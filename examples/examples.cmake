@@ -1,7 +1,8 @@
-# Copyright (c) the JPEG XL Project Authors. All rights reserved.
+# Copyright (c) the JPEG XL Project Authors.
 #
 # Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 add_executable(decode_oneshot ${CMAKE_CURRENT_LIST_DIR}/decode_oneshot.cc)
 target_link_libraries(decode_oneshot jxl_dec jxl_threads)

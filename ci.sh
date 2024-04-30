@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Copyright (c) the JPEG XL Project Authors. All rights reserved.
+# Copyright (c) the JPEG XL Project Authors.
 #
 # Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 # Continuous integration helper module. This module is meant to be called from
 # workflows during the continuous integration build, as well as from the

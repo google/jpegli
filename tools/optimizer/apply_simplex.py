@@ -1,8 +1,9 @@
 #!/usr/bin/python
-# Copyright (c) the JPEG XL Project Authors. All rights reserved.
+# Copyright (c) the JPEG XL Project Authors.
 #
 # Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 """apply_simplex.py: Updates constants based on results of simplex search.
 
