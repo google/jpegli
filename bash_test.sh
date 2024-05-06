@@ -114,7 +114,7 @@ test_printf_size_t() {
       continue
     fi
     if ! grep -F printf_macros.h "$f" >/dev/null; then
-      echo "$f: Add lib/jxl/base/printf_macros.h for PRI.S, or use other " \
+      echo "$f: Add lib/base/printf_macros.h for PRI.S, or use other " \
         "types for code outside lib/jxl library." >&2
       ret=1
     fi

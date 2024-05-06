@@ -9,8 +9,8 @@
 #if JPEGXL_ENABLE_GIF
 #include <gif_lib.h>
 #endif
-#include <string.h>
 
+#include <cstring>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -20,6 +20,9 @@
 #include "lib/base/sanitizers.h"
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/size_constraints.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/rect.h"
+#include "lib/base/sanitizers.h"
 
 namespace jxl {
 namespace extras {

@@ -24,6 +24,9 @@
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
 #include "lib/extras/exif.h"
+#include "lib/base/common.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 #if JPEGXL_ENABLE_SJPEG
 #include "sjpeg.h"
 #include "sjpegi.h"
