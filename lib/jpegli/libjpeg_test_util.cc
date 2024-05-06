@@ -6,7 +6,6 @@
 
 #include "lib/jpegli/libjpeg_test_util.h"
 
-#include <cstdlib>
 #include <cstring>
 
 #include "lib/base/include_jpeglib.h"  // NOLINT

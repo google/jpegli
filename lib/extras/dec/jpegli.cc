@@ -7,16 +7,18 @@
 #include "lib/extras/dec/jpegli.h"
 
 #include <setjmp.h>
-#include <stdint.h>
 
 #include <algorithm>
-#include <numeric>
+#include <cstdint>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
 #include "lib/jpegli/decode.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 namespace extras {
