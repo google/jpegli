@@ -15,6 +15,7 @@
 #include <limits>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/extras/image.h"
@@ -118,7 +119,9 @@ StatusOr<Plane<T>> LinComb(const T lambda1, const Plane<T>& image1,
   const size_t ysize = image1.ysize();
   JXL_CHECK(xsize == image2.xsize());
   JXL_CHECK(ysize == image2.ysize());
-  JXL_ASSIGN_OR_RETURN(Plane<T> out, Plane<T>::Create(xsize, ysize));
+  JxlMemoryManager* memory_manager = image1.memory_manager();
+  JXL_ASSIGN_OR_RETURN(Plane<T> out,
+                       Plane<T>::Create(memory_manager, xsize, ysize));
   for (size_t y = 0; y < ysize; ++y) {
     const T* const JXL_RESTRICT row1 = image1.Row(y);
     const T* const JXL_RESTRICT row2 = image2.Row(y);

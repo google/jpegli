@@ -9,6 +9,7 @@
 #include <atomic>
 #include <utility>
 
+#include "lib/base/memory_manager.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms_interface.h"
@@ -26,8 +27,10 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
   // Changing IsGray is probably a bug.
   JXL_CHECK(c_current.IsGray() == c_desired.IsGray());
   bool is_gray = c_current.IsGray();
+  JxlMemoryManager* memory_amanger = color.memory_manager();
   if (out->xsize() < rect.xsize() || out->ysize() < rect.ysize()) {
-    JXL_ASSIGN_OR_RETURN(*out, Image3F::Create(rect.xsize(), rect.ysize()));
+    JXL_ASSIGN_OR_RETURN(
+        *out, Image3F::Create(memory_amanger, rect.xsize(), rect.ysize()));
   } else {
     out->ShrinkTo(rect.xsize(), rect.ysize());
   }

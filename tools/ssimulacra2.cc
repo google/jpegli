@@ -25,10 +25,9 @@ Design:
 
 #include "tools/ssimulacra2.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <hwy/aligned_allocator.h>
 #include <utility>
 
@@ -44,6 +43,7 @@ Design:
 #include "lib/extras/simd_util.h"
 #include "lib/extras/xyb_transform.h"
 #include "tools/gauss_blur.h"
+#include "tools/no_memory_manager.h"
 
 namespace {
 
@@ -86,7 +86,9 @@ void ToXYB(const ColorEncoding& c_current, float intensity_target,
 Status Downsample(Image3F& in, size_t fx, size_t fy) {
   const size_t out_xsize = (in.xsize() + fx - 1) / fx;
   const size_t out_ysize = (in.ysize() + fy - 1) / fy;
-  JXL_ASSIGN_OR_RETURN(Image3F out, Image3F::Create(out_xsize, out_ysize));
+  JXL_ASSIGN_OR_RETURN(
+      Image3F out,
+      Image3F::Create(jpegxl::tools::NoMemoryManager(), out_xsize, out_ysize));
   const float normalize = 1.0f / (fx * fy);
   for (size_t c = 0; c < 3; ++c) {
     for (size_t oy = 0; oy < out_ysize; ++oy) {
@@ -126,8 +128,10 @@ void Multiply(const Image3F& a, const Image3F& b, Image3F* mul) {
 class Blur {
  public:
   static StatusOr<Blur> Create(const size_t xsize, const size_t ysize) {
+    JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
     Blur result;
-    JXL_ASSIGN_OR_RETURN(result.temp_, ImageF::Create(xsize, ysize));
+    JXL_ASSIGN_OR_RETURN(result.temp_,
+                         ImageF::Create(memory_manager, xsize, ysize));
     return result;
   }
 
@@ -139,7 +143,9 @@ class Blur {
   }
 
   StatusOr<Image3F> operator()(const Image3F& in) {
-    JXL_ASSIGN_OR_RETURN(Image3F out, Image3F::Create(in.xsize(), in.ysize()));
+    JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+    JXL_ASSIGN_OR_RETURN(
+        Image3F out, Image3F::Create(memory_manager, in.xsize(), in.ysize()));
     operator()(in.Plane(0), &out.Plane(0));
     operator()(in.Plane(1), &out.Plane(1));
     operator()(in.Plane(2), &out.Plane(2));
@@ -456,6 +462,7 @@ double Msssim::Score() const {
 
 StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
                                     const PackedPixelFile& distorted) {
+  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
   Msssim msssim;
 
   if (orig.xsize() != distorted.xsize() || orig.ysize() != distorted.ysize()) {
@@ -470,10 +477,12 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
   const JxlCmsInterface& cms = *JxlGetDefaultCms();
 
-  JXL_ASSIGN_OR_RETURN(Image3F orig2, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_RETURN(Image3F orig2,
+                       Image3F::Create(memory_manager, xsize, ysize));
   JXL_RETURN_IF_ERROR(
       jxl::extras::ConvertPackedPixelFileToImage3F(orig, &orig2, nullptr));
-  JXL_ASSIGN_OR_RETURN(Image3F dist2, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_RETURN(Image3F dist2,
+                       Image3F::Create(memory_manager, xsize, ysize));
   JXL_RETURN_IF_ERROR(
       jxl::extras::ConvertPackedPixelFileToImage3F(distorted, &dist2, nullptr));
 
@@ -495,8 +504,10 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
                                   &dist2));
   }
 
-  JXL_ASSIGN_OR_RETURN(Image3F img1, Image3F::Create(xsize, ysize));
-  JXL_ASSIGN_OR_RETURN(Image3F img2, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_RETURN(Image3F img1,
+                       Image3F::Create(memory_manager, xsize, ysize));
+  JXL_ASSIGN_OR_RETURN(Image3F img2,
+                       Image3F::Create(memory_manager, xsize, ysize));
   jxl::CopyImageTo(orig2, &img1);
   jxl::CopyImageTo(dist2, &img2);
   ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
@@ -506,8 +517,8 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
   MakePositiveXYB(img1);
   MakePositiveXYB(img2);
 
-  JXL_ASSIGN_OR_RETURN(Image3F mul,
-                       Image3F::Create(img1.xsize(), img1.ysize()));
+  JXL_ASSIGN_OR_RETURN(
+      Image3F mul, Image3F::Create(memory_manager, img1.xsize(), img1.ysize()));
   JXL_ASSIGN_OR_RETURN(Blur blur, Blur::Create(img1.xsize(), img1.ysize()));
 
   for (int scale = 0; scale < kNumScales; scale++) {

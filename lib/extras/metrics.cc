@@ -19,6 +19,7 @@
 
 #include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms.h"
@@ -130,7 +131,8 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
   }
 }
 
-void ComputeSumOfSquares(const extras::PackedPixelFile& a,
+void ComputeSumOfSquares(JxlMemoryManager* memory_manager,
+                         const extras::PackedPixelFile& a,
                          const extras::PackedPixelFile& b,
                          const JxlCmsInterface& cms, double sum_of_squares[3]) {
   const size_t xsize = a.xsize();
@@ -139,9 +141,11 @@ void ComputeSumOfSquares(const extras::PackedPixelFile& a,
   // Convert to sRGB - closer to perception than linear.
   ColorEncoding c_desired = ColorEncoding::SRGB(is_gray);
 
-  JXL_ASSIGN_OR_DIE(Image3F srgb0, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_DIE(Image3F srgb0,
+                    Image3F::Create(memory_manager, xsize, ysize));
   JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &srgb0, nullptr));
-  JXL_ASSIGN_OR_DIE(Image3F srgb1, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_DIE(Image3F srgb1,
+                    Image3F::Create(memory_manager, xsize, ysize));
   JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &srgb1, nullptr));
 
   ColorEncoding c_enc_a;
@@ -204,10 +208,11 @@ namespace {
 float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
                          const ButteraugliParams& params,
                          const JxlCmsInterface& cms, ImageF* distmap) {
+  JxlMemoryManager* memory_manager = ref.memory_manager();
   std::unique_ptr<ButteraugliComparator> comparator;
   JXL_ASSIGN_OR_DIE(comparator, ButteraugliComparator::Make(ref, params));
   JXL_ASSIGN_OR_DIE(ImageF temp_distmap,
-                    ImageF::Create(ref.xsize(), ref.ysize()));
+                    ImageF::Create(memory_manager, ref.xsize(), ref.ysize()));
   JXL_CHECK(comparator->Diffmap(actual, temp_distmap));
   float score = ButteraugliScoreFromDiffmap(temp_distmap, &params);
   if (distmap != nullptr) {
@@ -218,7 +223,8 @@ float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
 
 }  // namespace
 
-float ButteraugliDistance(const extras::PackedPixelFile& a,
+float ButteraugliDistance(JxlMemoryManager* memory_manager,
+                          const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
                           ButteraugliParams params, ImageF* distmap,
                           ThreadPool* pool, bool ignore_alpha) {
@@ -236,9 +242,11 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
   const JxlCmsInterface& cms = *JxlGetDefaultCms();
 
-  JXL_ASSIGN_OR_DIE(Image3F rgb0, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_DIE(Image3F rgb0,
+                    Image3F::Create(memory_manager, xsize, ysize));
   JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &rgb0, pool));
-  JXL_ASSIGN_OR_DIE(Image3F rgb1, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_DIE(Image3F rgb1,
+                    Image3F::Create(memory_manager, xsize, ysize));
   JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &rgb1, pool));
 
   ColorEncoding c_enc_a;
@@ -266,16 +274,18 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
   return HWY_DYNAMIC_DISPATCH(ComputeDistanceP)(distmap, params, p);
 }
 
-float Butteraugli3Norm(const extras::PackedPixelFile& a,
+float Butteraugli3Norm(JxlMemoryManager* memory_manager,
+                       const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b, ThreadPool* pool) {
   ButteraugliParams params;
   ImageF distmap;
-  ButteraugliDistance(a, b, params, &distmap, pool);
+  ButteraugliDistance(memory_manager, a, b, params, &distmap, pool);
   return ComputeDistanceP(distmap, params, 3);
 }
 
 HWY_EXPORT(ComputeSumOfSquares);
-double ComputePSNR(const extras::PackedPixelFile& a,
+double ComputePSNR(JxlMemoryManager* memory_manager,
+                   const extras::PackedPixelFile& a,
                    const extras::PackedPixelFile& b,
                    const JxlCmsInterface& cms) {
   if (a.xsize() != b.xsize() || a.ysize() != b.ysize()) {
@@ -287,7 +297,8 @@ double ComputePSNR(const extras::PackedPixelFile& a,
     return 0.0;
   }
   double sum_of_squares[3] = {};
-  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)(a, b, cms, sum_of_squares);
+  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)
+  (memory_manager, a, b, cms, sum_of_squares);
   constexpr double kChannelWeights[3] = {6.0 / 8, 1.0 / 8, 1.0 / 8};
   double avg_psnr = 0;
   const size_t input_pixels = a.xsize() * a.ysize();

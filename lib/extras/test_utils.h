@@ -11,10 +11,14 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/memory_manager.h"
+
 namespace jxl {
 namespace test {
 
 std::vector<uint8_t> ReadTestData(const std::string& filename);
+
+JxlMemoryManager* MemoryManager();
 
 }  // namespace test
 }  // namespace jxl

@@ -10,16 +10,14 @@
 // Helper class for storing external (int or float, interleaved) images. This is
 // the common format used by other libraries and in the libjxl API.
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <functional>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 

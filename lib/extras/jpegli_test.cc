@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/memory_manager.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
@@ -111,6 +112,7 @@ float BitsPerPixel(const PackedPixelFile& ppf,
 
 TEST(JpegliTest, JpegliSRGBDecodeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf0;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf0));
@@ -125,11 +127,13 @@ TEST(JpegliTest, JpegliSRGBDecodeTest) {
   PackedPixelFile ppf2;
   JpegDecompressParams dparams;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams, nullptr, &ppf2));
-  EXPECT_LT(ButteraugliDistance(ppf0, ppf2), ButteraugliDistance(ppf0, ppf1));
+  EXPECT_LT(ButteraugliDistance(memory_manager, ppf0, ppf2),
+            ButteraugliDistance(memory_manager, ppf0, ppf1));
 }
 
 TEST(JpegliTest, JpegliGrayscaleDecodeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.g.depth8.pgm";
   PackedPixelFile ppf0;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf0));
@@ -144,11 +148,13 @@ TEST(JpegliTest, JpegliGrayscaleDecodeTest) {
   PackedPixelFile ppf2;
   JpegDecompressParams dparams;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams, nullptr, &ppf2));
-  EXPECT_LT(ButteraugliDistance(ppf0, ppf2), ButteraugliDistance(ppf0, ppf1));
+  EXPECT_LT(ButteraugliDistance(memory_manager, ppf0, ppf2),
+            ButteraugliDistance(memory_manager, ppf0, ppf1));
 }
 
 TEST(JpegliTest, JpegliXYBEncodeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf_in;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
@@ -163,11 +169,13 @@ TEST(JpegliTest, JpegliXYBEncodeTest) {
   PackedPixelFile ppf_out;
   ASSERT_TRUE(DecodeWithLibjpeg(compressed, &ppf_out));
   EXPECT_SLIGHTLY_BELOW(BitsPerPixel(ppf_in, compressed), 1.45f);
-  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(ppf_in, ppf_out), 1.32f);
+  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(memory_manager, ppf_in, ppf_out),
+                        1.32f);
 }
 
 TEST(JpegliTest, JpegliDecodeTestLargeSmoothArea) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   TestImage t;
   const size_t xsize = 2070;
   const size_t ysize = 1063;
@@ -193,11 +201,12 @@ TEST(JpegliTest, JpegliDecodeTestLargeSmoothArea) {
   PackedPixelFile ppf1;
   JpegDecompressParams dparams;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams, nullptr, &ppf1));
-  EXPECT_LT(ButteraugliDistance(ppf0, ppf1), 3.0f);
+  EXPECT_LT(ButteraugliDistance(memory_manager, ppf0, ppf1), 3.0f);
 }
 
 TEST(JpegliTest, JpegliYUVEncodeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf_in;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
@@ -212,11 +221,13 @@ TEST(JpegliTest, JpegliYUVEncodeTest) {
   PackedPixelFile ppf_out;
   ASSERT_TRUE(DecodeWithLibjpeg(compressed, &ppf_out));
   EXPECT_SLIGHTLY_BELOW(BitsPerPixel(ppf_in, compressed), 1.7f);
-  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(ppf_in, ppf_out), 1.32f);
+  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(memory_manager, ppf_in, ppf_out),
+                        1.32f);
 }
 
 TEST(JpegliTest, JpegliYUVChromaSubsamplingEncodeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf_in;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
@@ -233,12 +244,13 @@ TEST(JpegliTest, JpegliYUVChromaSubsamplingEncodeTest) {
     PackedPixelFile ppf_out;
     ASSERT_TRUE(DecodeWithLibjpeg(compressed, &ppf_out));
     EXPECT_LE(BitsPerPixel(ppf_in, compressed), 1.55f);
-    EXPECT_LE(ButteraugliDistance(ppf_in, ppf_out), 1.82f);
+    EXPECT_LE(ButteraugliDistance(memory_manager, ppf_in, ppf_out), 1.82f);
   }
 }
 
 TEST(JpegliTest, JpegliYUVEncodeTestNoAq) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf_in;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
@@ -254,10 +266,12 @@ TEST(JpegliTest, JpegliYUVEncodeTestNoAq) {
   PackedPixelFile ppf_out;
   ASSERT_TRUE(DecodeWithLibjpeg(compressed, &ppf_out));
   EXPECT_SLIGHTLY_BELOW(BitsPerPixel(ppf_in, compressed), 1.85f);
-  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(ppf_in, ppf_out), 1.25f);
+  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(memory_manager, ppf_in, ppf_out),
+                        1.25f);
 }
 
 TEST(JpegliTest, JpegliHDRRoundtripTest) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   std::string testimage = "jxl/hdr_room.png";
   PackedPixelFile ppf_in;
   ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
@@ -274,7 +288,8 @@ TEST(JpegliTest, JpegliHDRRoundtripTest) {
   dparams.output_data_type = JXL_TYPE_UINT16;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams, nullptr, &ppf_out));
   EXPECT_SLIGHTLY_BELOW(BitsPerPixel(ppf_in, compressed), 2.95f);
-  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(ppf_in, ppf_out), 1.05f);
+  EXPECT_SLIGHTLY_BELOW(ButteraugliDistance(memory_manager, ppf_in, ppf_out),
+                        1.05f);
 }
 
 TEST(JpegliTest, JpegliSetAppData) {
@@ -343,6 +358,7 @@ class JpegliColorQuantTestParam : public ::testing::TestWithParam<TestConfig> {
 
 TEST_P(JpegliColorQuantTestParam, JpegliColorQuantizeTest) {
   TEST_LIBJPEG_SUPPORT();
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   TestConfig config = GetParam();
   std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
   PackedPixelFile ppf0;
@@ -367,8 +383,8 @@ TEST_P(JpegliColorQuantTestParam, JpegliColorQuantizeTest) {
   dparams2.dither_mode = config.dither;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams2, nullptr, &ppf2));
 
-  double dist1 = Butteraugli3Norm(ppf0, ppf1);
-  double dist2 = Butteraugli3Norm(ppf0, ppf2);
+  double dist1 = Butteraugli3Norm(memory_manager, ppf0, ppf1);
+  double dist2 = Butteraugli3Norm(memory_manager, ppf0, ppf2);
   printf("distance: %f  vs %f\n", dist2, dist1);
   if (config.passes == 1) {
     if (config.num_colors == 16 && config.dither == 2) {
