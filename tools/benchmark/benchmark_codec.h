@@ -7,9 +7,7 @@
 #ifndef TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
 #define TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
 
-#include <stdint.h>
-
-#include <deque>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -22,7 +20,6 @@
 #include "tools/args.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_stats.h"
-#include "tools/cmdline.h"
 #include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
 

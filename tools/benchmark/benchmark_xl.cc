@@ -20,6 +20,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/random.h"
 #include "lib/base/span.h"
@@ -44,6 +45,7 @@
 #include "tools/benchmark/benchmark_stats.h"
 #include "tools/benchmark/benchmark_utils.h"
 #include "tools/file_io.h"
+#include "tools/no_memory_manager.h"
 #include "tools/speed_stats.h"
 #include "tools/ssimulacra2.h"
 #include "tools/thread_pool_internal.h"
@@ -111,6 +113,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
                 const std::vector<std::string>& extra_metrics_commands,
                 ImageCodec* codec, ThreadPool* inner_pool,
                 std::vector<uint8_t>* compressed, BenchmarkStats* s) {
+  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
   ++s->total_input_files;
 
   if (ppf.frames.size() != 1) {
@@ -228,19 +231,20 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       // TODO(szabadka) Support different intensity targets as well.
       params.intensity_target = 80.0;
 
-      distance = ButteraugliDistance(ppf, ppf2, params, &distmap, inner_pool,
-                                     codec->IgnoreAlpha());
+      distance =
+          ButteraugliDistance(memory_manager, ppf, ppf2, params, &distmap,
+                              inner_pool, codec->IgnoreAlpha());
     } else {
       // TODO(veluca): re-upsample and compute proper distance.
       distance = 1e+4f;
-      JXL_ASSIGN_OR_DIE(distmap, ImageF::Create(1, 1));
+      JXL_ASSIGN_OR_DIE(distmap, ImageF::Create(memory_manager, 1, 1));
       distmap.Row(0)[0] = distance;
     }
     // Update stats
-    s->psnr +=
-        compressed->empty()
-            ? 0
-            : jxl::ComputePSNR(ppf, ppf2, *JxlGetDefaultCms()) * input_pixels;
+    s->psnr += compressed->empty() ? 0
+                                   : jxl::ComputePSNR(memory_manager, ppf, ppf2,
+                                                      *JxlGetDefaultCms()) *
+                                         input_pixels;
     s->distance_p_norm +=
         ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm) *
         input_pixels;

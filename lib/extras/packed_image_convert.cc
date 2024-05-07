@@ -12,6 +12,7 @@
 #include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/float.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
@@ -155,6 +156,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
   JXL_CHECK(float_out ? bits_per_sample == 16 || bits_per_sample == 32
                       : bits_per_sample > 0 && bits_per_sample <= 16);
   JXL_CHECK(out_image);
+  JxlMemoryManager* memory_manager = in_channels[0]->memory_manager();
   std::vector<const ImageF*> channels;
   channels.assign(in_channels, in_channels + num_channels);
 
@@ -182,7 +184,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
   ImageF ones;
   for (size_t c = 0; c < num_channels; ++c) {
     if (!channels[c]) {
-      JXL_ASSIGN_OR_RETURN(ones, ImageF::Create(xsize, 1));
+      JXL_ASSIGN_OR_RETURN(ones, ImageF::Create(memory_manager, xsize, 1));
       FillImage(1.0f, &ones);
       break;
     }
@@ -196,7 +198,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
           pool, 0, static_cast<uint32_t>(ysize),
           [&](size_t num_threads) {
             StatusOr<Plane<hwy::float16_t>> f16_cache_or =
-                Plane<hwy::float16_t>::Create(xsize,
+                Plane<hwy::float16_t>::Create(memory_manager, xsize,
                                               num_channels * num_threads);
             if (!f16_cache_or.ok()) return false;
             f16_cache = std::move(f16_cache_or).value();
@@ -262,8 +264,8 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
     JXL_RETURN_IF_ERROR(RunOnPool(
         pool, 0, static_cast<uint32_t>(ysize),
         [&](size_t num_threads) {
-          StatusOr<Plane<uint32_t>> u32_cache_or =
-              Plane<uint32_t>::Create(xsize, num_channels * num_threads);
+          StatusOr<Plane<uint32_t>> u32_cache_or = Plane<uint32_t>::Create(
+              memory_manager, xsize, num_channels * num_threads);
           if (!u32_cache_or.ok()) return false;
           u32_cache = std::move(u32_cache_or).value();
           return true;

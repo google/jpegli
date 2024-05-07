@@ -51,5 +51,12 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
   return data;
 }
 
+namespace {
+void* TestAlloc(void* /* opaque*/, size_t size) { return malloc(size); }
+void TestFree(void* /* opaque*/, void* address) { free(address); }
+JxlMemoryManager kMemoryManager{nullptr, &TestAlloc, &TestFree};
+}  // namespace
+JxlMemoryManager* MemoryManager() { return &kMemoryManager; };
+
 }  // namespace test
 }  // namespace jxl

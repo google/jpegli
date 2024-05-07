@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "lib/base/memory_manager.h"
 #include "lib/base/random.h"
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
@@ -22,6 +23,7 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/test_image.h"
+#include "lib/extras/test_utils.h"
 
 namespace jxl {
 namespace {
@@ -31,7 +33,8 @@ using extras::PackedPixelFile;
 using test::TestImage;
 
 Image3F SinglePixelImage(float red, float green, float blue) {
-  JXL_ASSIGN_OR_DIE(Image3F img, Image3F::Create(1, 1));
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JXL_ASSIGN_OR_DIE(Image3F img, Image3F::Create(memory_manager, 1, 1));
   img.PlaneRow(0, 0)[0] = red;
   img.PlaneRow(1, 0)[0] = green;
   img.PlaneRow(2, 0)[0] = blue;
@@ -39,8 +42,10 @@ Image3F SinglePixelImage(float red, float green, float blue) {
 }
 
 Image3F GetColorImage(const PackedPixelFile& ppf) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   JXL_CHECK(!ppf.frames.empty());
-  JXL_ASSIGN_OR_DIE(Image3F color, Image3F::Create(ppf.xsize(), ppf.ysize()));
+  JXL_ASSIGN_OR_DIE(Image3F color,
+                    Image3F::Create(memory_manager, ppf.xsize(), ppf.ysize()));
   JXL_CHECK(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
   return color;
 }
@@ -84,12 +89,14 @@ TEST(ButteraugliInPlaceTest, SinglePixel) {
 }
 
 TEST(ButteraugliInPlaceTest, LargeImage) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   const size_t xsize = 1024;
   const size_t ysize = 1024;
   TestImage img;
   img.SetDimensions(xsize, ysize).AddFrame().RandomFill(777);
   Image3F rgb0 = GetColorImage(img.ppf());
-  JXL_ASSIGN_OR_DIE(Image3F rgb1, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_DIE(Image3F rgb1,
+                    Image3F::Create(memory_manager, xsize, ysize));
   CopyImageTo(rgb0, &rgb1);
   AddUniformNoise(&rgb1, 0.02f, 7777);
   AddEdge(&rgb1, 0.1f, xsize / 2, xsize / 2);
