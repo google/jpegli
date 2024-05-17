@@ -129,8 +129,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/ans_params.h
   jxl/blending.cc
   jxl/blending.h
-  jxl/cache_aligned.cc
-  jxl/cache_aligned.h
   jxl/chroma_from_luma.cc
   jxl/chroma_from_luma.h
   jxl/codec_in_out.h
@@ -412,8 +410,6 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
-  extras/cache_aligned.cc
-  extras/cache_aligned.h
   extras/butteraugli.cc
   extras/butteraugli.h
   extras/convolve-inl.h
@@ -425,6 +421,8 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/image_color_transform.cc
   extras/image_color_transform.h
   extras/image_ops.h
+  extras/memory_manager_internal.cc
+  extras/memory_manager_internal.h
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc

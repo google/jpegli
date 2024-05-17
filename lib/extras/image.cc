@@ -12,7 +12,7 @@
 
 #include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
-#include "lib/extras/cache_aligned.h"
+#include "lib/extras/memory_manager_internal.h"
 #include "lib/extras/simd_util.h"
 
 #if defined(MEMORY_SANITIZER)
@@ -24,38 +24,6 @@ namespace jxl {
 namespace detail {
 
 namespace {
-
-size_t BytesPerRow(const size_t xsize, const size_t sizeof_t) {
-  // Special case: we don't allow any ops -> don't need extra padding/
-  if (xsize == 0) {
-    return 0;
-  }
-
-  const size_t vec_size = MaxVectorSize();
-  size_t valid_bytes = xsize * sizeof_t;
-
-  // Allow unaligned accesses starting at the last valid value.
-  // Skip for the scalar case because no extra lanes will be loaded.
-  if (vec_size != 0) {
-    valid_bytes += vec_size - sizeof_t;
-  }
-
-  // Round up to vector and cache line size.
-  const size_t align = std::max(vec_size, CacheAligned::kAlignment);
-  size_t bytes_per_row = RoundUpTo(valid_bytes, align);
-
-  // During the lengthy window before writes are committed to memory, CPUs
-  // guard against read after write hazards by checking the address, but
-  // only the lower 11 bits. We avoid a false dependency between writes to
-  // consecutive rows by ensuring their sizes are not multiples of 2 KiB.
-  // Avoid2K prevents the same problem for the planes of an Image3.
-  if (bytes_per_row % CacheAligned::kAlias == 0) {
-    bytes_per_row += align;
-  }
-
-  JXL_ASSERT(bytes_per_row % align == 0);
-  return bytes_per_row;
-}
 
 // Initializes the minimum bytes required to suppress MSAN warnings from
 // legitimate vector loads/stores on the right border, where some lanes are
@@ -100,8 +68,6 @@ PlaneBase::PlaneBase(const size_t xsize, const size_t ysize,
       orig_xsize_(static_cast<uint32_t>(xsize)),
       orig_ysize_(static_cast<uint32_t>(ysize)),
       bytes_per_row_(BytesPerRow(xsize_, sizeof_t)),
-      memory_manager_(nullptr),
-      bytes_(nullptr),
       sizeof_t_(sizeof_t) {
   // TODO(eustas): turn to error instead of abort.
   JXL_CHECK(xsize == xsize_);
@@ -111,9 +77,7 @@ PlaneBase::PlaneBase(const size_t xsize, const size_t ysize,
 }
 
 Status PlaneBase::Allocate(JxlMemoryManager* memory_manager) {
-  JXL_CHECK(memory_manager_ == nullptr);
-  JXL_CHECK(memory_manager != nullptr);
-  JXL_CHECK(!bytes_.get());
+  JXL_CHECK(bytes_.address<void>() == nullptr);
 
   // Dimensions can be zero, e.g. for lazily-allocated images. Only allocate
   // if nonzero, because "zero" bytes still have padding/bookkeeping overhead.
@@ -121,12 +85,9 @@ Status PlaneBase::Allocate(JxlMemoryManager* memory_manager) {
     return true;
   }
 
-  bytes_ = AllocateArray(bytes_per_row_ * ysize_);
-  if (!bytes_.get()) {
-    // TODO(eustas): use specialized OOM error code
-    return JXL_FAILURE("Failed to allocate memory for image surface");
-  }
-  memory_manager_ = memory_manager;
+  JXL_ASSIGN_OR_RETURN(
+      bytes_, AlignedMemory::Create(memory_manager, bytes_per_row_ * ysize_));
+
   InitializePadding(*this, sizeof_t_);
 
   return true;
@@ -138,7 +99,6 @@ void PlaneBase::Swap(PlaneBase& other) {
   std::swap(orig_xsize_, other.orig_xsize_);
   std::swap(orig_ysize_, other.orig_ysize_);
   std::swap(bytes_per_row_, other.bytes_per_row_);
-  std::swap(memory_manager_, other.memory_manager_);
   std::swap(bytes_, other.bytes_);
 }
 
