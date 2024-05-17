@@ -13,6 +13,7 @@
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/span.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
 #include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
@@ -86,7 +87,8 @@ using ImageCodecPtr = std::unique_ptr<ImageCodec>;
 // Creates an image codec by name, e.g. "jxl" to get a new instance of the
 // jxl codec. Optionally, behind a colon, parameters can be specified,
 // then ParseParameters of the codec gets called with the part behind the colon.
-ImageCodecPtr CreateImageCodec(const std::string& description);
+ImageCodecPtr CreateImageCodec(const std::string& description,
+                               JxlMemoryManager* memory_manager);
 
 }  // namespace tools
 }  // namespace jpegxl

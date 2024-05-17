@@ -129,8 +129,6 @@ libjxl_dec_sources = [
     "jxl/ans_params.h",
     "jxl/blending.cc",
     "jxl/blending.h",
-    "jxl/cache_aligned.cc",
-    "jxl/cache_aligned.h",
     "jxl/chroma_from_luma.cc",
     "jxl/chroma_from_luma.h",
     "jxl/codec_in_out.h",
@@ -412,8 +410,6 @@ libjxl_enc_sources = [
 ]
 
 libjxl_extras_for_tools_sources = [
-    "extras/cache_aligned.cc",
-    "extras/cache_aligned.h",
     "extras/butteraugli.cc",
     "extras/butteraugli.h",
     "extras/convolve-inl.h",
@@ -425,6 +421,8 @@ libjxl_extras_for_tools_sources = [
     "extras/image_color_transform.cc",
     "extras/image_color_transform.h",
     "extras/image_ops.h",
+    "extras/memory_manager_internal.cc",
+    "extras/memory_manager_internal.h",
     "extras/metrics.cc",
     "extras/metrics.h",
     "extras/packed_image_convert.cc",

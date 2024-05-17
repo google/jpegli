@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
 #include "lib/extras/image.h"
@@ -69,7 +70,8 @@ Status ImageCodec::ParseParam(const std::string& param) {
   return false;
 }
 
-ImageCodecPtr CreateImageCodec(const std::string& description) {
+ImageCodecPtr CreateImageCodec(const std::string& description,
+                               JxlMemoryManager* memory_manager) {
   std::string name = description;
   std::string parameters;
   size_t colon = description.find(':');
