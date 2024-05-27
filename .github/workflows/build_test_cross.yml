@@ -69,7 +69,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
       with:
         egress-policy: audit
 
@@ -235,7 +235,11 @@ jobs:
 
     steps:
     - name: Harden Runner
+<<<<<<< HEAD
       uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+=======
+      uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+>>>>>>> d49cb87f (Bump step-security/harden-runner from 2.7.1 to 2.8.0 (#3608))
       with:
         egress-policy: audit
 
