@@ -16,7 +16,7 @@
 
 #include <stddef.h>
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -64,7 +64,7 @@ typedef struct JxlMemoryManagerStruct {
   /* TODO(deymo): Add cache-aligned alloc/free functions here. */
 } JxlMemoryManager;
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 }
 #endif
 
