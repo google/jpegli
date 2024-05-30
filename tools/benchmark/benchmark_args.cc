@@ -6,14 +6,14 @@
 
 #include "tools/benchmark/benchmark_args.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-
-#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_description.h"
 #include "lib/extras/dec/decode.h"

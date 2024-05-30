@@ -32,6 +32,7 @@ Design:
 #include <utility>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms.h"
