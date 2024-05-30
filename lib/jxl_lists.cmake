@@ -519,6 +519,7 @@ set(JPEGXL_INTERNAL_JPEGLI_SOURCES
 )
 
 set(JPEGXL_INTERNAL_JPEGLI_TESTLIB_FILES
+  jpegli/fuzztest.h
   jpegli/test_params.h
   jpegli/test_utils-inl.h
   jpegli/test_utils.cc
@@ -543,6 +544,8 @@ set(JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES
 set(JPEGXL_INTERNAL_TESTLIB_FILES
   extras/test_image.cc
   extras/test_image.h
+  extras/test_memory_manager.cc
+  extras/test_memory_manager.h
   extras/test_utils.cc
   extras/test_utils.h
   threads/test_utils.h

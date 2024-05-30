@@ -123,15 +123,4 @@ void VerifyOutputImage(const TestImage& input, const TestImage& output,
 
 }  // namespace jpegli
 
-#if !defined(FUZZ_TEST)
-struct FuzzTestSink {
-  template <typename F>
-  FuzzTestSink WithSeeds(F /*f*/) {
-    return *this;
-  }
-};
-#define FUZZ_TEST(A, B) \
-  const JXL_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
-#endif
-
 #endif  // LIB_JPEGLI_TEST_UTILS_H_

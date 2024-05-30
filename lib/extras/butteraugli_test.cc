@@ -23,6 +23,7 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/test_image.h"
+#include "lib/extras/test_memory_manager.h"
 #include "lib/extras/test_utils.h"
 
 namespace jxl {
