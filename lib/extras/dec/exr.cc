@@ -6,7 +6,7 @@
 
 #include "lib/extras/dec/exr.h"
 
-#include "lib/jxl/base/common.h"
+#include "lib/base/common.h"
 
 #if JPEGXL_ENABLE_EXR
 #include <ImfChromaticitiesAttribute.h>

@@ -16,6 +16,7 @@
 #include "lib/base/testing.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/test_utils.h"
+#include "lib/extras/test_memory_manager.h"
 
 namespace jxl {
 

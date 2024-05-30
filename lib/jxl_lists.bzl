@@ -529,6 +529,7 @@ libjxl_jpegli_sources = [
 ]
 
 libjxl_jpegli_testlib_files = [
+    "jpegli/fuzztest.h",
     "jpegli/test_params.h",
     "jpegli/test_utils-inl.h",
     "jpegli/test_utils.cc",
@@ -574,6 +575,8 @@ libjxl_public_headers = [
 libjxl_testlib_files = [
     "extras/test_image.cc",
     "extras/test_image.h",
+    "extras/test_memory_manager.cc",
+    "extras/test_memory_manager.h",
     "extras/test_utils.cc",
     "extras/test_utils.h",
     "threads/test_utils.h",
