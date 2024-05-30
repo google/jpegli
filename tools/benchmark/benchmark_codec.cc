@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
