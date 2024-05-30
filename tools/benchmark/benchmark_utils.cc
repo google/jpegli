@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#define _DEFAULT_SOURCE  // for mkstemps().
+#define _DEFAULT_SOURCE  // NOLINT for mkstemps().
 
 #include "tools/benchmark/benchmark_utils.h"
 

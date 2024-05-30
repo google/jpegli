@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
 #include "lib/base/memory_manager.h"
@@ -926,7 +927,7 @@ class Benchmark {
             " threads, %" PRIuS " inner threads\n",
             num_hw_threads, num_tasks, num_threads, num_inner);
 
-    pool->reset(new ThreadPoolInternal(num_threads));
+    *pool = jxl::make_unique<ThreadPoolInternal>(num_threads);
     // Main thread OR worker threads in pool each get a possibly empty nested
     // pool (helps use all available cores when #tasks < #threads)
     for (size_t i = 0; i < std::max<size_t>(num_threads, 1); ++i) {

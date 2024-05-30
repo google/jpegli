@@ -11,6 +11,7 @@
 #include <memory>
 #include <thread>  // NOLINT
 
+#include "lib/base/common.h"
 #include "lib/base/data_parallel.h"
 #include "lib/threads/thread_parallel_runner.h"
 #include "lib/threads/thread_parallel_runner_cxx.h"
@@ -30,7 +31,8 @@ class ThreadPoolInternal {
       size_t num_threads = std::thread::hardware_concurrency()) {
     runner_ =
         JxlThreadParallelRunnerMake(/* memory_manager */ nullptr, num_threads);
-    pool_.reset(new ThreadPool(JxlThreadParallelRunner, runner_.get()));
+    pool_ =
+        jxl::make_unique<ThreadPool>(JxlThreadParallelRunner, runner_.get());
   }
 
   ThreadPoolInternal(const ThreadPoolInternal&) = delete;
