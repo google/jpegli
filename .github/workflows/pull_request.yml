@@ -60,7 +60,7 @@ jobs:
     - name: Install buildifier
       run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install buildifier
+        brew install buildifier typos-cli
     - name: lint
       run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"

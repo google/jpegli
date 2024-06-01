@@ -908,7 +908,7 @@ run_benchmark() {
     "${TOOLS_DIR}/benchmark_xl" "${benchmark_args[@]}" | \
        tee "${output_dir}/results.txt"
 
-    # Check error code for benckmark_xl command. This will exit if not.
+    # Check error code for benchmark_xl command. This will exit if not.
     return ${PIPESTATUS[0]}
   )
 }
