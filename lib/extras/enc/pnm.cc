@@ -22,7 +22,7 @@ namespace jxl {
 namespace extras {
 namespace {
 
-constexpr size_t kMaxHeaderSize = 200;
+constexpr size_t kMaxHeaderSize = 2000;
 
 class BasePNMEncoder : public Encoder {
  public:
