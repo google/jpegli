@@ -63,14 +63,6 @@
 #endif
 
 #if JXL_COMPILER_MSVC
-#define JXL_UNREACHABLE_BUILTIN __assume(false)
-#elif JXL_COMPILER_CLANG || JXL_COMPILER_GCC >= 405
-#define JXL_UNREACHABLE_BUILTIN __builtin_unreachable()
-#else
-#define JXL_UNREACHABLE_BUILTIN
-#endif
-
-#if JXL_COMPILER_MSVC
 #define JXL_MAYBE_UNUSED
 #else
 // Encountered "attribute list cannot appear here" when using the C++17
