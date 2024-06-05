@@ -24,7 +24,6 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/matrix_ops.h"
 #include "lib/base/printf_macros.h"
-#include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms.h"
 #include "lib/cms/cms_interface.h"
@@ -36,6 +35,7 @@
 #else  // JPEGXL_ENABLE_SKCMS
 #include "lcms2.h"
 #include "lcms2_plugin.h"
+#include "lib/jxl/base/span.h"
 #endif  // JPEGXL_ENABLE_SKCMS
 
 #define JXL_CMS_VERBOSE 0
