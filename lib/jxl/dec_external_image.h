@@ -9,12 +9,12 @@
 
 // Interleaved image for color transforms and Codec.
 
+#include <jxl/decode.h>
 #include <jxl/types.h>
 #include <stddef.h>
 
 #include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/dec_cache.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_metadata.h"
@@ -23,6 +23,32 @@ namespace jxl {
 
 // Maximum number of channels for the ConvertChannelsToExternal function.
 const size_t kConvertMaxChannels = 4;
+
+struct PixelCallback {
+  PixelCallback() = default;
+  PixelCallback(JxlImageOutInitCallback init, JxlImageOutRunCallback run,
+                JxlImageOutDestroyCallback destroy, void* init_opaque)
+      : init(init), run(run), destroy(destroy), init_opaque(init_opaque) {
+#if JXL_ENABLE_ASSERT
+    const bool has_init = init != nullptr;
+    const bool has_run = run != nullptr;
+    const bool has_destroy = destroy != nullptr;
+    const bool healthy = (has_init == has_run) && (has_run == has_destroy);
+    JXL_ASSERT(healthy);
+#endif
+  }
+
+  bool IsPresent() const { return run != nullptr; }
+
+  void* Init(size_t num_threads, size_t num_pixels) const {
+    return init(init_opaque, num_threads, num_pixels);
+  }
+
+  JxlImageOutInitCallback init = nullptr;
+  JxlImageOutRunCallback run = nullptr;
+  JxlImageOutDestroyCallback destroy = nullptr;
+  void* init_opaque = nullptr;
+};
 
 // Converts a list of channels to an interleaved image, applying transformations
 // when needed.

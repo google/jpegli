@@ -303,9 +303,6 @@ const float kDCQuant[3] = {
     1.0f / kInvDCQuant[2],
 };
 
-class ModularFrameEncoder;
-class ModularFrameDecoder;
-
 class DequantMatrices {
  public:
   enum QuantTable : size_t {
@@ -398,8 +395,7 @@ class DequantMatrices {
     }
   }
 
-  Status Decode(BitReader* br,
-                ModularFrameDecoder* modular_frame_decoder = nullptr);
+  Status Decode(BitReader* br);
   Status DecodeDC(BitReader* br);
 
   const std::vector<QuantEncoding>& encodings() const { return encodings_; }

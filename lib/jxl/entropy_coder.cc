@@ -23,7 +23,7 @@
 #include "lib/jxl/dec_ans.h"
 #include "lib/jxl/dec_bit_reader.h"
 #include "lib/jxl/dec_context_map.h"
-#include "lib/jxl/epf.h"
+#include "lib/jxl/fields.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "lib/jxl/pack_signed.h"
