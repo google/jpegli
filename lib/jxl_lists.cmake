@@ -538,7 +538,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
   include/jxl/codestream_header.h
   include/jxl/color_encoding.h
   include/jxl/decode.h
-  include/jxl/decode_cxx.h
   include/jxl/encode.h
   include/jxl/memory_manager.h
   include/jxl/parallel_runner.h
