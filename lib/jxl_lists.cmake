@@ -149,8 +149,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_context_map.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
-  jxl/dec_group.cc
-  jxl/dec_group.h
   jxl/dec_group_border.cc
   jxl/dec_group_border.h
   jxl/dec_huffman.cc
