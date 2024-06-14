@@ -227,8 +227,6 @@ endif()
 
 endif()  # BUILD_TESTING AND TARGET jxl AND NOT JPEGXL_EMSCRIPTEN
 
-add_subdirectory(wasm_demo)
-
 if(JPEGXL_ENABLE_JNI)
 find_package(JNI QUIET)
 find_package(Java QUIET)

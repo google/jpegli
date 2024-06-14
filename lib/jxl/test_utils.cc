@@ -74,27 +74,6 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
   return data;
 }
 
-void DefaultAcceptedFormats(extras::JXLDecompressParams& dparams) {
-  if (dparams.accepted_formats.empty()) {
-    for (const uint32_t num_channels : {1, 2, 3, 4}) {
-      dparams.accepted_formats.push_back(
-          {num_channels, JXL_TYPE_FLOAT, JXL_LITTLE_ENDIAN, /*align=*/0});
-    }
-  }
-}
-
-Status DecodeFile(extras::JXLDecompressParams dparams,
-                  const Span<const uint8_t> file, CodecInOut* JXL_RESTRICT io,
-                  ThreadPool* pool) {
-  DefaultAcceptedFormats(dparams);
-  SetThreadParallelRunner(dparams, pool);
-  extras::PackedPixelFile ppf;
-  JXL_RETURN_IF_ERROR(DecodeImageJXL(file.data(), file.size(), dparams,
-                                     /*decoded_bytes=*/nullptr, &ppf));
-  JXL_RETURN_IF_ERROR(ConvertPackedPixelFileToCodecInOut(ppf, pool, io));
-  return true;
-}
-
 void JxlBasicInfoSetFromPixelFormat(JxlBasicInfo* basic_info,
                                     const JxlPixelFormat* pixel_format) {
   JxlEncoderInitBasicInfo(basic_info);
@@ -165,85 +144,6 @@ void CheckSameEncodings(const std::vector<ColorEncoding>& a,
   }
 }
 }  // namespace
-
-bool Roundtrip(const CodecInOut* io, const CompressParams& cparams,
-               extras::JXLDecompressParams dparams,
-               CodecInOut* JXL_RESTRICT io2, std::stringstream& failures,
-               size_t* compressed_size, ThreadPool* pool) {
-  DefaultAcceptedFormats(dparams);
-  if (compressed_size) {
-    *compressed_size = static_cast<size_t>(-1);
-  }
-  std::vector<uint8_t> compressed;
-
-  std::vector<ColorEncoding> original_metadata_encodings;
-  std::vector<ColorEncoding> original_current_encodings;
-  std::vector<ColorEncoding> metadata_encodings_1;
-  std::vector<ColorEncoding> metadata_encodings_2;
-  std::vector<ColorEncoding> current_encodings_2;
-  original_metadata_encodings.reserve(io->frames.size());
-  original_current_encodings.reserve(io->frames.size());
-  metadata_encodings_1.reserve(io->frames.size());
-  metadata_encodings_2.reserve(io->frames.size());
-  current_encodings_2.reserve(io->frames.size());
-
-  for (const ImageBundle& ib : io->frames) {
-    // Remember original encoding, will be returned by decoder.
-    original_metadata_encodings.push_back(ib.metadata()->color_encoding);
-    // c_current should not change during encoding.
-    original_current_encodings.push_back(ib.c_current());
-  }
-
-  JXL_CHECK(test::EncodeFile(cparams, io, &compressed, pool));
-
-  for (const ImageBundle& ib1 : io->frames) {
-    metadata_encodings_1.push_back(ib1.metadata()->color_encoding);
-  }
-
-  // Should still be in the same color space after encoding.
-  CheckSameEncodings(metadata_encodings_1, original_metadata_encodings,
-                     "original vs after encoding", failures);
-
-  JXL_CHECK(DecodeFile(dparams, Bytes(compressed), io2, pool));
-  JXL_CHECK(io2->frames.size() == io->frames.size());
-
-  for (const ImageBundle& ib2 : io2->frames) {
-    metadata_encodings_2.push_back(ib2.metadata()->color_encoding);
-    current_encodings_2.push_back(ib2.c_current());
-  }
-
-  // We always produce the original color encoding if a color transform hook is
-  // set.
-  CheckSameEncodings(current_encodings_2, original_current_encodings,
-                     "current: original vs decoded", failures);
-
-  // Decoder returns the originals passed to the encoder.
-  CheckSameEncodings(metadata_encodings_2, original_metadata_encodings,
-                     "metadata: original vs decoded", failures);
-
-  if (compressed_size) {
-    *compressed_size = compressed.size();
-  }
-
-  return failures.str().empty();
-}
-
-size_t Roundtrip(const extras::PackedPixelFile& ppf_in,
-                 const extras::JXLCompressParams& cparams,
-                 extras::JXLDecompressParams dparams, ThreadPool* pool,
-                 extras::PackedPixelFile* ppf_out) {
-  DefaultAcceptedFormats(dparams);
-  SetThreadParallelRunner(cparams, pool);
-  SetThreadParallelRunner(dparams, pool);
-  std::vector<uint8_t> compressed;
-  JXL_CHECK(extras::EncodeImageJXL(cparams, ppf_in, /*jpeg_bytes=*/nullptr,
-                                   &compressed));
-  size_t decoded_bytes = 0;
-  JXL_CHECK(extras::DecodeImageJXL(compressed.data(), compressed.size(),
-                                   dparams, &decoded_bytes, ppf_out));
-  JXL_CHECK(decoded_bytes == compressed.size());
-  return compressed.size();
-}
 
 std::vector<ColorEncodingDescriptor> AllEncodings() {
   std::vector<ColorEncodingDescriptor> all_encodings;

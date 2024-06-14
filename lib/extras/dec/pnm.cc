@@ -6,8 +6,6 @@
 
 #include "lib/extras/dec/pnm.h"
 
-#include <jxl/encode.h>
-
 #include <cmath>
 #include <cstddef>
 #include <cstdint>

@@ -6,8 +6,6 @@
 
 #include "lib/extras/dec/color_hints.h"
 
-#include <jxl/encode.h>
-
 #include <vector>
 
 #include "lib/extras/dec/color_description.h"

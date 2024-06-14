@@ -76,13 +76,6 @@ set(JPEGXL_INTERNAL_CODEC_JPG_SOURCES
   extras/enc/jpg.h
 )
 
-set(JPEGXL_INTERNAL_CODEC_JXL_SOURCES
-  extras/dec/jxl.cc
-  extras/dec/jxl.h
-  extras/enc/jxl.cc
-  extras/enc/jxl.h
-)
-
 set(JPEGXL_INTERNAL_CODEC_NPY_SOURCES
   extras/enc/npy.cc
   extras/enc/npy.h
