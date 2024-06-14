@@ -66,16 +66,14 @@ if (JPEGXL_ENABLE_SJPEG)
   list(APPEND JXL_EXTRAS_CODEC_INTERNAL_LIBRARIES sjpeg)
 endif()
 
-if(JPEGXL_ENABLE_JPEGLI)
-  add_library(jxl_extras_jpegli-obj OBJECT
-    "${JPEGXL_INTERNAL_CODEC_JPEGLI_SOURCES}"
-  )
-  target_include_directories(jxl_extras_jpegli-obj PRIVATE
-    "${CMAKE_CURRENT_BINARY_DIR}/include/jpegli"
-  )
-  list(APPEND JXL_EXTRAS_OBJECT_LIBRARIES jxl_extras_jpegli-obj)
-  list(APPEND JXL_EXTRAS_OBJECTS $<TARGET_OBJECTS:jxl_extras_jpegli-obj>)
-endif()
+add_library(jxl_extras_jpegli-obj OBJECT
+  "${JPEGXL_INTERNAL_CODEC_JPEGLI_SOURCES}"
+)
+target_include_directories(jxl_extras_jpegli-obj PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}/include/jpegli"
+)
+list(APPEND JXL_EXTRAS_OBJECT_LIBRARIES jxl_extras_jpegli-obj)
+list(APPEND JXL_EXTRAS_OBJECTS $<TARGET_OBJECTS:jxl_extras_jpegli-obj>)
 
 if(NOT JPEGXL_BUNDLE_LIBPNG)
   find_package(PNG)
@@ -145,10 +143,7 @@ target_link_libraries(jxl_extras-internal PRIVATE
   jxl_threads
 )
 target_link_libraries(jxl_extras-internal PUBLIC jxl-internal)
-if(JPEGXL_ENABLE_JPEGLI)
-  target_compile_definitions(jxl_extras-internal PUBLIC -DJPEGXL_ENABLE_JPEGLI=1)
-  target_link_libraries(jxl_extras-internal PRIVATE jpegli-static)
-endif()
+target_link_libraries(jxl_extras-internal PRIVATE jpegli-static)
 
 ### Library that does not depend on internal parts of jxl library.
 ### Used by cjxl and djxl binaries.

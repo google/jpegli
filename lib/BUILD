@@ -262,7 +262,6 @@ cc_library(
         "JPEGXL_ENABLE_EXR=1",
         "JPEGXL_ENABLE_GIF=1",
         "JPEGXL_ENABLE_JPEG=1",
-        "JPEGXL_ENABLE_JPEGLI=1",
     ],
     deps = [
         ":jpegli",
