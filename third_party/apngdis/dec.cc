@@ -38,7 +38,6 @@
  */
 
 #include <jxl/codestream_header.h>
-#include <jxl/encode.h>
 
 #include <array>
 #include <cstdint>

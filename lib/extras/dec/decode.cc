@@ -12,7 +12,6 @@
 #include "lib/extras/dec/exr.h"
 #include "lib/extras/dec/gif.h"
 #include "lib/extras/dec/jpg.h"
-#include "lib/extras/dec/jxl.h"
 #include "lib/extras/dec/pgx.h"
 #include "lib/extras/dec/pnm.h"
 
@@ -121,19 +120,6 @@ Status DecodeBytes(const Span<const uint8_t> bytes,
     }
     if (DecodeImagePNM(bytes, color_hints, ppf, constraints)) {
       return Codec::kPNM;
-    }
-    JXLDecompressParams dparams = {};
-    for (const uint32_t num_channels : {1, 2, 3, 4}) {
-      dparams.accepted_formats.push_back(
-          {num_channels, JXL_TYPE_FLOAT, JXL_LITTLE_ENDIAN, /*align=*/0});
-    }
-    dparams.output_bitdepth.type = JXL_BIT_DEPTH_FROM_CODESTREAM;
-    size_t decoded_bytes;
-    if (DecodeImageJXL(bytes.data(), bytes.size(), dparams, &decoded_bytes,
-                       ppf) &&
-        ApplyColorHints(color_hints, true, ppf->info.num_color_channels == 1,
-                        ppf)) {
-      return Codec::kJXL;
     }
     if (DecodeImageGIF(bytes, color_hints, ppf, constraints)) {
       return Codec::kGIF;

@@ -19,8 +19,6 @@
 #include <ostream>
 #include <vector>
 
-#include "lib/extras/dec/jxl.h"
-#include "lib/extras/enc/jxl.h"
 #include "lib/extras/packed_image.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/data_parallel.h"
@@ -55,8 +53,6 @@ std::vector<uint8_t> ReadTestData(const std::string& filename);
 void JxlBasicInfoSetFromPixelFormat(JxlBasicInfo* basic_info,
                                     const JxlPixelFormat* pixel_format);
 
-void DefaultAcceptedFormats(extras::JXLDecompressParams& dparams);
-
 template <typename Params>
 void SetThreadParallelRunner(Params params, ThreadPool* pool) {
   if (pool && !params.runner_opaque) {
@@ -64,20 +60,6 @@ void SetThreadParallelRunner(Params params, ThreadPool* pool) {
     params.runner_opaque = pool->runner_opaque();
   }
 }
-
-Status DecodeFile(extras::JXLDecompressParams dparams, Span<const uint8_t> file,
-                  CodecInOut* JXL_RESTRICT io, ThreadPool* pool = nullptr);
-
-bool Roundtrip(const CodecInOut* io, const CompressParams& cparams,
-               extras::JXLDecompressParams dparams,
-               CodecInOut* JXL_RESTRICT io2, std::stringstream& failures,
-               size_t* compressed_size = nullptr, ThreadPool* pool = nullptr);
-
-// Returns compressed size [bytes].
-size_t Roundtrip(const extras::PackedPixelFile& ppf_in,
-                 const extras::JXLCompressParams& cparams,
-                 extras::JXLDecompressParams dparams, ThreadPool* pool,
-                 extras::PackedPixelFile* ppf_out);
 
 // A POD descriptor of a ColorEncoding. Only used in tests as the return value
 // of AllEncodings().
