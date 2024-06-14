@@ -144,7 +144,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_ans.cc
   jxl/dec_ans.h
   jxl/dec_bit_reader.h
-  jxl/dec_cache.cc
   jxl/dec_cache.h
   jxl/dec_context_map.cc
   jxl/dec_context_map.h
@@ -240,45 +239,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/quantizer-inl.h
   jxl/quantizer.cc
   jxl/quantizer.h
-  jxl/render_pipeline/low_memory_render_pipeline.cc
-  jxl/render_pipeline/low_memory_render_pipeline.h
-  jxl/render_pipeline/render_pipeline.cc
-  jxl/render_pipeline/render_pipeline.h
-  jxl/render_pipeline/render_pipeline_stage.h
-  jxl/render_pipeline/simple_render_pipeline.cc
-  jxl/render_pipeline/simple_render_pipeline.h
-  jxl/render_pipeline/stage_blending.cc
-  jxl/render_pipeline/stage_blending.h
-  jxl/render_pipeline/stage_chroma_upsampling.cc
-  jxl/render_pipeline/stage_chroma_upsampling.h
-  jxl/render_pipeline/stage_cms.cc
-  jxl/render_pipeline/stage_cms.h
-  jxl/render_pipeline/stage_epf.cc
-  jxl/render_pipeline/stage_epf.h
-  jxl/render_pipeline/stage_from_linear.cc
-  jxl/render_pipeline/stage_from_linear.h
-  jxl/render_pipeline/stage_gaborish.cc
-  jxl/render_pipeline/stage_gaborish.h
-  jxl/render_pipeline/stage_noise.cc
-  jxl/render_pipeline/stage_noise.h
-  jxl/render_pipeline/stage_patches.cc
-  jxl/render_pipeline/stage_patches.h
-  jxl/render_pipeline/stage_splines.cc
-  jxl/render_pipeline/stage_splines.h
-  jxl/render_pipeline/stage_spot.cc
-  jxl/render_pipeline/stage_spot.h
-  jxl/render_pipeline/stage_to_linear.cc
-  jxl/render_pipeline/stage_to_linear.h
-  jxl/render_pipeline/stage_tone_mapping.cc
-  jxl/render_pipeline/stage_tone_mapping.h
-  jxl/render_pipeline/stage_upsampling.cc
-  jxl/render_pipeline/stage_upsampling.h
-  jxl/render_pipeline/stage_write.cc
-  jxl/render_pipeline/stage_write.h
-  jxl/render_pipeline/stage_xyb.cc
-  jxl/render_pipeline/stage_xyb.h
-  jxl/render_pipeline/stage_ycbcr.cc
-  jxl/render_pipeline/stage_ycbcr.h
   jxl/sanitizers.h
   jxl/simd_util-inl.h
   jxl/simd_util.cc
@@ -456,7 +416,6 @@ set(JPEGXL_INTERNAL_TESTLIB_FILES
   jxl/dec_transforms_testonly.h
   jxl/fake_parallel_runner_testonly.h
   jxl/image_test_utils.h
-  jxl/render_pipeline/test_render_pipeline_stages.h
   jxl/test_image.cc
   jxl/test_image.h
   jxl/test_utils.cc
