@@ -20,26 +20,6 @@
 #include "lib/jxl/image_bundle.h"
 
 namespace jxl {
-namespace {
-
-// Any valid encoding is larger (ensures codecs can read the first few bytes)
-constexpr size_t kMinBytes = 9;
-
-}  // namespace
-
-Status SetFromBytes(const Span<const uint8_t> bytes,
-                    const extras::ColorHints& color_hints, CodecInOut* io,
-                    ThreadPool* pool, const SizeConstraints* constraints,
-                    extras::Codec* orig_codec) {
-  if (bytes.size() < kMinBytes) return JXL_FAILURE("Too few bytes");
-
-  extras::PackedPixelFile ppf;
-  if (extras::DecodeBytes(bytes, color_hints, &ppf, constraints, orig_codec)) {
-    return ConvertPackedPixelFileToCodecInOut(ppf, pool, io);
-  }
-  return JXL_FAILURE("Codecs failed to decode");
-}
-
 Status Encode(const extras::PackedPixelFile& ppf, const extras::Codec codec,
               std::vector<uint8_t>* bytes, ThreadPool* pool) {
   bytes->clear();

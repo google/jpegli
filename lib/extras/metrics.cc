@@ -20,6 +20,7 @@
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
+#include "lib/jxl/enc_image_bundle.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {
@@ -131,15 +132,19 @@ void ComputeSumOfSquares(const ImageBundle& ib1, const ImageBundle& ib2,
   const Image3F* srgb1 = &ib1.color();
   Image3F copy1;
   if (!ib1.IsSRGB()) {
-    JXL_CHECK(
-        ib1.CopyTo(Rect(ib1), ColorEncoding::SRGB(ib1.IsGray()), cms, &copy1));
+    JXL_CHECK(ApplyColorTransform(
+        ib1.c_current(), ib1.metadata()->IntensityTarget(), ib1.color(),
+        ib1.HasBlack() ? &ib1.black() : nullptr, Rect(ib1),
+        ColorEncoding::SRGB(ib1.IsGray()), cms, nullptr, &copy1));
     srgb1 = &copy1;
   }
   const Image3F* srgb2 = &ib2.color();
   Image3F copy2;
   if (!ib2.IsSRGB()) {
-    JXL_CHECK(
-        ib2.CopyTo(Rect(ib2), ColorEncoding::SRGB(ib2.IsGray()), cms, &copy2));
+    JXL_CHECK(ApplyColorTransform(
+        ib2.c_current(), ib2.metadata()->IntensityTarget(), ib2.color(),
+        ib2.HasBlack() ? &ib2.black() : nullptr, Rect(ib2),
+        ColorEncoding::SRGB(ib2.IsGray()), cms, nullptr, &copy2));
     srgb2 = &copy2;
   }
 
