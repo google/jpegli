@@ -301,104 +301,22 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/butteraugli/butteraugli.cc
   jxl/butteraugli/butteraugli.h
-  jxl/enc_ac_strategy.cc
-  jxl/enc_ac_strategy.h
-  jxl/enc_adaptive_quantization.cc
-  jxl/enc_adaptive_quantization.h
-  jxl/enc_ans.cc
-  jxl/enc_ans.h
-  jxl/enc_ans_params.h
-  jxl/enc_aux_out.cc
-  jxl/enc_aux_out.h
   jxl/enc_bit_writer.cc
   jxl/enc_bit_writer.h
   jxl/enc_butteraugli_comparator.cc
   jxl/enc_butteraugli_comparator.h
-  jxl/enc_cache.cc
-  jxl/enc_cache.h
-  jxl/enc_chroma_from_luma.cc
-  jxl/enc_chroma_from_luma.h
-  jxl/enc_cluster.cc
-  jxl/enc_cluster.h
-  jxl/enc_coeff_order.cc
-  jxl/enc_coeff_order.h
   jxl/enc_comparator.cc
   jxl/enc_comparator.h
-  jxl/enc_context_map.cc
-  jxl/enc_context_map.h
-  jxl/enc_debug_image.cc
-  jxl/enc_debug_image.h
-  jxl/enc_detect_dots.cc
-  jxl/enc_detect_dots.h
-  jxl/enc_dot_dictionary.cc
-  jxl/enc_dot_dictionary.h
-  jxl/enc_entropy_coder.cc
-  jxl/enc_entropy_coder.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
   jxl/enc_fields.cc
   jxl/enc_fields.h
-  jxl/enc_gaborish.cc
-  jxl/enc_gaborish.h
-  jxl/enc_gamma_correct.h
-  jxl/enc_group.cc
-  jxl/enc_group.h
-  jxl/enc_heuristics.cc
-  jxl/enc_heuristics.h
-  jxl/enc_huffman.cc
-  jxl/enc_huffman.h
-  jxl/enc_huffman_tree.cc
-  jxl/enc_huffman_tree.h
-  jxl/enc_icc_codec.cc
-  jxl/enc_icc_codec.h
   jxl/enc_image_bundle.cc
   jxl/enc_image_bundle.h
-  jxl/enc_linalg.cc
-  jxl/enc_linalg.h
-  jxl/enc_modular.cc
-  jxl/enc_modular.h
-  jxl/enc_noise.cc
-  jxl/enc_noise.h
-  jxl/enc_optimize.cc
-  jxl/enc_optimize.h
-  jxl/enc_params.h
-  jxl/enc_patch_dictionary.cc
-  jxl/enc_patch_dictionary.h
-  jxl/enc_photon_noise.cc
-  jxl/enc_photon_noise.h
-  jxl/enc_progressive_split.cc
-  jxl/enc_progressive_split.h
-  jxl/enc_quant_weights.cc
-  jxl/enc_quant_weights.h
-  jxl/enc_splines.cc
-  jxl/enc_splines.h
-  jxl/enc_toc.cc
-  jxl/enc_toc.h
-  jxl/enc_transforms-inl.h
-  jxl/enc_transforms.cc
-  jxl/enc_transforms.h
   jxl/enc_xyb.cc
   jxl/enc_xyb.h
   jxl/jpeg/enc_jpeg_data.cc
   jxl/jpeg/enc_jpeg_data.h
-  jxl/jpeg/enc_jpeg_data_reader.cc
-  jxl/jpeg/enc_jpeg_data_reader.h
-  jxl/jpeg/enc_jpeg_huffman_decode.cc
-  jxl/jpeg/enc_jpeg_huffman_decode.h
-  jxl/modular/encoding/enc_debug_tree.cc
-  jxl/modular/encoding/enc_debug_tree.h
-  jxl/modular/encoding/enc_encoding.cc
-  jxl/modular/encoding/enc_encoding.h
-  jxl/modular/encoding/enc_ma.cc
-  jxl/modular/encoding/enc_ma.h
-  jxl/modular/transform/enc_palette.cc
-  jxl/modular/transform/enc_palette.h
-  jxl/modular/transform/enc_rct.cc
-  jxl/modular/transform/enc_rct.h
-  jxl/modular/transform/enc_squeeze.cc
-  jxl/modular/transform/enc_squeeze.h
-  jxl/modular/transform/enc_transform.cc
-  jxl/modular/transform/enc_transform.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES

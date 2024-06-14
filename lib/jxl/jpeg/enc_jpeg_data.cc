@@ -11,7 +11,6 @@
 #include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/enc_bit_writer.h"
 #include "lib/jxl/image_bundle.h"
-#include "lib/jxl/jpeg/enc_jpeg_data_reader.h"
 #include "lib/jxl/luminance.h"
 #include "lib/jxl/sanitizers.h"
 
@@ -384,10 +383,6 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes, CodecInOut* io) {
   io->frames.emplace_back(&io->metadata.m);
   io->Main().jpeg_data = make_unique<jpeg::JPEGData>();
   jpeg::JPEGData* jpeg_data = io->Main().jpeg_data.get();
-  if (!jpeg::ReadJpeg(bytes.data(), bytes.size(), jpeg::JpegReadMode::kReadAll,
-                      jpeg_data)) {
-    return JXL_FAILURE("Error reading JPEG");
-  }
   SetColorEncodingFromJpegData(*jpeg_data, &io->metadata.m.color_encoding);
   JXL_RETURN_IF_ERROR(SetBlobsFromJpegData(*jpeg_data, &io->blobs));
   JXL_RETURN_IF_ERROR(SetChromaSubsamplingFromJpegData(
