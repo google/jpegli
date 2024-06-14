@@ -176,20 +176,8 @@ endif()  # JPEGXL_ENABLE_TOOLS
 if(JPEGXL_ENABLE_DEVTOOLS)
   list(APPEND INTERNAL_TOOL_BINARIES
     butteraugli_main
-    decode_and_encode
-    display_to_hlg
-    exr_to_pq
-    pq_to_hlg
-    render_hlg
-    local_tone_map
-    tone_map
-    texture_to_cube
-    generate_lut_template
     ssimulacra_main
     ssimulacra2
-    xyb_range
-    jxl_from_tree
-    icc_simplify
   )
 
   add_executable(ssimulacra_main ssimulacra_main.cc ssimulacra.cc)
@@ -199,18 +187,6 @@ if(JPEGXL_ENABLE_DEVTOOLS)
   target_link_libraries(ssimulacra2 jxl_gauss_blur)
 
   add_executable(butteraugli_main butteraugli_main.cc)
-  add_executable(decode_and_encode decode_and_encode.cc)
-  add_executable(display_to_hlg hdr/display_to_hlg.cc)
-  add_executable(exr_to_pq hdr/exr_to_pq.cc)
-  add_executable(pq_to_hlg hdr/pq_to_hlg.cc)
-  add_executable(render_hlg hdr/render_hlg.cc)
-  add_executable(local_tone_map hdr/local_tone_map.cc)
-  add_executable(tone_map hdr/tone_map.cc)
-  add_executable(texture_to_cube hdr/texture_to_cube.cc)
-  add_executable(generate_lut_template hdr/generate_lut_template.cc)
-  add_executable(xyb_range xyb_range.cc)
-  add_executable(jxl_from_tree jxl_from_tree.cc)
-  add_executable(icc_simplify icc_simplify.cc)
 
   list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
   add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
