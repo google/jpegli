@@ -107,18 +107,10 @@ set(JPEGXL_INTERNAL_DEC_JPEG_SOURCES
 )
 
 set(JPEGXL_INTERNAL_DEC_SOURCES
-  jxl/ac_context.h
-  jxl/ac_strategy.cc
-  jxl/ac_strategy.h
   jxl/alpha.cc
   jxl/alpha.h
-  jxl/ans_common.cc
-  jxl/ans_common.h
-  jxl/ans_params.h
   jxl/cache_aligned.cc
   jxl/cache_aligned.h
-  jxl/chroma_from_luma.cc
-  jxl/chroma_from_luma.h
   jxl/codec_in_out.h
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
@@ -129,10 +121,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/convolve_slow.cc
   jxl/convolve_symmetric3.cc
   jxl/convolve_symmetric5.cc
-  jxl/dct_block-inl.h
-  jxl/dct_scales.cc
-  jxl/dct_scales.h
-  jxl/dct_util.h
   jxl/dec_bit_reader.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
@@ -152,7 +140,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/image_metadata.h
   jxl/image_ops.cc
   jxl/image_ops.h
-  jxl/inverse_mtf-inl.h
   jxl/luminance.cc
   jxl/luminance.h
   jxl/pack_signed.h
@@ -319,7 +306,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
-  jxl/dct_for_test.h
   jxl/fake_parallel_runner_testonly.h
   jxl/image_test_utils.h
   jxl/test_image.cc
