@@ -4,59 +4,6 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-# ICC detection library used by the comparison and viewer tools.
-if(JPEGXL_ENABLE_VIEWERS)
-if(WIN32)
-  find_package(Qt6 QUIET COMPONENTS Widgets)
-  if (NOT Qt6_FOUND)
-    message(WARNING "Qt6 was not found.")
-  else()
-    add_library(icc_detect STATIC EXCLUDE_FROM_ALL
-      icc_detect/icc_detect_win32.cc
-      icc_detect/icc_detect.h
-    )
-    target_include_directories(icc_detect PRIVATE "${PROJECT_SOURCE_DIR}")
-    target_link_libraries(icc_detect PUBLIC Qt6::Widgets)
-    if(JPEGXL_DEP_LICENSE_DIR)
-      configure_file("${JPEGXL_DEP_LICENSE_DIR}/libqt6widgets6/copyright"
-                     ${PROJECT_BINARY_DIR}/LICENSE.libqt6widgets6 COPYONLY)
-    endif()  # JPEGXL_DEP_LICENSE_DIR
-  endif()
-elseif(APPLE)
-  find_package(Qt6 QUIET COMPONENTS Widgets)
-  if (Qt6_FOUND)
-    add_library(icc_detect STATIC EXCLUDE_FROM_ALL
-      icc_detect/icc_detect_empty.cc
-      icc_detect/icc_detect.h
-    )
-    target_include_directories(icc_detect PRIVATE "${PROJECT_SOURCE_DIR}")
-    target_link_libraries(icc_detect PUBLIC Qt6::Widgets)
-  else()
-    message(WARNING "APPLE: Qt6 was not found.")
-  endif()
-else()
-  find_package(Qt6 QUIET COMPONENTS Widgets)
-  find_package(ECM QUIET NO_MODULE)
-  if (NOT Qt6_FOUND OR NOT ECM_FOUND)
-    if (NOT Qt6_FOUND)
-      message(WARNING "Qt6 was not found.")
-    else()
-      message(WARNING "extra-cmake-modules were not found.")
-    endif()
-  else()
-    set(CMAKE_MODULE_PATH ${ECM_FIND_MODULE_DIR})
-    find_package(XCB COMPONENTS XCB)
-    if (XCB_FOUND)
-      add_library(icc_detect STATIC EXCLUDE_FROM_ALL
-        icc_detect/icc_detect_x11.cc
-        icc_detect/icc_detect.h
-      )
-      target_link_libraries(icc_detect PUBLIC jxl-internal Qt6::Widgets XCB::XCB)
-    endif ()
-  endif()
-endif()
-endif()  # JPEGXL_ENABLE_VIEWERS
-
 # Tools are added conditionally below.
 set(TOOL_BINARIES)
 # Tools that depend on jxl internal functions.
@@ -372,13 +319,6 @@ if(UNIX AND CMAKE_SKIP_RPATH)
 endif()
 
 endif()  # BUILD_TESTING AND TARGET jxl AND NOT JPEGXL_EMSCRIPTEN
-
-# Tools defined in subdirectories.
-if(JPEGXL_ENABLE_VIEWERS)
-add_subdirectory(viewer)
-add_subdirectory(comparison_viewer)
-add_subdirectory(flicker_test)
-endif()
 
 add_subdirectory(conformance)
 add_subdirectory(wasm_demo)
