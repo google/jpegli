@@ -25,16 +25,10 @@
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/codec_in_out.h"
-#include "lib/jxl/enc_aux_out.h"
-#include "lib/jxl/enc_bit_writer.h"
 #include "lib/jxl/enc_butteraugli_comparator.h"
-#include "lib/jxl/enc_cache.h"
 #include "lib/jxl/enc_external_image.h"
-#include "lib/jxl/enc_fields.h"
-#include "lib/jxl/enc_icc_codec.h"
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/frame_header.h"
-#include "lib/jxl/icc_codec.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/padded_bytes.h"
@@ -572,17 +566,6 @@ bool SamePixels(const extras::PackedPixelFile& a,
       }
     }
   }
-  return true;
-}
-
-Status ReadICC(BitReader* JXL_RESTRICT reader,
-               std::vector<uint8_t>* JXL_RESTRICT icc, size_t output_limit) {
-  icc->clear();
-  ICCReader icc_reader;
-  PaddedBytes icc_buffer;
-  JXL_RETURN_IF_ERROR(icc_reader.Init(reader, output_limit));
-  JXL_RETURN_IF_ERROR(icc_reader.Process(reader, &icc_buffer));
-  Bytes(icc_buffer).AppendTo(*icc);
   return true;
 }
 
