@@ -116,12 +116,8 @@ set(JPEGXL_ENABLE_OPENEXR true CACHE BOOL
     "Build JPEGXL with support for OpenEXR if available.")
 set(JPEGXL_ENABLE_SKCMS true CACHE BOOL
     "Build with skcms instead of lcms2.")
-set(JPEGXL_ENABLE_VIEWERS false CACHE BOOL
-    "Build JPEGXL viewer tools for evaluation.")
 set(JPEGXL_ENABLE_TCMALLOC ${ENABLE_TCMALLOC_DEFAULT} CACHE BOOL
     "Build JPEGXL using gperftools (tcmalloc) allocator.")
-set(JPEGXL_ENABLE_PLUGINS false CACHE BOOL
-    "Build third-party plugins to support JPEG XL in other applications.")
 set(JPEGXL_ENABLE_COVERAGE false CACHE BOOL
     "Enable code coverage tracking for libjxl. This also enables debug and disables optimizations.")
 set(JPEGXL_ENABLE_SIZELESS_VECTORS false CACHE BOOL
@@ -473,11 +469,6 @@ if(JPEGXL_ENABLE_MANPAGES)
     message(WARNING "asciidoc was not found, the man pages will not be installed.")
   endif()  # ASCIIDOC
 endif()  # JPEGXL_ENABLE_MANPAGES
-
-# Plugins for third-party software
-if (JPEGXL_ENABLE_PLUGINS)
-  add_subdirectory(plugins)
-endif ()
 
 # Binary tools
 add_subdirectory(tools)
