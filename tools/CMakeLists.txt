@@ -78,45 +78,11 @@ target_link_libraries(jxl_gauss_blur PUBLIC jxl)
 target_link_libraries(jxl_gauss_blur PUBLIC hwy)
 
 if(JPEGXL_ENABLE_TOOLS)
-  # Main compressor.
-  add_executable(cjxl cjxl_main.cc)
-  target_link_libraries(cjxl
-    jxl
-    jxl_extras_codec
-    jxl_threads
-    jxl_tool
-  )
-  list(APPEND TOOL_BINARIES cjxl)
-
-  # Main decompressor.
-  add_executable(djxl djxl_main.cc)
-  target_link_libraries(djxl
-    jxl
-    jxl_extras_codec
-    jxl_threads
-    jxl_tool
-  )
-  list(APPEND TOOL_BINARIES djxl)
-
-  if(JPEGXL_ENABLE_JPEGLI)
-    # Depends on parts of jxl_extras that are only built if libjpeg is found and
-    # jpegli is enabled.
-    add_executable(cjpegli cjpegli.cc)
-    add_executable(djpegli djpegli.cc)
-    list(APPEND INTERNAL_TOOL_BINARIES cjpegli djpegli)
-  endif()
-
-  add_executable(jxlinfo jxlinfo.c)
-  target_link_libraries(jxlinfo jxl)
-  list(APPEND TOOL_BINARIES jxlinfo)
-
-  if(NOT SANITIZER STREQUAL "none")
-    # Linking a C test binary with the C++ JPEG XL implementation when using
-    # address sanitizer is not well supported by clang 9, so force using clang++
-    # for linking this test if a sanitizer is used.
-    set_target_properties(jxlinfo PROPERTIES LINKER_LANGUAGE CXX)
-  endif()  # SANITIZER != "none"
-
+  # Depends on parts of jxl_extras that are only built if libjpeg is found and
+  # jpegli is enabled.
+  add_executable(cjpegli cjpegli.cc)
+  add_executable(djpegli djpegli.cc)
+  list(APPEND INTERNAL_TOOL_BINARIES cjpegli djpegli)
 endif()  # JPEGXL_ENABLE_TOOLS
 
 # Other developer tools.
@@ -320,7 +286,6 @@ endif()
 
 endif()  # BUILD_TESTING AND TARGET jxl AND NOT JPEGXL_EMSCRIPTEN
 
-add_subdirectory(conformance)
 add_subdirectory(wasm_demo)
 
 if(JPEGXL_ENABLE_JNI)
@@ -381,10 +346,7 @@ find_program (BASH_PROGRAM bash)
 if (BASH_PROGRAM)
   set(TEST_SCRIPTS)
   find_package(JPEG)
-  if (JPEG_FOUND AND JPEGXL_ENABLE_TRANSCODE_JPEG)
-    list(APPEND TEST_SCRIPTS roundtrip_test)
-  endif()
-  if (JPEG_FOUND AND JPEGXL_ENABLE_JPEGLI)
+  if (JPEG_FOUND)
     list(APPEND TEST_SCRIPTS jpegli_tools_test)
   endif()
   foreach(SCRIPT IN LISTS TEST_SCRIPTS)
