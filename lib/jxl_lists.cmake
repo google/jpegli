@@ -142,22 +142,17 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_ans.cc
   jxl/dec_ans.h
   jxl/dec_bit_reader.h
-  jxl/dec_cache.h
   jxl/dec_context_map.cc
   jxl/dec_context_map.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
   jxl/dec_huffman.cc
   jxl/dec_huffman.h
-  jxl/dec_modular.cc
-  jxl/dec_modular.h
   jxl/dec_xyb-inl.h
   jxl/dec_xyb.cc
   jxl/dec_xyb.h
   jxl/entropy_coder.cc
   jxl/entropy_coder.h
-  jxl/epf.cc
-  jxl/epf.h
   jxl/field_encodings.h
   jxl/fields.cc
   jxl/fields.h
@@ -210,9 +205,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/opsin_params.h
   jxl/pack_signed.h
   jxl/padded_bytes.h
-  jxl/passes_state.cc
-  jxl/passes_state.h
-  jxl/patch_dictionary_internal.h
   jxl/quant_weights.cc
   jxl/quant_weights.h
   jxl/quantizer-inl.h
