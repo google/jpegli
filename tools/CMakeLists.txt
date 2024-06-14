@@ -237,15 +237,7 @@ foreach(FUZZER IN LISTS FUZZER_BINARIES)
         "fuzzer_stub.cc" "${FUZZER}.cc")
   endif()  # JPEGXL_ENABLE_FUZZERS
   target_include_directories("${BINARY}" PRIVATE "${CMAKE_SOURCE_DIR}")
-  if(FUZZER STREQUAL jpegli_dec_fuzzer)
-    target_link_libraries("${BINARY}" jpegli-static)
-  else()
-    target_link_libraries("${BINARY}"
-      jxl_testlib-internal
-      jxl_extras_nocodec-internal
-      jxl_tool
-    )
-  endif()
+  target_link_libraries("${BINARY}" jpegli-static)
 endforeach()
 
 # EMSCRIPTEN doesn't support dynamic libraries so testing for linkage there
