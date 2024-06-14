@@ -101,19 +101,6 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
   return true;
 }
 
-namespace {
-
-// Copies ib:rect, converts, and copies into out.
-Status CopyToT(const ImageMetadata* metadata, const ImageBundle* ib,
-               const Rect& rect, const ColorEncoding& c_desired,
-               const JxlCmsInterface& cms, ThreadPool* pool, Image3F* out) {
-  return ApplyColorTransform(
-      ib->c_current(), metadata->IntensityTarget(), ib->color(),
-      ib->HasBlack() ? &ib->black() : nullptr, rect, c_desired, cms, pool, out);
-}
-
-}  // namespace
-
 Status ImageBundle::TransformTo(const ColorEncoding& c_desired,
                                 const JxlCmsInterface& cms, ThreadPool* pool) {
   JXL_RETURN_IF_ERROR(CopyTo(Rect(color_), c_desired, cms, &color_, pool));
@@ -123,7 +110,10 @@ Status ImageBundle::TransformTo(const ColorEncoding& c_desired,
 Status ImageBundle::CopyTo(const Rect& rect, const ColorEncoding& c_desired,
                            const JxlCmsInterface& cms, Image3F* out,
                            ThreadPool* pool) const {
-  return CopyToT(metadata_, this, rect, c_desired, cms, pool, out);
+  return ApplyColorTransform(
+      c_current(), metadata_->IntensityTarget(), color(),
+      HasBlack() ? &black() : nullptr, rect, c_desired, cms, pool, out);
+
 }
 Status TransformIfNeeded(const ImageBundle& in, const ColorEncoding& c_desired,
                          const JxlCmsInterface& cms, ThreadPool* pool,

@@ -190,21 +190,6 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
 
 HWY_EXPORT(ComputeSumOfSquares);
 
-double ComputeDistance2(const ImageBundle& ib1, const ImageBundle& ib2,
-                        const JxlCmsInterface& cms) {
-  double sum_of_squares[3] = {};
-  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)(ib1, ib2, cms, sum_of_squares);
-  // Weighted PSNR as in JPEG-XL: chroma counts 1/8.
-  const float weights[3] = {6.0f / 8, 1.0f / 8, 1.0f / 8};
-  // Avoid squaring the weight - 1/64 is too extreme.
-  double norm = 0;
-  for (size_t i = 0; i < 3; i++) {
-    norm += std::sqrt(sum_of_squares[i]) * weights[i];
-  }
-  // This function returns distance *squared*.
-  return norm * norm;
-}
-
 double ComputePSNR(const ImageBundle& ib1, const ImageBundle& ib2,
                    const JxlCmsInterface& cms) {
   if (!SameSize(ib1, ib2)) return 0.0;

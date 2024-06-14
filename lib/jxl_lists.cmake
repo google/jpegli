@@ -170,14 +170,10 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/codec.cc
   extras/codec.h
-  extras/hlg.cc
-  extras/hlg.h
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc
   extras/packed_image_convert.h
-  extras/tone_mapping.cc
-  extras/tone_mapping.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_SOURCES
@@ -202,7 +198,6 @@ set(JPEGXL_INTERNAL_EXTRAS_SOURCES
 )
 
 set(JPEGXL_INTERNAL_GBENCH_SOURCES
-  extras/tone_mapping_gbench.cc
   jxl/dec_external_image_gbench.cc
   jxl/enc_external_image_gbench.cc
   jxl/splines_gbench.cc
