@@ -212,13 +212,6 @@ if(JPEGXL_ENABLE_DEVTOOLS)
   add_executable(jxl_from_tree jxl_from_tree.cc)
   add_executable(icc_simplify icc_simplify.cc)
 
-  list(APPEND FUZZER_CORPUS_BINARIES djxl_fuzzer_corpus)
-  add_executable(djxl_fuzzer_corpus djxl_fuzzer_corpus.cc)
-  target_link_libraries(djxl_fuzzer_corpus
-    jxl_testlib-internal
-    jxl_extras-internal
-    jxl_tool
-  )
   if(JPEGXL_ENABLE_JPEGLI)
     list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
     add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
