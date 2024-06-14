@@ -1329,8 +1329,7 @@ JXL_EXPORT JxlDecoderStatus JxlDecoderSetDecompressBoxes(JxlDecoder* dec,
  *  - "jxll": a JXL level box. This indicates if the codestream is level `5` or
  *    level `10` compatible. If not present, it is level `5`. Level `10` allows
  * more features such as very high image resolution and bit-depths above `16`
- * bits per channel. Added automatically by the encoder when
- *    @ref JxlEncoderSetCodestreamLevel is used
+ * bits per channel.
  *  - "jxlc": a box with the image codestream, in case the codestream is not
  *    split across multiple boxes. The codestream contains the JPEG XL image
  *    itself, including the basic info such as image dimensions, ICC color
