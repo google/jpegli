@@ -27,7 +27,6 @@
 #include "lib/jxl/fields.h"
 #include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/image_metadata.h"
-#include "lib/jxl/loop_filter.h"
 
 namespace jxl {
 
@@ -440,9 +439,6 @@ struct FrameHeader : public Fields {
   // Must be set to the one ImageMetadata acting as the full codestream header,
   // with correct xyb_encoded, list of extra channels, etc...
   const CodecMetadata* nonserialized_metadata = nullptr;
-
-  // NOTE: This is ignored by AllDefault.
-  LoopFilter loop_filter;
 
   bool nonserialized_is_preview = false;
 

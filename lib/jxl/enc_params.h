@@ -19,9 +19,6 @@
 #include "lib/jxl/enc_progressive_split.h"
 #include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/frame_header.h"
-#include "lib/jxl/modular/encoding/dec_ma.h"
-#include "lib/jxl/modular/options.h"
-#include "lib/jxl/splines.h"
 
 namespace jxl {
 
@@ -106,9 +103,6 @@ struct CompressParams {
   // exposure for a given ISO setting on a 35mm camera.
   float photon_noise_iso = 0;
 
-  // modular mode options below
-  ModularOptions options;
-
   // TODO(eustas): use Override?
   int responsive = -1;
   int colorspace = -1;
@@ -175,12 +169,6 @@ struct CompressParams {
   std::vector<float> manual_noise;
   std::vector<float> manual_xyb_factors;
 
-  // If not empty, this tree will be used for dc global section.
-  // Used in jxl_from_tree tool.
-  Tree custom_fixed_tree;
-  // If not empty, these custom splines will be used instead of the computed
-  // ones. Used in jxl_from_tee tool.
-  Splines custom_splines;
   // If not null, overrides progressive mode settings. Used in decode_test.
   const ProgressiveMode* custom_progressive_mode = nullptr;
 };
