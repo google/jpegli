@@ -87,20 +87,6 @@ endif()  # JPEGXL_ENABLE_TOOLS
 
 # Other developer tools.
 if(JPEGXL_ENABLE_DEVTOOLS)
-  list(APPEND INTERNAL_TOOL_BINARIES
-    butteraugli_main
-    ssimulacra_main
-    ssimulacra2
-  )
-
-  add_executable(ssimulacra_main ssimulacra_main.cc ssimulacra.cc)
-  target_link_libraries(ssimulacra_main jxl_gauss_blur)
-
-  add_executable(ssimulacra2 ssimulacra2_main.cc ssimulacra2.cc)
-  target_link_libraries(ssimulacra2 jxl_gauss_blur)
-
-  add_executable(butteraugli_main butteraugli_main.cc)
-
   list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
   add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
   target_link_libraries(jpegli_dec_fuzzer_corpus

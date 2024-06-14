@@ -400,7 +400,7 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
   CodecInOut io1;
   JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
   // TODO(eustas): simplify?
-  return ButteraugliDistance(io0.frames, io1.frames, ButteraugliParams(),
+  return ButteraugliDistance(io0.frames[0], io1.frames[0], ButteraugliParams(),
                              *JxlGetDefaultCms(),
                              /*distmap=*/nullptr, pool);
 }
@@ -416,23 +416,6 @@ float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
   return distance;
 }
 
-float ButteraugliDistance(const std::vector<ImageBundle>& frames0,
-                          const std::vector<ImageBundle>& frames1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms, ImageF* distmap,
-                          ThreadPool* pool) {
-  JxlButteraugliComparator comparator(params, cms);
-  JXL_ASSERT(frames0.size() == frames1.size());
-  float max_dist = 0.0f;
-  for (size_t i = 0; i < frames0.size(); ++i) {
-    float frame_score;
-    JXL_CHECK(ComputeScore(frames0[i], frames1[i], &comparator, cms,
-                           &frame_score, distmap, pool));
-    max_dist = std::max(max_dist, frame_score);
-  }
-  return max_dist;
-}
-
 float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b, ThreadPool* pool) {
   CodecInOut io0;
@@ -441,8 +424,8 @@ float Butteraugli3Norm(const extras::PackedPixelFile& a,
   JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
   ButteraugliParams ba;
   ImageF distmap;
-  ButteraugliDistance(io0.frames, io1.frames, ba, *JxlGetDefaultCms(), &distmap,
-                      pool);
+  ButteraugliDistance(io0.frames[0], io1.frames[0], ba, *JxlGetDefaultCms(),
+                      &distmap, pool);
   return ComputeDistanceP(distmap, ba, 3);
 }
 
