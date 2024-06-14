@@ -50,9 +50,6 @@ namespace test {
 std::string GetTestDataPath(const std::string& filename);
 std::vector<uint8_t> ReadTestData(const std::string& filename);
 
-void JxlBasicInfoSetFromPixelFormat(JxlBasicInfo* basic_info,
-                                    const JxlPixelFormat* pixel_format);
-
 template <typename Params>
 void SetThreadParallelRunner(Params params, ThreadPool* pool) {
   if (pool && !params.runner_opaque) {

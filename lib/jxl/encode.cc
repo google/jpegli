@@ -28,7 +28,6 @@
 #include "lib/jxl/enc_bit_writer.h"
 #include "lib/jxl/enc_cache.h"
 #include "lib/jxl/enc_external_image.h"
-#include "lib/jxl/enc_fast_lossless.h"
 #include "lib/jxl/enc_fields.h"
 #include "lib/jxl/enc_frame.h"
 #include "lib/jxl/enc_icc_codec.h"
@@ -445,14 +444,6 @@ void QueueFrame(
   frame_settings->enc->num_queued_frames++;
 }
 
-void QueueFastLosslessFrame(const JxlEncoderFrameSettings* frame_settings,
-                            JxlFastLosslessFrameState* fast_lossless_frame) {
-  jxl::JxlEncoderQueuedInput queued_input(frame_settings->enc->memory_manager);
-  queued_input.fast_lossless_frame.reset(fast_lossless_frame);
-  frame_settings->enc->input_queue.emplace_back(std::move(queued_input));
-  frame_settings->enc->num_queued_frames++;
-}
-
 void QueueBox(JxlEncoder* enc,
               jxl::MemoryManagerUniquePtr<jxl::JxlEncoderQueuedBox>& box) {
   jxl::JxlEncoderQueuedInput queued_input(enc->memory_manager);
@@ -779,9 +770,7 @@ jxl::Status JxlEncoderStruct::ProcessOneEnqueuedInput() {
       // always be done, but there's no reason to add an extra box with box
       // header overhead if the codestream will already come immediately after
       // the signature and level boxes.
-      bool partial_header =
-          store_jpeg_metadata ||
-          (use_boxes && (!input.frame && !input.fast_lossless_frame));
+      bool partial_header = store_jpeg_metadata || (use_boxes && !input.frame);
 
       if (partial_header) {
         JXL_RETURN_IF_ERROR(AppendBox(
@@ -808,11 +797,9 @@ jxl::Status JxlEncoderStruct::ProcessOneEnqueuedInput() {
 
   // Choose frame or box processing: exactly one of the two unique pointers (box
   // or frame) in the input queue item is non-null.
-  if (input.frame || input.fast_lossless_frame) {
+  if (input.frame) {
     jxl::MemoryManagerUniquePtr<jxl::JxlEncoderQueuedFrame> input_frame =
         std::move(input.frame);
-    jxl::FJXLFrameUniquePtr fast_lossless_frame =
-        std::move(input.fast_lossless_frame);
     input_queue.erase(input_queue.begin());
     num_queued_frames--;
     if (input_frame) {
@@ -952,17 +939,6 @@ jxl::Status JxlEncoderStruct::ProcessOneEnqueuedInput() {
         return JXL_API_ERROR(this, JXL_ENC_ERR_GENERIC,
                              "Failed to encode frame");
       }
-    } else {
-      JXL_CHECK(fast_lossless_frame);
-      auto runner = +[](void* void_pool, void* opaque, void fun(void*, size_t),
-                        size_t count) {
-        auto* pool = reinterpret_cast<jxl::ThreadPool*>(void_pool);
-        JXL_CHECK(jxl::RunOnPool(
-            pool, 0, count, jxl::ThreadPool::NoInit,
-            [&](size_t i, size_t) { fun(opaque, i); }, "Encode fast lossless"));
-      };
-      JxlFastLosslessProcessFrame(fast_lossless_frame.get(), last_frame,
-                                  thread_pool.get(), runner, &output_processor);
     }
 
     const size_t frame_codestream_end = output_processor.CurrentPosition();
@@ -1132,35 +1108,6 @@ JxlEncoderStatus JxlEncoderSetICCProfile(JxlEncoder* enc,
   return JxlErrorOrStatus::Success();
 }
 
-void JxlEncoderInitBasicInfo(JxlBasicInfo* info) {
-  info->have_container = JXL_FALSE;
-  info->xsize = 0;
-  info->ysize = 0;
-  info->bits_per_sample = 8;
-  info->exponent_bits_per_sample = 0;
-  info->intensity_target = 0.f;
-  info->min_nits = 0.f;
-  info->relative_to_max_display = JXL_FALSE;
-  info->linear_below = 0.f;
-  info->uses_original_profile = JXL_FALSE;
-  info->have_preview = JXL_FALSE;
-  info->have_animation = JXL_FALSE;
-  info->orientation = JXL_ORIENT_IDENTITY;
-  info->num_color_channels = 3;
-  info->num_extra_channels = 0;
-  info->alpha_bits = 0;
-  info->alpha_exponent_bits = 0;
-  info->alpha_premultiplied = JXL_FALSE;
-  info->preview.xsize = 0;
-  info->preview.ysize = 0;
-  info->intrinsic_xsize = 0;
-  info->intrinsic_ysize = 0;
-  info->animation.tps_numerator = 10;
-  info->animation.tps_denominator = 1;
-  info->animation.num_loops = 0;
-  info->animation.have_timecodes = JXL_FALSE;
-}
-
 void JxlEncoderInitFrameHeader(JxlFrameHeader* frame_header) {
   // For each field, the default value of the specification is used. Depending
   // on whether an animation frame, or a composite still blending frame,
@@ -1245,7 +1192,6 @@ JxlEncoderStatus JxlEncoderSetBasicInfo(JxlEncoder* enc,
   // zero the appropriate alpha channel.
   if (info->alpha_bits) {
     JxlExtraChannelInfo channel_info;
-    JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_ALPHA, &channel_info);
     channel_info.bits_per_sample = info->alpha_bits;
     channel_info.exponent_bits_per_sample = info->alpha_exponent_bits;
     if (JxlEncoderSetExtraChannelInfo(enc, 0, &channel_info)) {
@@ -1311,21 +1257,6 @@ JxlEncoderStatus JxlEncoderSetBasicInfo(JxlEncoder* enc,
             .c_str());
   }
   return JxlErrorOrStatus::Success();
-}
-
-void JxlEncoderInitExtraChannelInfo(JxlExtraChannelType type,
-                                    JxlExtraChannelInfo* info) {
-  info->type = type;
-  info->bits_per_sample = 8;
-  info->exponent_bits_per_sample = 0;
-  info->dim_shift = 0;
-  info->name_length = 0;
-  info->alpha_premultiplied = JXL_FALSE;
-  info->spot_color[0] = 0;
-  info->spot_color[1] = 0;
-  info->spot_color[2] = 0;
-  info->spot_color[3] = 0;
-  info->cfa_channel = 0;
 }
 
 JXL_EXPORT JxlEncoderStatus JxlEncoderSetUpsamplingMode(JxlEncoder* enc,
@@ -1941,7 +1872,6 @@ void JxlEncoderReset(JxlEncoder* enc) {
   enc->use_boxes = false;
   enc->codestream_level = -1;
   enc->output_processor = JxlEncoderOutputProcessorWrapper();
-  JxlEncoderInitBasicInfo(&enc->basic_info);
 }
 
 void JxlEncoderDestroy(JxlEncoder* enc) {
@@ -2058,7 +1988,6 @@ JxlEncoderStatus JxlEncoderAddJPEGFrame(
 
   if (!frame_settings->enc->basic_info_set) {
     JxlBasicInfo basic_info;
-    JxlEncoderInitBasicInfo(&basic_info);
     basic_info.xsize = io.Main().jpeg_data->width;
     basic_info.ysize = io.Main().jpeg_data->height;
     basic_info.uses_original_profile = JXL_TRUE;
@@ -2160,69 +2089,6 @@ JxlEncoderStatus JxlEncoderAddJPEGFrame(
   return JxlErrorOrStatus::Success();
 }
 
-static bool CanDoFastLossless(const JxlEncoderFrameSettings* frame_settings,
-                              const JxlPixelFormat* pixel_format,
-                              bool has_alpha) {
-  if (!frame_settings->values.lossless) {
-    return false;
-  }
-  // TODO(veluca): many of the following options could be made to work, but are
-  // just not implemented in FJXL's frame header handling yet.
-  if (frame_settings->values.frame_index_box) {
-    return false;
-  }
-  if (frame_settings->values.header.layer_info.have_crop) {
-    return false;
-  }
-  if (frame_settings->enc->metadata.m.have_animation) {
-    return false;
-  }
-  if (frame_settings->values.cparams.speed_tier != jxl::SpeedTier::kLightning) {
-    return false;
-  }
-  if (frame_settings->values.image_bit_depth.type ==
-          JxlBitDepthType::JXL_BIT_DEPTH_CUSTOM &&
-      frame_settings->values.image_bit_depth.bits_per_sample !=
-          frame_settings->enc->metadata.m.bit_depth.bits_per_sample) {
-    return false;
-  }
-  // TODO(veluca): implement support for LSB-padded input in fast_lossless.
-  if (frame_settings->values.image_bit_depth.type ==
-          JxlBitDepthType::JXL_BIT_DEPTH_FROM_PIXEL_FORMAT &&
-      frame_settings->values.image_bit_depth.bits_per_sample % 8 != 0) {
-    return false;
-  }
-  if (!frame_settings->values.frame_name.empty()) {
-    return false;
-  }
-  // No extra channels other than alpha.
-  if (!(has_alpha && frame_settings->enc->metadata.m.num_extra_channels == 1) &&
-      frame_settings->enc->metadata.m.num_extra_channels != 0) {
-    return false;
-  }
-  if (frame_settings->enc->metadata.m.bit_depth.bits_per_sample > 16) {
-    return false;
-  }
-  if (pixel_format->data_type != JxlDataType::JXL_TYPE_FLOAT16 &&
-      pixel_format->data_type != JxlDataType::JXL_TYPE_UINT16 &&
-      pixel_format->data_type != JxlDataType::JXL_TYPE_UINT8) {
-    return false;
-  }
-  if ((frame_settings->enc->metadata.m.bit_depth.bits_per_sample > 8) !=
-      (pixel_format->data_type == JxlDataType::JXL_TYPE_UINT16 ||
-       pixel_format->data_type == JxlDataType::JXL_TYPE_FLOAT16)) {
-    return false;
-  }
-  if (!((pixel_format->num_channels == 1 || pixel_format->num_channels == 3) &&
-        !has_alpha) &&
-      !((pixel_format->num_channels == 2 || pixel_format->num_channels == 4) &&
-        has_alpha)) {
-    return false;
-  }
-
-  return true;
-}
-
 namespace {
 JxlEncoderStatus JxlEncoderAddImageFrameInternal(
     const JxlEncoderFrameSettings* frame_settings, size_t xsize, size_t ysize,
@@ -2278,36 +2144,6 @@ JxlEncoderStatus JxlEncoderAddImageFrameInternal(
     return JXL_API_ERROR(
         frame_settings->enc, JXL_ENC_ERR_API_USAGE,
         "number of extra channels mismatch (need 1 extra channel for alpha)");
-  }
-
-  bool has_alpha = frame_settings->enc->metadata.m.HasAlpha();
-
-  // All required conditions to do fast-lossless.
-  if (CanDoFastLossless(frame_settings, &pixel_format, has_alpha)) {
-    const bool big_endian =
-        pixel_format.endianness == JXL_BIG_ENDIAN ||
-        (pixel_format.endianness == JXL_NATIVE_ENDIAN && !IsLittleEndian());
-
-    auto runner = +[](void* void_pool, void* opaque, void fun(void*, size_t),
-                      size_t count) {
-      auto* pool = reinterpret_cast<jxl::ThreadPool*>(void_pool);
-      JXL_CHECK(jxl::RunOnPool(
-          pool, 0, count, jxl::ThreadPool::NoInit,
-          [&](size_t i, size_t) { fun(opaque, i); }, "Encode fast lossless"));
-    };
-    JXL_BOOL oneshot = TO_JXL_BOOL(!frame_data.StreamingInput());
-    auto* frame_state = JxlFastLosslessPrepareFrame(
-        frame_data.GetInputSource(), xsize, ysize, num_channels,
-        frame_settings->enc->metadata.m.bit_depth.bits_per_sample,
-        TO_JXL_BOOL(big_endian),
-        /*effort=*/2, oneshot);
-    if (!streaming) {
-      JxlFastLosslessProcessFrame(frame_state, /*is_last=*/false,
-                                  frame_settings->enc->thread_pool.get(),
-                                  runner, nullptr);
-    }
-    QueueFastLosslessFrame(frame_settings, frame_state);
-    return JxlErrorOrStatus::Success();
   }
 
   if (!streaming) {
@@ -2645,8 +2481,6 @@ void JxlEncoderAllowExpertOptions(JxlEncoder* enc) {
 JXL_EXPORT void JxlEncoderSetDebugImageCallback(
     JxlEncoderFrameSettings* frame_settings, JxlDebugImageCallback callback,
     void* opaque) {
-  frame_settings->values.cparams.debug_image = callback;
-  frame_settings->values.cparams.debug_image_opaque = opaque;
 }
 
 JXL_EXPORT JxlEncoderStats* JxlEncoderStatsCreate() {

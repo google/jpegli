@@ -6,7 +6,6 @@
 
 #include <jxl/codestream_header.h>
 #include <jxl/color_encoding.h>
-#include <jxl/encode.h>
 #include <jxl/types.h>
 #include <stddef.h>
 
@@ -20,7 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "lib/extras/common.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/dec/pnm.h"
@@ -381,41 +379,6 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
 }
 
 TEST(CodecTest, TestPNM) { TestCodecPNM(); }
-
-TEST(CodecTest, FormatNegotiation) {
-  const std::vector<JxlPixelFormat> accepted_formats = {
-      {/*num_channels=*/4,
-       /*data_type=*/JXL_TYPE_UINT16,
-       /*endianness=*/JXL_NATIVE_ENDIAN,
-       /*align=*/0},
-      {/*num_channels=*/3,
-       /*data_type=*/JXL_TYPE_UINT8,
-       /*endianness=*/JXL_NATIVE_ENDIAN,
-       /*align=*/0},
-      {/*num_channels=*/3,
-       /*data_type=*/JXL_TYPE_UINT16,
-       /*endianness=*/JXL_NATIVE_ENDIAN,
-       /*align=*/0},
-      {/*num_channels=*/1,
-       /*data_type=*/JXL_TYPE_UINT8,
-       /*endianness=*/JXL_NATIVE_ENDIAN,
-       /*align=*/0},
-  };
-
-  JxlBasicInfo info;
-  JxlEncoderInitBasicInfo(&info);
-  info.bits_per_sample = 12;
-  info.num_color_channels = 2;
-
-  JxlPixelFormat format;
-  EXPECT_FALSE(SelectFormat(accepted_formats, info, &format));
-
-  info.num_color_channels = 3;
-  ASSERT_TRUE(SelectFormat(accepted_formats, info, &format));
-  EXPECT_EQ(format.num_channels, info.num_color_channels);
-  // 16 is the smallest accepted format that can accommodate the 12-bit data.
-  EXPECT_EQ(format.data_type, JXL_TYPE_UINT16);
-}
 
 TEST(CodecTest, EncodeToPNG) {
   ThreadPool* const pool = nullptr;

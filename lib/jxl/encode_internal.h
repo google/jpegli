@@ -32,7 +32,6 @@
 #include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/enc_aux_out.h"
-#include "lib/jxl/enc_fast_lossless.h"
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/image_metadata.h"
 #include "lib/jxl/jpeg/jpeg_data.h"
@@ -387,10 +386,6 @@ struct JxlEncoderQueuedBox {
   bool compress_box;
 };
 
-using FJXLFrameUniquePtr =
-    std::unique_ptr<JxlFastLosslessFrameState,
-                    decltype(&JxlFastLosslessFreeFrameState)>;
-
 // Either a frame, or a box, not both.
 // Can also be a FJXL frame.
 struct JxlEncoderQueuedInput {
@@ -399,8 +394,6 @@ struct JxlEncoderQueuedInput {
         box(nullptr, jxl::MemoryManagerDeleteHelper(&memory_manager)) {}
   MemoryManagerUniquePtr<JxlEncoderQueuedFrame> frame;
   MemoryManagerUniquePtr<JxlEncoderQueuedBox> box;
-  FJXLFrameUniquePtr fast_lossless_frame = {nullptr,
-                                            JxlFastLosslessFreeFrameState};
 };
 
 static constexpr size_t kSmallBoxHeaderSize = 8;

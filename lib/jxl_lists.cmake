@@ -336,8 +336,6 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/enc_entropy_coder.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
-  jxl/enc_fast_lossless.cc
-  jxl/enc_fast_lossless.h
   jxl/enc_fields.cc
   jxl/enc_fields.h
   jxl/enc_frame.cc
@@ -423,8 +421,6 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
 set(JPEGXL_INTERNAL_EXTRAS_SOURCES
   extras/alpha_blend.cc
   extras/alpha_blend.h
-  extras/common.cc
-  extras/common.h
   extras/dec/color_description.cc
   extras/dec/color_description.h
   extras/dec/color_hints.cc
@@ -544,7 +540,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
   include/jxl/decode.h
   include/jxl/decode_cxx.h
   include/jxl/encode.h
-  include/jxl/encode_cxx.h
   include/jxl/memory_manager.h
   include/jxl/parallel_runner.h
   include/jxl/stats.h

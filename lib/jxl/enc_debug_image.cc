@@ -41,20 +41,6 @@ StatusOr<Image3F> ConvertToFloat(const Image3<From>& from) {
 template <typename T>
 Status DumpImageT(const CompressParams& cparams, const char* label,
                   const ColorEncoding& color_encoding, const Image3<T>& image) {
-  if (!cparams.debug_image) return true;
-  JXL_ASSIGN_OR_RETURN(Image3F float_image, ConvertToFloat(image));
-  JxlColorEncoding color = color_encoding.ToExternal();
-  size_t num_pixels = 3 * image.xsize() * image.ysize();
-  std::vector<uint16_t> pixels(num_pixels);
-  const ImageF* channels[3];
-  for (int c = 0; c < 3; ++c) {
-    channels[c] = &float_image.Plane(c);
-  }
-  JXL_CHECK(ConvertChannelsToExternal(
-      channels, 3, 16, false, JXL_BIG_ENDIAN, 6 * image.xsize(), nullptr,
-      pixels.data(), 2 * num_pixels, PixelCallback(), Orientation::kIdentity));
-  (*cparams.debug_image)(cparams.debug_image_opaque, label, image.xsize(),
-                         image.ysize(), &color, pixels.data());
   return true;
 }
 
@@ -93,15 +79,7 @@ Status DumpImage(const CompressParams& cparams, const char* label,
 
 Status DumpXybImage(const CompressParams& cparams, const char* label,
                     const Image3F& image) {
-  if (!cparams.debug_image) return true;
-
-  JXL_ASSIGN_OR_RETURN(Image3F linear,
-                       Image3F::Create(image.xsize(), image.ysize()));
-  OpsinParams opsin_params;
-  opsin_params.Init(kDefaultIntensityTarget);
-  OpsinToLinear(image, Rect(linear), nullptr, &linear, opsin_params);
-
-  return DumpImageT(cparams, label, ColorEncoding::LinearSRGB(), linear);
+  return true;
 }
 
 Status DumpPlaneNormalized(const CompressParams& cparams, const char* label,
