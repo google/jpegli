@@ -124,8 +124,6 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
     benchmark/benchmark_stats.cc
     benchmark/benchmark_utils.cc
     benchmark/benchmark_utils.h
-    benchmark/benchmark_codec_custom.cc
-    benchmark/benchmark_codec_custom.h
     benchmark/benchmark_codec_jpeg.cc
     benchmark/benchmark_codec_jpeg.h
     ssimulacra2.cc

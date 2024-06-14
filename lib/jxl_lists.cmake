@@ -317,7 +317,6 @@ set(JPEGXL_INTERNAL_TESTLIB_FILES
 set(JPEGXL_INTERNAL_TESTS
   extras/codec_test.cc
   extras/dec/color_description_test.cc
-  extras/dec/pgx_test.cc
   extras/jpegli_test.cc
   threads/thread_parallel_runner_test.cc
 )

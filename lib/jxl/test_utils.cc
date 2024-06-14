@@ -82,24 +82,6 @@ ColorEncoding ColorEncodingFromDescriptor(const ColorEncodingDescriptor& desc) {
   return c;
 }
 
-namespace {
-void CheckSameEncodings(const std::vector<ColorEncoding>& a,
-                        const std::vector<ColorEncoding>& b,
-                        const std::string& check_name,
-                        std::stringstream& failures) {
-  JXL_CHECK(a.size() == b.size());
-  for (size_t i = 0; i < a.size(); ++i) {
-    if ((a[i].ICC() == b[i].ICC()) ||
-        ((a[i].GetPrimariesType() == b[i].GetPrimariesType()) &&
-         a[i].Tf().IsSame(b[i].Tf()))) {
-      continue;
-    }
-    failures << "CheckSameEncodings " << check_name << ": " << i
-             << "-th encoding mismatch\n";
-  }
-}
-}  // namespace
-
 std::vector<ColorEncodingDescriptor> AllEncodings() {
   std::vector<ColorEncodingDescriptor> all_encodings;
   all_encodings.reserve(300);
@@ -462,111 +444,6 @@ float Butteraugli3Norm(const extras::PackedPixelFile& a,
   ButteraugliDistance(io0.frames, io1.frames, ba, *JxlGetDefaultCms(), &distmap,
                       pool);
   return ComputeDistanceP(distmap, ba, 3);
-}
-
-float ComputeDistance2(const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b) {
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, nullptr, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, nullptr, &io1));
-  return ComputeDistance2(io0.Main(), io1.Main(), *JxlGetDefaultCms());
-}
-
-float ComputePSNR(const extras::PackedPixelFile& a,
-                  const extras::PackedPixelFile& b) {
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, nullptr, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, nullptr, &io1));
-  return ComputePSNR(io0.Main(), io1.Main(), *JxlGetDefaultCms());
-}
-
-bool SameAlpha(const extras::PackedPixelFile& a,
-               const extras::PackedPixelFile& b) {
-  JXL_CHECK(a.info.xsize == b.info.xsize);
-  JXL_CHECK(a.info.ysize == b.info.ysize);
-  JXL_CHECK(a.info.alpha_bits == b.info.alpha_bits);
-  JXL_CHECK(a.info.alpha_exponent_bits == b.info.alpha_exponent_bits);
-  JXL_CHECK(a.info.alpha_bits > 0);
-  JXL_CHECK(a.frames.size() == b.frames.size());
-  for (size_t i = 0; i < a.frames.size(); ++i) {
-    const extras::PackedImage& color_a = a.frames[i].color;
-    const extras::PackedImage& color_b = b.frames[i].color;
-    JXL_CHECK(color_a.format.num_channels == color_b.format.num_channels);
-    JXL_CHECK(color_a.format.data_type == color_b.format.data_type);
-    JXL_CHECK(color_a.format.endianness == color_b.format.endianness);
-    JXL_CHECK(color_a.pixels_size == color_b.pixels_size);
-    size_t pwidth =
-        extras::PackedImage::BitsPerChannel(color_a.format.data_type) / 8;
-    size_t num_color = color_a.format.num_channels < 3 ? 1 : 3;
-    const uint8_t* p_a = reinterpret_cast<const uint8_t*>(color_a.pixels());
-    const uint8_t* p_b = reinterpret_cast<const uint8_t*>(color_b.pixels());
-    for (size_t y = 0; y < a.info.ysize; ++y) {
-      for (size_t x = 0; x < a.info.xsize; ++x) {
-        size_t idx =
-            ((y * a.info.xsize + x) * color_a.format.num_channels + num_color) *
-            pwidth;
-        if (memcmp(&p_a[idx], &p_b[idx], pwidth) != 0) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-}
-
-bool SamePixels(const extras::PackedImage& a, const extras::PackedImage& b) {
-  JXL_CHECK(a.xsize == b.xsize);
-  JXL_CHECK(a.ysize == b.ysize);
-  JXL_CHECK(a.format.num_channels == b.format.num_channels);
-  JXL_CHECK(a.format.data_type == b.format.data_type);
-  JXL_CHECK(a.format.endianness == b.format.endianness);
-  JXL_CHECK(a.pixels_size == b.pixels_size);
-  const uint8_t* p_a = reinterpret_cast<const uint8_t*>(a.pixels());
-  const uint8_t* p_b = reinterpret_cast<const uint8_t*>(b.pixels());
-  for (size_t y = 0; y < a.ysize; ++y) {
-    for (size_t x = 0; x < a.xsize; ++x) {
-      size_t idx = (y * a.xsize + x) * a.pixel_stride();
-      if (memcmp(&p_a[idx], &p_b[idx], a.pixel_stride()) != 0) {
-        printf("Mismatch at row %" PRIuS " col %" PRIuS "\n", y, x);
-        printf("  a: ");
-        for (size_t j = 0; j < a.pixel_stride(); ++j) {
-          printf(" %3u", p_a[idx + j]);
-        }
-        printf("\n  b: ");
-        for (size_t j = 0; j < a.pixel_stride(); ++j) {
-          printf(" %3u", p_b[idx + j]);
-        }
-        printf("\n");
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-bool SamePixels(const extras::PackedPixelFile& a,
-                const extras::PackedPixelFile& b) {
-  JXL_CHECK(a.info.xsize == b.info.xsize);
-  JXL_CHECK(a.info.ysize == b.info.ysize);
-  JXL_CHECK(a.info.bits_per_sample == b.info.bits_per_sample);
-  JXL_CHECK(a.info.exponent_bits_per_sample == b.info.exponent_bits_per_sample);
-  JXL_CHECK(a.frames.size() == b.frames.size());
-  for (size_t i = 0; i < a.frames.size(); ++i) {
-    const auto& frame_a = a.frames[i];
-    const auto& frame_b = b.frames[i];
-    if (!SamePixels(frame_a.color, frame_b.color)) {
-      return false;
-    }
-    JXL_CHECK(frame_a.extra_channels.size() == frame_b.extra_channels.size());
-    for (size_t j = 0; j < frame_a.extra_channels.size(); ++j) {
-      if (!SamePixels(frame_a.extra_channels[i], frame_b.extra_channels[i])) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 }  // namespace test
