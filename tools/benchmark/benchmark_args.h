@@ -148,11 +148,6 @@ struct BenchmarkArgs {
   size_t decode_reps;
   size_t encode_reps;
 
-  std::string sample_tmp_dir;
-
-  int num_samples;
-  int sample_dimensions;
-
   double error_pnorm;
   bool show_progress;
 

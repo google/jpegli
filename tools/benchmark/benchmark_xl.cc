@@ -81,17 +81,6 @@ Status WriteImage(const Image3F& image, ThreadPool* pool,
   return Encode(ppf, filename, &encoded, pool) && WriteFile(filename, encoded);
 }
 
-Status ReadPNG(const std::string& filename, Image3F* image) {
-  CodecInOut io;
-  std::vector<uint8_t> encoded;
-  JXL_CHECK(ReadFile(filename, &encoded));
-  JXL_CHECK(
-      jxl::SetFromBytes(jxl::Bytes(encoded), jxl::extras::ColorHints(), &io));
-  JXL_ASSIGN_OR_DIE(*image, Image3F::Create(io.xsize(), io.ysize()));
-  CopyImageTo(*io.Main().color(), image);
-  return true;
-}
-
 Status CreateNonSRGBICCProfile(PackedPixelFile* ppf) {
   ColorEncoding color_encoding;
   JXL_RETURN_IF_ERROR(color_encoding.FromExternal(ppf->color_encoding));
@@ -917,54 +906,6 @@ class Benchmark {
     return metrics;
   }
 
-  static StringVec SampleFromInput(const StringVec& fnames,
-                                   const std::string& sample_tmp_dir,
-                                   int num_samples, size_t size) {
-    JXL_CHECK(!sample_tmp_dir.empty());
-    fprintf(stderr, "Creating samples of %" PRIuS "x%" PRIuS " tiles...\n",
-            size, size);
-    StringVec fnames_out;
-    std::vector<Image3F> images;
-    std::vector<size_t> offsets;
-    size_t total_num_tiles = 0;
-    for (const auto& fname : fnames) {
-      Image3F img;
-      JXL_CHECK(ReadPNG(fname, &img));
-      JXL_CHECK(img.xsize() >= size);
-      JXL_CHECK(img.ysize() >= size);
-      total_num_tiles += (img.xsize() - size + 1) * (img.ysize() - size + 1);
-      offsets.push_back(total_num_tiles);
-      images.emplace_back(std::move(img));
-    }
-    JXL_CHECK(MakeDir(sample_tmp_dir));
-    Rng rng(0);
-    for (int i = 0; i < num_samples; ++i) {
-      int val = rng.UniformI(0, offsets.back());
-      size_t idx = (std::lower_bound(offsets.begin(), offsets.end(), val) -
-                    offsets.begin());
-      JXL_CHECK(idx < images.size());
-      const Image3F& img = images[idx];
-      int x0 = rng.UniformI(0, img.xsize() - size);
-      int y0 = rng.UniformI(0, img.ysize() - size);
-      JXL_ASSIGN_OR_DIE(Image3F sample, Image3F::Create(size, size));
-      for (size_t c = 0; c < 3; ++c) {
-        for (size_t y = 0; y < size; ++y) {
-          const float* JXL_RESTRICT row_in = img.PlaneRow(c, y0 + y);
-          float* JXL_RESTRICT row_out = sample.PlaneRow(c, y);
-          memcpy(row_out, &row_in[x0], size * sizeof(row_out[0]));
-        }
-      }
-      std::string fn_output =
-          StringPrintf("%s/%s.crop_%dx%d+%d+%d.png", sample_tmp_dir.c_str(),
-                       FileBaseName(fnames[idx]).c_str(), size, size, x0, y0);
-      ThreadPool* null_pool = nullptr;
-      JXL_CHECK(WriteImage(sample, null_pool, fn_output));
-      fnames_out.push_back(fn_output);
-    }
-    fprintf(stderr, "Created %d sample tiles\n", num_samples);
-    return fnames_out;
-  }
-
   static StringVec GetFilenames() {
     StringVec fnames;
     JXL_CHECK(MatchFiles(Args()->input, &fnames));
@@ -975,10 +916,6 @@ class Benchmark {
       std::sort(fnames.begin(), fnames.end());
     }
 
-    if (Args()->num_samples > 0) {
-      fnames = SampleFromInput(fnames, Args()->sample_tmp_dir,
-                               Args()->num_samples, Args()->sample_dimensions);
-    }
     return fnames;
   }
 

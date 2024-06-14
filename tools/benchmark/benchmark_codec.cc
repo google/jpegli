@@ -23,7 +23,6 @@
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_ops.h"
 #include "tools/benchmark/benchmark_args.h"
-#include "tools/benchmark/benchmark_codec_custom.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
 #include "tools/benchmark/benchmark_stats.h"
 #include "tools/speed_stats.h"
@@ -141,10 +140,6 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
   ImageCodecPtr result;
   if (name == "jpeg") {
     result.reset(CreateNewJPEGCodec(*Args()));
-#if !defined(__wasm__)
-  } else if (name == "custom") {
-    result.reset(CreateNewCustomCodec(*Args()));
-#endif
   } else if (name == "none") {
     result.reset(new NoneCodec(*Args()));
   }

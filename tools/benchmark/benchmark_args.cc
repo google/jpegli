@@ -17,7 +17,6 @@
 #include "lib/extras/dec/color_description.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "tools/benchmark/benchmark_codec_custom.h"  // for AddCommand..
 #include "tools/benchmark/benchmark_codec_jpeg.h"    // for AddCommand..
 
 namespace jpegxl {
@@ -172,13 +171,6 @@ Status BenchmarkArgs::AddCommandLineOptions() {
               "Defaults to 1.",
               1);
 
-  AddString(&sample_tmp_dir, "sample_tmp_dir",
-            "Directory to put samples from input images.");
-
-  AddSigned(&num_samples, "num_samples", "How many sample areas to take.", 0);
-  AddSigned(&sample_dimensions, "sample_dimensions",
-            "How big areas to sample from the input.", 64);
-
   AddDouble(&error_pnorm, "error_pnorm",
             "smallest p norm for pooling butteraugli values", 3.0);
 
@@ -199,7 +191,6 @@ Status BenchmarkArgs::AddCommandLineOptions() {
       "Distance numbers and compression speeds shown in the table are invalid.",
       false);
 
-  if (!AddCommandLineOptionsCustomCodec(this)) return false;
   if (!AddCommandLineOptionsJPEGCodec(this)) return false;
 
   return true;

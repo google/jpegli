@@ -137,20 +137,6 @@ float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b,
                        ThreadPool* pool = nullptr);
 
-float ComputeDistance2(const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b);
-
-float ComputePSNR(const extras::PackedPixelFile& a,
-                  const extras::PackedPixelFile& b);
-
-bool SameAlpha(const extras::PackedPixelFile& a,
-               const extras::PackedPixelFile& b);
-
-bool SamePixels(const extras::PackedImage& a, const extras::PackedImage& b);
-
-bool SamePixels(const extras::PackedPixelFile& a,
-                const extras::PackedPixelFile& b);
-
 class ThreadPoolForTests {
  public:
   explicit ThreadPoolForTests(int num_threads) {
