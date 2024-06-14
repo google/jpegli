@@ -106,8 +106,6 @@ set(JPEGXL_ENABLE_MANPAGES true CACHE BOOL
     "Build and install man pages for the command-line tools.")
 set(JPEGXL_ENABLE_BENCHMARK true CACHE BOOL
     "Build JPEGXL benchmark tools.")
-set(JPEGXL_ENABLE_EXAMPLES true CACHE BOOL
-    "Build JPEGXL library usage examples.")
 set(JPEGXL_BUNDLE_LIBPNG ${BUNDLE_LIBPNG_DEFAULT} CACHE BOOL
     "Build libpng from source and link it statically.")
 set(JPEGXL_ENABLE_JNI true CACHE BOOL
@@ -475,11 +473,6 @@ if(JPEGXL_ENABLE_MANPAGES)
     message(WARNING "asciidoc was not found, the man pages will not be installed.")
   endif()  # ASCIIDOC
 endif()  # JPEGXL_ENABLE_MANPAGES
-
-# Example usage code.
-if (JPEGXL_ENABLE_EXAMPLES)
-  include(examples/examples.cmake)
-endif ()
 
 # Plugins for third-party software
 if (JPEGXL_ENABLE_PLUGINS)
