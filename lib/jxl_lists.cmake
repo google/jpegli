@@ -132,7 +132,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/convolve_slow.cc
   jxl/convolve_symmetric3.cc
   jxl/convolve_symmetric5.cc
-  jxl/dct-inl.h
   jxl/dct_block-inl.h
   jxl/dct_scales.cc
   jxl/dct_scales.h
@@ -177,8 +176,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/lehmer_code.h
   jxl/luminance.cc
   jxl/luminance.h
-  jxl/memory_manager_internal.cc
-  jxl/memory_manager_internal.h
   jxl/noise.h
   jxl/opsin_params.cc
   jxl/opsin_params.h
@@ -186,19 +183,12 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/padded_bytes.h
   jxl/quant_weights.cc
   jxl/quant_weights.h
-  jxl/quantizer-inl.h
   jxl/quantizer.cc
   jxl/quantizer.h
   jxl/sanitizers.h
   jxl/simd_util-inl.h
   jxl/simd_util.cc
   jxl/simd_util.h
-  jxl/splines.cc
-  jxl/splines.h
-  jxl/toc.cc
-  jxl/toc.h
-  jxl/transpose-inl.h
-  jxl/xorshift128plus-inl.h
 )
 
 set(JPEGXL_INTERNAL_ENC_SOURCES
