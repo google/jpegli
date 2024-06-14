@@ -576,59 +576,6 @@ set(JPEGXL_INTERNAL_TESTS
   extras/dec/color_description_test.cc
   extras/dec/pgx_test.cc
   extras/jpegli_test.cc
-  jxl/ac_strategy_test.cc
-  jxl/alpha_test.cc
-  jxl/ans_common_test.cc
-  jxl/ans_test.cc
-  jxl/bit_reader_test.cc
-  jxl/bits_test.cc
-  jxl/blending_test.cc
-  jxl/butteraugli/butteraugli_test.cc
-  jxl/byte_order_test.cc
-  jxl/cms/tone_mapping_test.cc
-  jxl/cms/transfer_functions_test.cc
-  jxl/coeff_order_test.cc
-  jxl/color_encoding_internal_test.cc
-  jxl/color_management_test.cc
-  jxl/convolve_test.cc
-  jxl/data_parallel_test.cc
-  jxl/dct_test.cc
-  jxl/decode_test.cc
-  jxl/enc_external_image_test.cc
-  jxl/enc_gaborish_test.cc
-  jxl/enc_linalg_test.cc
-  jxl/enc_optimize_test.cc
-  jxl/enc_photon_noise_test.cc
-  jxl/encode_test.cc
-  jxl/entropy_coder_test.cc
-  jxl/fast_dct_test.cc
-  jxl/fast_math_test.cc
-  jxl/fields_test.cc
-  jxl/gamma_correct_test.cc
-  jxl/gradient_test.cc
-  jxl/iaca_test.cc
-  jxl/icc_codec_test.cc
-  jxl/image_bundle_test.cc
-  jxl/image_ops_test.cc
-  jxl/jxl_test.cc
-  jxl/lehmer_code_test.cc
-  jxl/modular_test.cc
-  jxl/opsin_image_test.cc
-  jxl/opsin_inverse_test.cc
-  jxl/padded_bytes_test.cc
-  jxl/passes_test.cc
-  jxl/patch_dictionary_test.cc
-  jxl/preview_test.cc
-  jxl/quant_weights_test.cc
-  jxl/quantizer_test.cc
-  jxl/rational_polynomial_test.cc
-  jxl/render_pipeline/render_pipeline_test.cc
-  jxl/roundtrip_test.cc
-  jxl/simd_util_test.cc
-  jxl/speed_tier_test.cc
-  jxl/splines_test.cc
-  jxl/toc_test.cc
-  jxl/xorshift128plus_test.cc
   threads/thread_parallel_runner_test.cc
 )
 
