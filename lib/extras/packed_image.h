@@ -11,7 +11,7 @@
 // the common format used by other libraries and in the libjxl API.
 
 #include <jxl/codestream_header.h>
-#include <jxl/encode.h>
+#include <jxl/color_encoding.h>
 #include <jxl/types.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -33,6 +33,35 @@
 
 namespace jxl {
 namespace extras {
+
+static inline void JxlEncoderInitBasicInfo(JxlBasicInfo* info) {
+  info->have_container = JXL_FALSE;
+  info->xsize = 0;
+  info->ysize = 0;
+  info->bits_per_sample = 8;
+  info->exponent_bits_per_sample = 0;
+  info->intensity_target = 0.f;
+  info->min_nits = 0.f;
+  info->relative_to_max_display = JXL_FALSE;
+  info->linear_below = 0.f;
+  info->uses_original_profile = JXL_FALSE;
+  info->have_preview = JXL_FALSE;
+  info->have_animation = JXL_FALSE;
+  info->orientation = JXL_ORIENT_IDENTITY;
+  info->num_color_channels = 3;
+  info->num_extra_channels = 0;
+  info->alpha_bits = 0;
+  info->alpha_exponent_bits = 0;
+  info->alpha_premultiplied = JXL_FALSE;
+  info->preview.xsize = 0;
+  info->preview.ysize = 0;
+  info->intrinsic_xsize = 0;
+  info->intrinsic_ysize = 0;
+  info->animation.tps_numerator = 10;
+  info->animation.tps_denominator = 1;
+  info->animation.num_loops = 0;
+  info->animation.have_timecodes = JXL_FALSE;
+}
 
 // Class representing an interleaved image with a bunch of channels.
 class PackedImage {
@@ -209,32 +238,6 @@ class PackedFrame {
   std::vector<PackedImage> extra_channels;
 };
 
-class ChunkedPackedFrame {
- public:
-  ChunkedPackedFrame(
-      size_t xsize, size_t ysize,
-      std::function<JxlChunkedFrameInputSource()> get_input_source)
-      : xsize(xsize),
-        ysize(ysize),
-        get_input_source_(std::move(get_input_source)) {
-    const auto input_source = get_input_source_();
-    input_source.get_color_channels_pixel_format(input_source.opaque, &format);
-  }
-
-  JxlChunkedFrameInputSource GetInputSource() { return get_input_source_(); }
-
-  // The Frame metadata.
-  JxlFrameHeader frame_info = {};
-  std::string name;
-
-  size_t xsize;
-  size_t ysize;
-  JxlPixelFormat format;
-
- private:
-  std::function<JxlChunkedFrameInputSource()> get_input_source_;
-};
-
 // Optional metadata associated with a file
 class PackedMetadata {
  public:
@@ -281,13 +284,12 @@ class PackedPixelFile {
 
   std::unique_ptr<PackedFrame> preview_frame;
   std::vector<PackedFrame> frames;
-  mutable std::vector<ChunkedPackedFrame> chunked_frames;
 
   PackedMetadata metadata;
   PackedPixelFile() { JxlEncoderInitBasicInfo(&info); };
 
   size_t num_frames() const {
-    return chunked_frames.empty() ? frames.size() : chunked_frames.size();
+    return frames.size();
   }
   size_t xsize() const { return info.xsize; }
   size_t ysize() const { return info.ysize; }

@@ -6,8 +6,6 @@
 
 #include "lib/jxl/test_image.h"
 
-#include <jxl/encode.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -253,6 +251,21 @@ TestImage& TestImage::SetDimensions(size_t xsize, size_t ysize) {
   ppf_.info.xsize = xsize;
   ppf_.info.ysize = ysize;
   return *this;
+}
+
+void JxlEncoderInitExtraChannelInfo(JxlExtraChannelType type,
+                                    JxlExtraChannelInfo* info) {
+  info->type = type;
+  info->bits_per_sample = 8;
+  info->exponent_bits_per_sample = 0;
+  info->dim_shift = 0;
+  info->name_length = 0;
+  info->alpha_premultiplied = JXL_FALSE;
+  info->spot_color[0] = 0;
+  info->spot_color[1] = 0;
+  info->spot_color[2] = 0;
+  info->spot_color[3] = 0;
+  info->cfa_channel = 0;
 }
 
 TestImage& TestImage::SetChannels(size_t num_channels) {

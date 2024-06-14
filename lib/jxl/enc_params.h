@@ -10,7 +10,6 @@
 // Parameters and flags that govern JXL compression.
 
 #include <jxl/cms_interface.h>
-#include <jxl/encode.h>
 #include <stddef.h>
 
 #include <vector>
@@ -184,9 +183,6 @@ struct CompressParams {
   Splines custom_splines;
   // If not null, overrides progressive mode settings. Used in decode_test.
   const ProgressiveMode* custom_progressive_mode = nullptr;
-
-  JxlDebugImageCallback debug_image = nullptr;
-  void* debug_image_opaque;
 };
 
 static constexpr float kMinButteraugliForDynamicAR = 0.5f;

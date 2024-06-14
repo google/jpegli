@@ -30,7 +30,7 @@ Status DumpPlaneNormalized(const CompressParams& cparams, const char* label,
 
 // Used to skip image creation if they won't be written to debug directory.
 static inline bool WantDebugOutput(const CompressParams& cparams) {
-  return cparams.debug_image != nullptr;
+  return false;
 }
 
 }  // namespace jxl

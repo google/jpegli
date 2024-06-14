@@ -74,44 +74,6 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
   return data;
 }
 
-void JxlBasicInfoSetFromPixelFormat(JxlBasicInfo* basic_info,
-                                    const JxlPixelFormat* pixel_format) {
-  JxlEncoderInitBasicInfo(basic_info);
-  switch (pixel_format->data_type) {
-    case JXL_TYPE_FLOAT:
-      basic_info->bits_per_sample = 32;
-      basic_info->exponent_bits_per_sample = 8;
-      break;
-    case JXL_TYPE_FLOAT16:
-      basic_info->bits_per_sample = 16;
-      basic_info->exponent_bits_per_sample = 5;
-      break;
-    case JXL_TYPE_UINT8:
-      basic_info->bits_per_sample = 8;
-      basic_info->exponent_bits_per_sample = 0;
-      break;
-    case JXL_TYPE_UINT16:
-      basic_info->bits_per_sample = 16;
-      basic_info->exponent_bits_per_sample = 0;
-      break;
-    default:
-      JXL_ABORT("Unhandled JxlDataType");
-  }
-  if (pixel_format->num_channels < 3) {
-    basic_info->num_color_channels = 1;
-  } else {
-    basic_info->num_color_channels = 3;
-  }
-  if (pixel_format->num_channels == 2 || pixel_format->num_channels == 4) {
-    basic_info->alpha_exponent_bits = basic_info->exponent_bits_per_sample;
-    basic_info->alpha_bits = basic_info->bits_per_sample;
-    basic_info->num_extra_channels = 1;
-  } else {
-    basic_info->alpha_exponent_bits = 0;
-    basic_info->alpha_bits = 0;
-  }
-}
-
 ColorEncoding ColorEncodingFromDescriptor(const ColorEncodingDescriptor& desc) {
   ColorEncoding c;
   c.SetColorSpace(desc.color_space);
