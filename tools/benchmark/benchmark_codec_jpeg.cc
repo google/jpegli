@@ -26,13 +26,9 @@
 #include "tools/benchmark/benchmark_codec.h"
 #include "tools/speed_stats.h"
 
-#if JPEGXL_ENABLE_JPEGLI
 #include "lib/extras/dec/jpegli.h"
-#endif
 #include "lib/extras/dec/jpg.h"
-#if JPEGXL_ENABLE_JPEGLI
 #include "lib/extras/enc/jpegli.h"
-#endif
 #include "lib/extras/enc/jpg.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/time.h"
@@ -110,12 +106,10 @@ class JPEGCodec : public ImageCodec {
       jpeg_encoder_ = param;
       return true;
     }
-#if JPEGXL_ENABLE_JPEGLI
     if (param == "enc-jpegli") {
       jpeg_encoder_ = "jpegli";
       return true;
     }
-#endif
     if (param.compare(0, 3, "yuv") == 0) {
       chroma_subsampling_ = param.substr(3);
       return true;
@@ -145,7 +139,6 @@ class JPEGCodec : public ImageCodec {
       enable_adaptive_quant_ = false;
       return true;
     }
-#if JPEGXL_ENABLE_JPEGLI
     if (param == "xyb") {
       xyb_mode_ = true;
       return true;
@@ -166,7 +159,6 @@ class JPEGCodec : public ImageCodec {
       num_colors_ = strtol(param.substr(6).c_str(), nullptr, 10);
       return true;
     }
-#endif
     return false;
   }
 
@@ -218,7 +210,6 @@ class JPEGCodec : public ImageCodec {
 
     double elapsed = 0.0;
     if (jpeg_encoder_ == "jpegli") {
-#if JPEGXL_ENABLE_JPEGLI
       jxl::extras::JpegSettings settings;
       settings.xyb = xyb_mode_;
       if (!xyb_mode_) {
@@ -254,7 +245,6 @@ class JPEGCodec : public ImageCodec {
           jxl::extras::EncodeJpeg(ppf, settings, pool, compressed));
       const double end = jxl::Now();
       elapsed = end - start;
-#endif
     } else {
       jxl::extras::EncodedImage encoded;
       std::unique_ptr<jxl::extras::Encoder> encoder =
@@ -314,7 +304,6 @@ class JPEGCodec : public ImageCodec {
                     jxl::extras::PackedPixelFile* ppf,
                     jpegxl::tools::SpeedStats* speed_stats) override {
     if (jpeg_decoder_ == "jpegli") {
-#if JPEGXL_ENABLE_JPEGLI
       std::vector<uint8_t> jpeg_bytes(compressed.data(),
                                       compressed.data() + compressed.size());
       const double start = jxl::Now();
@@ -326,7 +315,6 @@ class JPEGCodec : public ImageCodec {
           jxl::extras::DecodeJpeg(jpeg_bytes, dparams, pool, ppf));
       const double end = jxl::Now();
       speed_stats->NotifyElapsed(end - start);
-#endif
     } else {
       const double start = jxl::Now();
       jxl::extras::JPGDecompressParams dparams;
@@ -350,17 +338,13 @@ class JPEGCodec : public ImageCodec {
   bool enc_quality_set_ = false;
   int libjpeg_quality_ = 0;
   std::string libjpeg_chroma_subsampling_;
-#if JPEGXL_ENABLE_JPEGLI
   bool xyb_mode_ = false;
   bool use_std_tables_ = false;
-#endif
   bool enable_adaptive_quant_ = true;
   // JPEG decoder and its parameters
   std::string jpeg_decoder_ = "libjpeg";
   int num_colors_ = 0;
-#if JPEGXL_ENABLE_JPEGLI
   size_t bitdepth_ = 8;
-#endif
 };
 
 ImageCodec* CreateNewJPEGCodec(const BenchmarkArgs& args) {

@@ -4,8 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#if JPEGXL_ENABLE_JPEGLI
-
 #include "lib/extras/dec/jpegli.h"
 
 #include <jxl/color_encoding.h>
@@ -420,4 +418,3 @@ JXL_GTEST_INSTANTIATE_TEST_SUITE_P(JpegliColorQuantTest,
 }  // namespace
 }  // namespace extras
 }  // namespace jxl
-#endif  // JPEGXL_ENABLE_JPEGLI
