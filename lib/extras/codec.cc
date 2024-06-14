@@ -6,7 +6,6 @@
 
 #include "lib/extras/codec.h"
 
-#include <jxl/decode.h>
 #include <jxl/types.h>
 
 #include "lib/extras/dec/decode.h"

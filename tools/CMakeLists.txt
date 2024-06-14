@@ -189,44 +189,6 @@ foreach(FUZZER IN LISTS FUZZER_BINARIES)
   target_link_libraries("${BINARY}" jpegli-static)
 endforeach()
 
-# EMSCRIPTEN doesn't support dynamic libraries so testing for linkage there
-# doesn't make much sense.
-if(BUILD_TESTING AND TARGET jxl AND NOT JPEGXL_EMSCRIPTEN)
-# Library API test. This test is only to check that we can link against the
-# shared library from C99 file and don't need to use internal symbols.
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
-add_executable(libjxl_test libjxl_test.c)
-set_property(TARGET libjxl_test PROPERTY C_STANDARD 99)
-if(NOT SANITIZER STREQUAL "none")
-  # Linking a C test binary with the C++ JPEG XL implementation when using
-  # address sanitizer is not well supported by clang 9, so force using clang++
-  # for linking this test if a sanitizer is used.
-  set_target_properties(libjxl_test PROPERTIES LINKER_LANGUAGE CXX)
-endif()  # SANITIZER != "none"
-set_target_properties(libjxl_test PROPERTIES PREFIX "tests/")
-target_link_libraries(libjxl_test jxl)
-if (NOT MSVC)
-target_compile_options(libjxl_test PRIVATE -Wall -Wextra -Werror)
-if(NOT WIN32)
-  target_compile_options(libjxl_test PRIVATE -pedantic)
-endif()  # NOT WIN32
-endif()  # NOT MSVC
-
-add_test(
-  NAME LibraryCLinkageTest
-  COMMAND libjxl_test
-  WORKING_DIRECTORY $<TARGET_FILE_DIR:jxl>
-)
-# if user decide to set CMAKE_SKIP_RPATH:BOOL=ON make sure libjxl.so.0.7 can
-# still be found:
-if(UNIX AND CMAKE_SKIP_RPATH)
-  set_property(TEST LibraryCLinkageTest PROPERTY ENVIRONMENT
-     LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/..
-     )
-endif()
-
-endif()  # BUILD_TESTING AND TARGET jxl AND NOT JPEGXL_EMSCRIPTEN
-
 if(JPEGXL_ENABLE_JNI)
 find_package(JNI QUIET)
 find_package(Java QUIET)
@@ -234,48 +196,6 @@ find_package(Java QUIET)
 if (JNI_FOUND AND Java_FOUND)
   include(UseJava)
 
-  # decoder_jni_onload.cc might be necessary for Android; not used yet.
-  add_library(jxl_jni SHARED jni/org/jpeg/jpegxl/wrapper/decoder_jni.cc)
-  target_include_directories(jxl_jni PRIVATE "${JNI_INCLUDE_DIRS}" "${PROJECT_SOURCE_DIR}")
-  target_link_libraries(jxl_jni PUBLIC jxl_dec-internal jxl_threads)
-  if(NOT DEFINED JPEGXL_INSTALL_JNIDIR)
-    set(JPEGXL_INSTALL_JNIDIR ${CMAKE_INSTALL_LIBDIR})
-  endif()
-  install(TARGETS jxl_jni DESTINATION ${JPEGXL_INSTALL_JNIDIR})
-
-  add_jar(jxl_jni_wrapper SOURCES
-    jni/org/jpeg/jpegxl/wrapper/Decoder.java
-    jni/org/jpeg/jpegxl/wrapper/DecoderJni.java
-    jni/org/jpeg/jpegxl/wrapper/ImageData.java
-    jni/org/jpeg/jpegxl/wrapper/PixelFormat.java
-    jni/org/jpeg/jpegxl/wrapper/Status.java
-    jni/org/jpeg/jpegxl/wrapper/StreamInfo.java
-    OUTPUT_NAME org.jpeg.jpegxl
-  )
-  get_target_property(JXL_JNI_WRAPPER_JAR jxl_jni_wrapper JAR_FILE)
-  if(NOT DEFINED JPEGXL_INSTALL_JARDIR)
-    set(JPEGXL_INSTALL_JARDIR ${CMAKE_INSTALL_LIBDIR})
-  endif()
-  install_jar(jxl_jni_wrapper DESTINATION ${JPEGXL_INSTALL_JARDIR})
-
-  add_jar(jxl_jni_wrapper_test
-    SOURCES jni/org/jpeg/jpegxl/wrapper/DecoderTest.java
-    INCLUDE_JARS jxl_jni_wrapper
-  )
-  get_target_property(JXL_JNI_WRAPPER_TEST_JAR jxl_jni_wrapper_test JAR_FILE)
-
-  if(NOT SANITIZER MATCHES ".san")
-    # NB: Vanilla OpenJDK 8 / 11 are known to work well (i.e. either
-    #     "which java" or JAVA_HOME environment variable point to the path like
-    #     "/usr/lib/jvm/java-xx-openjdk-yyy" on Debian Linux).
-    add_test(
-      NAME test_jxl_jni_wrapper
-      COMMAND ${Java_JAVA_EXECUTABLE}
-              -cp "${JXL_JNI_WRAPPER_JAR}:${JXL_JNI_WRAPPER_TEST_JAR}"
-              -Dorg.jpeg.jpegxl.wrapper.lib=$<TARGET_FILE:jxl_jni>
-              org.jpeg.jpegxl.wrapper.DecoderTest
-    )
-  endif()  # JPEGXL_ENABLE_FUZZERS
 endif()  # JNI_FOUND & Java_FOUND
 endif()  # JPEGXL_ENABLE_JNI
 

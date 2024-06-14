@@ -6,7 +6,6 @@
 
 #include <jxl/cms.h>
 #include <jxl/cms_interface.h>
-#include <jxl/decode.h>
 #include <jxl/types.h>
 
 #include <algorithm>
@@ -1089,9 +1088,6 @@ class Benchmark {
 };
 
 int BenchmarkMain(int argc, const char** argv) {
-  fprintf(stderr, "benchmark_xl %s\n",
-          jpegxl::tools::CodecConfigString(JxlDecoderVersion()).c_str());
-
   JXL_CHECK(Args()->AddCommandLineOptions());
 
   if (!Args()->Parse(argc, argv)) {
