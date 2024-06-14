@@ -120,9 +120,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/chroma_from_luma.cc
   jxl/chroma_from_luma.h
   jxl/codec_in_out.h
-  jxl/coeff_order.cc
-  jxl/coeff_order.h
-  jxl/coeff_order_fwd.h
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
   jxl/common.h
@@ -136,17 +133,9 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dct_scales.cc
   jxl/dct_scales.h
   jxl/dct_util.h
-  jxl/dec_ans.cc
-  jxl/dec_ans.h
   jxl/dec_bit_reader.h
-  jxl/dec_context_map.cc
-  jxl/dec_context_map.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
-  jxl/dec_huffman.cc
-  jxl/dec_huffman.h
-  jxl/entropy_coder.cc
-  jxl/entropy_coder.h
   jxl/field_encodings.h
   jxl/fields.cc
   jxl/fields.h
@@ -155,8 +144,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/frame_header.h
   jxl/headers.cc
   jxl/headers.h
-  jxl/huffman_table.cc
-  jxl/huffman_table.h
   jxl/image.cc
   jxl/image.h
   jxl/image_bundle.cc
@@ -166,7 +153,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/image_ops.cc
   jxl/image_ops.h
   jxl/inverse_mtf-inl.h
-  jxl/lehmer_code.h
   jxl/luminance.cc
   jxl/luminance.h
   jxl/pack_signed.h
