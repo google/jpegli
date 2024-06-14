@@ -408,15 +408,11 @@ typedef struct {
 
   /** Length of the frame name in bytes, or 0 if no name.
    * Excludes null termination character. This value is set by the decoder.
-   * For the encoder, this value is ignored and @ref JxlEncoderSetFrameName is
-   * used instead to set the name and the length.
    */
   uint32_t name_length;
 
   /** Indicates this is the last animation frame. This value is set by the
-   * decoder to indicate no further frames follow. For the encoder, it is not
-   * required to set this value and it is ignored, @ref JxlEncoderCloseFrames is
-   * used to indicate the last frame to the encoder instead.
+   * decoder to indicate no further frames follow.
    */
   JXL_BOOL is_last;
 
