@@ -25,22 +25,9 @@
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_custom.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
-#include "tools/benchmark/benchmark_codec_jxl.h"
 #include "tools/benchmark/benchmark_stats.h"
 #include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
-
-#ifdef BENCHMARK_PNG
-#include "tools/benchmark/benchmark_codec_png.h"
-#endif  // BENCHMARK_PNG
-
-#ifdef BENCHMARK_WEBP
-#include "tools/benchmark/benchmark_codec_webp.h"
-#endif  // BENCHMARK_WEBP
-
-#ifdef BENCHMARK_AVIF
-#include "tools/benchmark/benchmark_codec_avif.h"
-#endif  // BENCHMARK_AVIF
 
 namespace jpegxl {
 namespace tools {
@@ -152,28 +139,14 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
     parameters = description.substr(colon + 1);
   }
   ImageCodecPtr result;
-  if (name == "jxl") {
-    result.reset(CreateNewJxlCodec(*Args()));
+  if (name == "jpeg") {
+    result.reset(CreateNewJPEGCodec(*Args()));
 #if !defined(__wasm__)
   } else if (name == "custom") {
     result.reset(CreateNewCustomCodec(*Args()));
 #endif
-  } else if (name == "jpeg") {
-    result.reset(CreateNewJPEGCodec(*Args()));
-#ifdef BENCHMARK_PNG
-  } else if (name == "png") {
-    result.reset(CreateNewPNGCodec(*Args()));
-#endif  // BENCHMARK_PNG
   } else if (name == "none") {
     result.reset(new NoneCodec(*Args()));
-#ifdef BENCHMARK_WEBP
-  } else if (name == "webp") {
-    result.reset(CreateNewWebPCodec(*Args()));
-#endif  // BENCHMARK_WEBP
-#ifdef BENCHMARK_AVIF
-  } else if (name == "avif") {
-    result.reset(CreateNewAvifCodec(*Args()));
-#endif  // BENCHMARK_AVIF
   }
   if (!result.get()) {
     JXL_ABORT("Unknown image codec: %s", name.c_str());
