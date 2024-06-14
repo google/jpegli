@@ -35,9 +35,6 @@
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_metadata.h"
 #include "lib/jxl/passes_state.h"
-#include "lib/jxl/render_pipeline/render_pipeline.h"
-#include "lib/jxl/render_pipeline/render_pipeline_stage.h"
-#include "lib/jxl/render_pipeline/stage_upsampling.h"
 
 namespace jxl {
 
@@ -91,9 +88,6 @@ struct PassesDecoderState {
   // Allows avoiding copies for encoder loop.
   const PassesSharedState* JXL_RESTRICT shared = &shared_storage;
 
-  // 8x upsampling stage for DC.
-  std::unique_ptr<RenderPipelineStage> upsampler8x;
-
   // For ANS decoding.
   std::vector<ANSCode> code;
   std::vector<std::vector<uint8_t>> context_map;
@@ -132,22 +126,8 @@ struct PassesDecoderState {
   // Storage for coefficients if in "accumulate" mode.
   std::unique_ptr<ACImage> coefficients = make_unique<ACImageT<int32_t>>();
 
-  // Rendering pipeline.
-  std::unique_ptr<RenderPipeline> render_pipeline;
-
   // Storage for the current frame if it can be referenced by future frames.
   ImageBundle frame_storage_for_referencing;
-
-  struct PipelineOptions {
-    bool use_slow_render_pipeline;
-    bool coalescing;
-    bool render_spotcolors;
-    bool render_noise;
-  };
-
-  Status PreparePipeline(const FrameHeader& frame_header,
-                         const ImageMetadata* metadata, ImageBundle* decoded,
-                         PipelineOptions options);
 
   // Information for colour conversions.
   OutputEncodingInfo output_encoding_info;
@@ -167,7 +147,6 @@ struct PassesDecoderState {
 
     used_acs = 0;
 
-    upsampler8x = GetUpsamplingStage(shared->metadata->transform_data, 0, 3);
     if (frame_header.loop_filter.epf_iters > 0) {
       JXL_ASSIGN_OR_RETURN(
           sigma,
@@ -234,16 +213,6 @@ struct GroupDecCache {
     scratch_space = dec_group_block + max_block_area_ * 3;
     dec_group_qblock = int32_memory_.get();
     dec_group_qblock16 = int16_memory_.get();
-    return true;
-  }
-
-  Status InitDCBufferOnce() {
-    if (dc_buffer.xsize() == 0) {
-      JXL_ASSIGN_OR_RETURN(
-          dc_buffer,
-          ImageF::Create(kGroupDimInBlocks + kRenderPipelineXOffset * 2,
-                         kGroupDimInBlocks + 4));
-    }
     return true;
   }
 

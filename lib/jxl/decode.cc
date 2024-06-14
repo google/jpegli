@@ -1181,8 +1181,7 @@ JxlDecoderStatus JxlDecoderProcessCodestream(JxlDecoder* dec) {
         dec->ib.reset(new jxl::ImageBundle(&dec->image_metadata));
       }
       dec->frame_dec.reset(new FrameDecoder(
-          dec->passes_state.get(), dec->metadata, dec->thread_pool.get(),
-          /*use_slow_rendering_pipeline=*/false));
+          dec->passes_state.get(), dec->metadata, dec->thread_pool.get()));
       dec->frame_header.reset(new FrameHeader(&dec->metadata));
       Span<const uint8_t> span;
       JXL_API_RETURN_IF_ERROR(dec->GetCodestreamInput(&span));

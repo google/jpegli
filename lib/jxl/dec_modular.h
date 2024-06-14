@@ -23,7 +23,6 @@
 #include "lib/jxl/modular/encoding/encoding.h"
 #include "lib/jxl/modular/modular_image.h"
 #include "lib/jxl/quant_weights.h"
-#include "lib/jxl/render_pipeline/render_pipeline.h"
 
 namespace jxl {
 
@@ -99,7 +98,6 @@ class ModularFrameDecoder {
                      BitReader* reader, int minShift, int maxShift,
                      const ModularStreamId& stream, bool zerofill,
                      PassesDecoderState* dec_state,
-                     RenderPipelineInput* render_pipeline_input,
                      bool allow_truncated, bool* should_run_pipeline = nullptr);
   // Decodes a VarDCT DC group (`group_id`) from the given `reader`.
   Status DecodeVarDCTDC(const FrameHeader& frame_header, size_t group_id,
@@ -128,7 +126,6 @@ class ModularFrameDecoder {
   Status ModularImageToDecodedRect(const FrameHeader& frame_header, Image& gi,
                                    PassesDecoderState* dec_state,
                                    jxl::ThreadPool* pool,
-                                   RenderPipelineInput& render_pipeline_input,
                                    Rect modular_rect) const;
 
   Image full_image;

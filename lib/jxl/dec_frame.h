@@ -38,19 +38,17 @@ namespace jxl {
 Status DecodeFrame(PassesDecoderState* dec_state, ThreadPool* JXL_RESTRICT pool,
                    const uint8_t* next_in, size_t avail_in,
                    FrameHeader* frame_header, ImageBundle* decoded,
-                   const CodecMetadata& metadata,
-                   bool use_slow_rendering_pipeline = false);
+                   const CodecMetadata& metadata);
 
 // TODO(veluca): implement "forced drawing".
 class FrameDecoder {
  public:
   // All parameters must outlive the FrameDecoder.
   FrameDecoder(PassesDecoderState* dec_state, const CodecMetadata& metadata,
-               ThreadPool* pool, bool use_slow_rendering_pipeline)
+               ThreadPool* pool)
       : dec_state_(dec_state),
         pool_(pool),
-        frame_header_(&metadata),
-        use_slow_rendering_pipeline_(use_slow_rendering_pipeline) {}
+        frame_header_(&metadata) {}
 
   void SetRenderSpotcolors(bool rsc) { render_spotcolors_ = rsc; }
   void SetCoalescing(bool c) { coalescing_ = c; }
@@ -258,20 +256,7 @@ class FrameDecoder {
   // here. The value of `task` passed to `GetStorageLocation` must be smaller
   // than the value of `num_tasks` passed here.
   Status PrepareStorage(size_t num_threads, size_t num_tasks) {
-    size_t storage_size = std::min(num_threads, num_tasks);
-    if (storage_size > group_dec_caches_.size()) {
-      group_dec_caches_.resize(storage_size);
-    }
-    use_task_id_ = num_threads > num_tasks;
-    bool use_noise = (frame_header_.flags & FrameHeader::kNoise) != 0;
-    bool use_group_ids =
-        (modular_frame_decoder_.UsesFullImage() &&
-         (frame_header_.encoding == FrameEncoding::kVarDCT || use_noise));
-    if (dec_state_->render_pipeline) {
-      JXL_RETURN_IF_ERROR(dec_state_->render_pipeline->PrepareForThreads(
-          storage_size, use_group_ids));
-    }
-    return true;
+    return false;
   }
 
   size_t GetStorageLocation(size_t thread, size_t task) const {
@@ -327,9 +312,6 @@ class FrameDecoder {
   // Whether or not the task id should be used for storage indexing, instead of
   // the thread id.
   bool use_task_id_ = false;
-
-  // Testing setting: whether or not to use the slow rendering pipeline.
-  bool use_slow_rendering_pipeline_;
 
   JxlProgressiveDetail progressive_detail_ = kFrames;
   // Number of completed passes where section decoding should pause.
