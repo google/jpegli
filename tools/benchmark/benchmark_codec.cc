@@ -72,63 +72,6 @@ Status ImageCodec::ParseParam(const std::string& param) {
   return false;
 }
 
-// Low-overhead "codec" for measuring benchmark overhead.
-class NoneCodec : public ImageCodec {
- public:
-  explicit NoneCodec(const BenchmarkArgs& args) : ImageCodec(args) {}
-  Status ParseParam(const std::string& param) override { return true; }
-
-  Status Compress(const std::string& filename, const PackedPixelFile& ppf,
-                  ThreadPool* pool, std::vector<uint8_t>* compressed,
-                  jpegxl::tools::SpeedStats* speed_stats) override {
-    const double start = jxl::Now();
-    // Encode image size so we "decompress" something of the same size, as
-    // required by butteraugli.
-    const uint32_t xsize = ppf.xsize();
-    const uint32_t ysize = ppf.ysize();
-    compressed->resize(8);
-    memcpy(compressed->data(), &xsize, 4);
-    memcpy(compressed->data() + 4, &ysize, 4);
-    const double end = jxl::Now();
-    speed_stats->NotifyElapsed(end - start);
-    return true;
-  }
-
-  Status Decompress(const std::string& filename,
-                    const Span<const uint8_t> compressed, ThreadPool* pool,
-                    PackedPixelFile* ppf,
-                    jpegxl::tools::SpeedStats* speed_stats) override {
-    CodecInOut io;
-    JXL_RETURN_IF_ERROR(
-        Decompress(filename, compressed, pool, &io, speed_stats));
-    JxlPixelFormat format{0, JXL_TYPE_UINT16, JXL_NATIVE_ENDIAN, 0};
-    return jxl::extras::ConvertCodecInOutToPackedPixelFile(
-        io, format, io.Main().c_current(), pool, ppf);
-  };
-
-  static Status Decompress(const std::string& filename,
-                           const Span<const uint8_t> compressed,
-                           ThreadPool* pool, CodecInOut* io,
-                           jpegxl::tools::SpeedStats* speed_stats) {
-    const double start = jxl::Now();
-    JXL_ASSERT(compressed.size() == 8);
-    uint32_t xsize;
-    uint32_t ysize;
-    memcpy(&xsize, compressed.data(), 4);
-    memcpy(&ysize, compressed.data() + 4, 4);
-    JXL_ASSIGN_OR_RETURN(Image3F image, Image3F::Create(xsize, ysize));
-    ZeroFillImage(&image);
-    io->metadata.m.SetFloat32Samples();
-    io->metadata.m.color_encoding = ColorEncoding::SRGB();
-    io->SetFromImage(std::move(image), io->metadata.m.color_encoding);
-    const double end = jxl::Now();
-    speed_stats->NotifyElapsed(end - start);
-    return true;
-  }
-
-  void GetMoreStats(BenchmarkStats* stats) override {}
-};
-
 ImageCodecPtr CreateImageCodec(const std::string& description) {
   std::string name = description;
   std::string parameters;
@@ -140,8 +83,6 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
   ImageCodecPtr result;
   if (name == "jpeg") {
     result.reset(CreateNewJPEGCodec(*Args()));
-  } else if (name == "none") {
-    result.reset(new NoneCodec(*Args()));
   }
   if (!result.get()) {
     JXL_ABORT("Unknown image codec: %s", name.c_str());
