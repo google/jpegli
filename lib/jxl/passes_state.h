@@ -10,7 +10,6 @@
 #include "lib/jxl/ac_context.h"
 #include "lib/jxl/ac_strategy.h"
 #include "lib/jxl/chroma_from_luma.h"
-#include "lib/jxl/dec_patch_dictionary.h"
 #include "lib/jxl/frame_header.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
@@ -24,12 +23,6 @@
 // (en/de)coder.
 
 namespace jxl {
-
-struct ImageFeatures {
-  NoiseParams noise_params;
-  PatchDictionary patches;
-  Splines splines;
-};
 
 // State common to both encoder and decoder.
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
@@ -50,8 +43,6 @@ struct PassesSharedState {
   ImageB epf_sharpness;
 
   ColorCorrelationMap cmap;
-
-  ImageFeatures image_features;
 
   // Memory area for storing coefficient orders.
   // `coeff_order_size` is the size used by *one* set of coefficient orders (at

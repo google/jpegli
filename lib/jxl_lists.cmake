@@ -115,8 +115,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/ans_common.cc
   jxl/ans_common.h
   jxl/ans_params.h
-  jxl/blending.cc
-  jxl/blending.h
   jxl/cache_aligned.cc
   jxl/cache_aligned.h
   jxl/chroma_from_luma.cc
@@ -149,17 +147,10 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_context_map.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
-  jxl/dec_group_border.cc
-  jxl/dec_group_border.h
   jxl/dec_huffman.cc
   jxl/dec_huffman.h
   jxl/dec_modular.cc
   jxl/dec_modular.h
-  jxl/dec_noise.cc
-  jxl/dec_noise.h
-  jxl/dec_patch_dictionary.cc
-  jxl/dec_patch_dictionary.h
-  jxl/dec_transforms-inl.h
   jxl/dec_xyb-inl.h
   jxl/dec_xyb.cc
   jxl/dec_xyb.h
@@ -167,13 +158,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/entropy_coder.h
   jxl/epf.cc
   jxl/epf.h
-  jxl/fast_dct-inl.h
-  jxl/fast_dct128-inl.h
-  jxl/fast_dct16-inl.h
-  jxl/fast_dct256-inl.h
-  jxl/fast_dct32-inl.h
-  jxl/fast_dct64-inl.h
-  jxl/fast_dct8-inl.h
   jxl/field_encodings.h
   jxl/fields.cc
   jxl/fields.h
@@ -407,8 +391,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
   jxl/dct_for_test.h
-  jxl/dec_transforms_testonly.cc
-  jxl/dec_transforms_testonly.h
   jxl/fake_parallel_runner_testonly.h
   jxl/image_test_utils.h
   jxl/test_image.cc
