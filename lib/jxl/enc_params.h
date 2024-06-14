@@ -16,7 +16,6 @@
 
 #include "lib/jxl/base/override.h"
 #include "lib/jxl/common.h"
-#include "lib/jxl/enc_progressive_split.h"
 #include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/frame_header.h"
 
@@ -168,9 +167,6 @@ struct CompressParams {
 
   std::vector<float> manual_noise;
   std::vector<float> manual_xyb_factors;
-
-  // If not null, overrides progressive mode settings. Used in decode_test.
-  const ProgressiveMode* custom_progressive_mode = nullptr;
 };
 
 static constexpr float kMinButteraugliForDynamicAR = 0.5f;
