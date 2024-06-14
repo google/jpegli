@@ -128,8 +128,6 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
     benchmark/benchmark_codec_custom.h
     benchmark/benchmark_codec_jpeg.cc
     benchmark/benchmark_codec_jpeg.h
-    benchmark/benchmark_codec_jxl.cc
-    benchmark/benchmark_codec_jxl.h
     ssimulacra2.cc
     ../third_party/dirent.cc
   )
@@ -139,55 +137,6 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
   # MINGW doesn't support glob.h.
   target_compile_definitions(benchmark_xl PRIVATE "-DHAS_GLOB=0")
   endif() # MINGW
-
-  if(NOT JPEGXL_BUNDLE_LIBPNG)
-    find_package(PNG)
-  endif()
-  if(PNG_FOUND)
-    target_sources(benchmark_xl PRIVATE
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_png.cc"
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_png.h"
-    )
-    target_compile_definitions(benchmark_xl PRIVATE -DBENCHMARK_PNG)
-  endif()
-
-  find_package(PkgConfig)
-  pkg_check_modules(WebP IMPORTED_TARGET libwebp)
-  if(WebP_FOUND)
-    target_sources(benchmark_xl PRIVATE
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_webp.cc"
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_webp.h"
-    )
-    target_compile_definitions(benchmark_xl PRIVATE -DBENCHMARK_WEBP)
-
-    # Use the static version of webp if available.
-    find_library(WebP_STATIC_LINK_LIBRARY NAMES libwebp.a
-        PATHS "${WebP_LIBDIR}")
-    find_library(SharpYuv_STATIC_LINK_LIBRARY NAMES libsharpyuv.a
-        PATHS "${WebP_LIBDIR}")
-    if(NOT WebP_STATIC_LINK_LIBRARY)
-      message(WARNING "Using dynamic libwebp")
-      target_link_libraries(benchmark_xl PkgConfig::WebP)
-    else()
-      target_link_libraries(benchmark_xl "${WebP_STATIC_LINK_LIBRARY}")
-      if(SharpYuv_STATIC_LINK_LIBRARY)
-        target_link_libraries(benchmark_xl "${SharpYuv_STATIC_LINK_LIBRARY}")
-      endif()
-      target_include_directories(benchmark_xl
-          PRIVATE ${WebP_STATIC_INCLUDE_DIRS})
-      target_compile_options(benchmark_xl PRIVATE ${WebP_STATIC_CFLAGS_OTHER})
-    endif()  # NOT WebP_STATIC_LINK_LIBRARY
-  endif()
-
-  pkg_check_modules(AVIF IMPORTED_TARGET libavif)
-  if(AVIF_FOUND)
-    target_sources(benchmark_xl PRIVATE
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_avif.cc"
-      "${CMAKE_CURRENT_LIST_DIR}/benchmark/benchmark_codec_avif.h"
-    )
-    target_compile_definitions(benchmark_xl PRIVATE -DBENCHMARK_AVIF)
-    target_link_libraries(benchmark_xl PkgConfig::AVIF)
-  endif()
 endif()  # JPEGXL_ENABLE_BENCHMARK
 
 # All tool binaries depend on "jxl" library and the tool helpers.

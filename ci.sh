@@ -893,7 +893,7 @@ run_benchmark() {
 
   local benchmark_args=(
     --input "${src_img_dir}/*.png"
-    --codec=jpeg:yuv420:q85,webp:q80,jxl:d1:6,jxl:d1:6:downsampling=8,jxl:d5:6,jxl:d5:6:downsampling=8,jxl:m:d0:2,jxl:m:d0:3,jxl:m:d2:2
+    --codec=jpeg:enc-jpegli:dec-jpegli:yuv420:q85
     --output_dir "${output_dir}"
     --show_progress
     --num_threads="${num_threads}"

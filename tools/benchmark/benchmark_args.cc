@@ -19,19 +19,6 @@
 #include "lib/jxl/color_encoding_internal.h"
 #include "tools/benchmark/benchmark_codec_custom.h"  // for AddCommand..
 #include "tools/benchmark/benchmark_codec_jpeg.h"    // for AddCommand..
-#include "tools/benchmark/benchmark_codec_jxl.h"
-
-#ifdef BENCHMARK_PNG
-#include "tools/benchmark/benchmark_codec_png.h"
-#endif  // BENCHMARK_PNG
-
-#ifdef BENCHMARK_WEBP
-#include "tools/benchmark/benchmark_codec_webp.h"
-#endif  // BENCHMARK_WEBP
-
-#ifdef BENCHMARK_AVIF
-#include "tools/benchmark/benchmark_codec_avif.h"
-#endif  // BENCHMARK_AVIF
 
 namespace jpegxl {
 namespace tools {
@@ -213,18 +200,7 @@ Status BenchmarkArgs::AddCommandLineOptions() {
       false);
 
   if (!AddCommandLineOptionsCustomCodec(this)) return false;
-  if (!AddCommandLineOptionsJxlCodec(this)) return false;
   if (!AddCommandLineOptionsJPEGCodec(this)) return false;
-
-#ifdef BENCHMARK_PNG
-  if (!AddCommandLineOptionsPNGCodec(this)) return false;
-#endif  // BENCHMARK_PNG
-#ifdef BENCHMARK_WEBP
-  if (!AddCommandLineOptionsWebPCodec(this)) return false;
-#endif  // BENCHMARK_WEBP
-#ifdef BENCHMARK_AVIF
-  if (!AddCommandLineOptionsAvifCodec(this)) return false;
-#endif  // BENCHMARK_AVIF
 
   return true;
 }
@@ -254,8 +230,6 @@ Status BenchmarkArgs::ValidateArgs() {
     JXL_RETURN_IF_ERROR(output_encoding.FromExternal(output_encoding_external));
     JXL_RETURN_IF_ERROR(!output_encoding.ICC().empty());
   }
-
-  JXL_RETURN_IF_ERROR(ValidateArgsJxlCodec(this));
 
   if (print_details_csv) print_details = true;
 
