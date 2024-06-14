@@ -95,14 +95,7 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
   extras/enc/pnm.h
 )
 
-set(JPEGXL_INTERNAL_DEC_BOX_SOURCES
-  jxl/box_content_decoder.cc
-  jxl/box_content_decoder.h
-)
-
 set(JPEGXL_INTERNAL_DEC_JPEG_SOURCES
-  jxl/decode_to_jpeg.cc
-  jxl/decode_to_jpeg.h
   jxl/jpeg/dec_jpeg_data.cc
   jxl/jpeg/dec_jpeg_data.h
   jxl/jpeg/dec_jpeg_data_writer.cc
