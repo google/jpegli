@@ -165,7 +165,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_xyb-inl.h
   jxl/dec_xyb.cc
   jxl/dec_xyb.h
-  jxl/decode.cc
   jxl/entropy_coder.cc
   jxl/entropy_coder.h
   jxl/epf.cc
