@@ -30,7 +30,6 @@
 #include "lib/jxl/enc_cache.h"
 #include "lib/jxl/enc_debug_image.h"
 #include "lib/jxl/enc_dot_dictionary.h"
-#include "lib/jxl/enc_frame.h"
 #include "lib/jxl/frame_header.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
@@ -757,82 +756,7 @@ Status RoundtripPatchFrame(Image3F* reference_frame,
                            PassesEncoderState* JXL_RESTRICT state, int idx,
                            CompressParams& cparams, const JxlCmsInterface& cms,
                            ThreadPool* pool, AuxOut* aux_out, bool subtract) {
-  FrameInfo patch_frame_info;
-  cparams.resampling = 1;
-  cparams.ec_resampling = 1;
-  cparams.dots = Override::kOff;
-  cparams.noise = Override::kOff;
-  cparams.modular_mode = true;
-  cparams.responsive = 0;
-  cparams.progressive_dc = 0;
-  cparams.progressive_mode = Override::kOff;
-  cparams.qprogressive_mode = Override::kOff;
-  // Use gradient predictor and not Predictor::Best.
-  cparams.options.predictor = Predictor::Gradient;
-  patch_frame_info.save_as_reference = idx;  // always saved.
-  patch_frame_info.frame_type = FrameType::kReferenceOnly;
-  patch_frame_info.save_before_color_transform = true;
-  ImageBundle ib(&state->shared.metadata->m);
-  // TODO(veluca): metadata.color_encoding is a lie: ib is in XYB, but there is
-  // no simple way to express that yet.
-  patch_frame_info.ib_needs_color_transform = false;
-  ib.SetFromImage(std::move(*reference_frame),
-                  state->shared.metadata->m.color_encoding);
-  if (!ib.metadata()->extra_channel_info.empty()) {
-    // Add placeholder extra channels to the patch image: patch encoding does
-    // not yet support extra channels, but the codec expects that the amount of
-    // extra channels in frames matches that in the metadata of the codestream.
-    std::vector<ImageF> extra_channels;
-    extra_channels.reserve(ib.metadata()->extra_channel_info.size());
-    for (size_t i = 0; i < ib.metadata()->extra_channel_info.size(); i++) {
-      JXL_ASSIGN_OR_RETURN(ImageF ch, ImageF::Create(ib.xsize(), ib.ysize()));
-      extra_channels.emplace_back(std::move(ch));
-      // Must initialize the image with data to not affect blending with
-      // uninitialized memory.
-      // TODO(lode): patches must copy and use the real extra channels instead.
-      ZeroFillImage(&extra_channels.back());
-    }
-    ib.SetExtraChannels(std::move(extra_channels));
-  }
-  auto special_frame = std::unique_ptr<BitWriter>(new BitWriter());
-  AuxOut patch_aux_out;
-  JXL_CHECK(EncodeFrame(cparams, patch_frame_info, state->shared.metadata, ib,
-                        cms, pool, special_frame.get(),
-                        aux_out ? &patch_aux_out : nullptr));
-  if (aux_out) {
-    for (const auto& l : patch_aux_out.layers) {
-      aux_out->layers[kLayerDictionary].Assimilate(l);
-    }
-  }
-  const Span<const uint8_t> encoded = special_frame->GetSpan();
-  state->special_frames.emplace_back(std::move(special_frame));
-  if (subtract) {
-    ImageBundle decoded(&state->shared.metadata->m);
-    PassesDecoderState dec_state;
-    JXL_CHECK(dec_state.output_encoding_info.SetFromMetadata(
-        *state->shared.metadata));
-    const uint8_t* frame_start = encoded.data();
-    size_t encoded_size = encoded.size();
-    JXL_CHECK(DecodeFrame(&dec_state, pool, frame_start, encoded_size,
-                          /*frame_header=*/nullptr, &decoded,
-                          *state->shared.metadata));
-    frame_start += decoded.decoded_bytes();
-    encoded_size -= decoded.decoded_bytes();
-    size_t ref_xsize =
-        dec_state.shared_storage.reference_frames[idx].frame.color()->xsize();
-    // if the frame itself uses patches, we need to decode another frame
-    if (!ref_xsize) {
-      JXL_CHECK(DecodeFrame(&dec_state, pool, frame_start, encoded_size,
-                            /*frame_header=*/nullptr, &decoded,
-                            *state->shared.metadata));
-    }
-    JXL_CHECK(encoded_size == 0);
-    state->shared.reference_frames[idx] =
-        std::move(dec_state.shared_storage.reference_frames[idx]);
-  } else {
-    state->shared.reference_frames[idx].frame = std::move(ib);
-  }
-  return true;
+  return false;
 }
 
 }  // namespace jxl

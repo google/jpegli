@@ -338,8 +338,6 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/enc_external_image.h
   jxl/enc_fields.cc
   jxl/enc_fields.h
-  jxl/enc_frame.cc
-  jxl/enc_frame.h
   jxl/enc_gaborish.cc
   jxl/enc_gaborish.h
   jxl/enc_gamma_correct.h
@@ -381,8 +379,6 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/enc_transforms.h
   jxl/enc_xyb.cc
   jxl/enc_xyb.h
-  jxl/encode.cc
-  jxl/encode_internal.h
   jxl/jpeg/enc_jpeg_data.cc
   jxl/jpeg/enc_jpeg_data.h
   jxl/jpeg/enc_jpeg_data_reader.cc

@@ -20,7 +20,6 @@
 #include "lib/jxl/dct_util.h"
 #include "lib/jxl/dec_frame.h"
 #include "lib/jxl/enc_aux_out.h"
-#include "lib/jxl/enc_frame.h"
 #include "lib/jxl/enc_group.h"
 #include "lib/jxl/enc_modular.h"
 #include "lib/jxl/enc_quant_weights.h"
@@ -160,51 +159,6 @@ Status InitializePassesEncoder(const FrameHeader& frame_header,
       }
       ib.SetExtraChannels(std::move(extra_channels));
     }
-    auto special_frame = std::unique_ptr<BitWriter>(new BitWriter());
-    FrameInfo dc_frame_info;
-    dc_frame_info.frame_type = FrameType::kDCFrame;
-    dc_frame_info.dc_level = frame_header.dc_level + 1;
-    dc_frame_info.ib_needs_color_transform = false;
-    dc_frame_info.save_before_color_transform = true;  // Implicitly true
-    AuxOut dc_aux_out;
-    JXL_CHECK(EncodeFrame(cparams, dc_frame_info, shared.metadata, ib, cms,
-                          pool, special_frame.get(),
-                          aux_out ? &dc_aux_out : nullptr));
-    if (aux_out) {
-      for (const auto& l : dc_aux_out.layers) {
-        aux_out->layers[kLayerDC].Assimilate(l);
-      }
-    }
-    const Span<const uint8_t> encoded = special_frame->GetSpan();
-    enc_state->special_frames.emplace_back(std::move(special_frame));
-
-    ImageBundle decoded(&shared.metadata->m);
-    std::unique_ptr<PassesDecoderState> dec_state =
-        jxl::make_unique<PassesDecoderState>();
-    JXL_CHECK(
-        dec_state->output_encoding_info.SetFromMetadata(*shared.metadata));
-    const uint8_t* frame_start = encoded.data();
-    size_t encoded_size = encoded.size();
-    for (int i = 0; i <= cparams.progressive_dc; ++i) {
-      JXL_CHECK(DecodeFrame(dec_state.get(), pool, frame_start, encoded_size,
-                            /*frame_header=*/nullptr, &decoded,
-                            *shared.metadata));
-      frame_start += decoded.decoded_bytes();
-      encoded_size -= decoded.decoded_bytes();
-    }
-    // TODO(lode): frame_header.dc_level should be equal to
-    // dec_state.frame_header.dc_level - 1 here, since above we set
-    // dc_frame_info.dc_level = frame_header.dc_level + 1, and
-    // dc_frame_info.dc_level is used by EncodeFrame. However, if EncodeFrame
-    // outputs multiple frames, this assumption could be wrong.
-    const Image3F& dc_frame =
-        dec_state->shared->dc_frames[frame_header.dc_level];
-    JXL_ASSIGN_OR_RETURN(shared.dc_storage,
-                         Image3F::Create(dc_frame.xsize(), dc_frame.ysize()));
-    CopyImageTo(dc_frame, &shared.dc_storage);
-    ZeroFillImage(&shared.quant_dc);
-    shared.dc = &shared.dc_storage;
-    JXL_CHECK(encoded_size == 0);
   } else {
     std::atomic<bool> has_error{false};
     auto compute_dc_coeffs = [&](int group_index, int /* thread */) {

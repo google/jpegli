@@ -7,7 +7,6 @@
 #ifndef TOOLS_BENCHMARK_BENCHMARK_STATS_H_
 #define TOOLS_BENCHMARK_BENCHMARK_STATS_H_
 
-#include <jxl/stats.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -19,19 +18,6 @@ namespace jpegxl {
 namespace tools {
 
 std::string StringPrintf(const char* format, ...);
-
-struct JxlStats {
-  JxlStats()
-      : num_inputs(0), stats(JxlEncoderStatsCreate(), JxlEncoderStatsDestroy) {}
-  void Assimilate(const JxlStats& victim) {
-    num_inputs += victim.num_inputs;
-    JxlEncoderStatsMerge(stats.get(), victim.stats.get());
-  }
-  void Print() const;
-
-  size_t num_inputs;
-  std::unique_ptr<JxlEncoderStats, decltype(JxlEncoderStatsDestroy)*> stats;
-};
 
 // The value of an entry in the table. Depending on the ColumnType, the string,
 // size_t or double should be used.
@@ -65,7 +51,6 @@ struct BenchmarkStats {
   double ssimulacra2 = 0.0;
   std::vector<float> distances;
   size_t total_errors = 0;
-  JxlStats jxl_stats;
   std::vector<float> extra_metrics;
 };
 

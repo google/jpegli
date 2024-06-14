@@ -175,11 +175,6 @@ class ThreadPoolForTests {
 Status ReadICC(BitReader* JXL_RESTRICT reader,
                std::vector<uint8_t>* JXL_RESTRICT icc, size_t output_limit = 0);
 
-// Compresses pixels from `io` (given in any ColorEncoding).
-// `io->metadata.m.original` must be set.
-Status EncodeFile(const CompressParams& params, const CodecInOut* io,
-                  std::vector<uint8_t>* compressed, ThreadPool* pool = nullptr);
-
 constexpr const char* BoolToCStr(bool b) { return b ? "true" : "false"; }
 
 }  // namespace test

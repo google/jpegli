@@ -6,8 +6,6 @@
 
 #include "tools/benchmark/benchmark_stats.h"
 
-#include <jxl/stats.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -24,52 +22,6 @@
 
 namespace jpegxl {
 namespace tools {
-
-#define ADD_NAME(val, name) \
-  case JXL_ENC_STAT_##val:  \
-    return name
-const char* JxlStatsName(JxlEncoderStatsKey key) {
-  switch (key) {
-    ADD_NAME(HEADER_BITS, "Header bits");
-    ADD_NAME(TOC_BITS, "TOC bits");
-    ADD_NAME(DICTIONARY_BITS, "Patch dictionary bits");
-    ADD_NAME(SPLINES_BITS, "Splines bits");
-    ADD_NAME(NOISE_BITS, "Noise bits");
-    ADD_NAME(QUANT_BITS, "Quantizer bits");
-    ADD_NAME(MODULAR_TREE_BITS, "Modular tree bits");
-    ADD_NAME(MODULAR_GLOBAL_BITS, "Modular global bits");
-    ADD_NAME(DC_BITS, "DC bits");
-    ADD_NAME(MODULAR_DC_GROUP_BITS, "Modular DC group bits");
-    ADD_NAME(CONTROL_FIELDS_BITS, "Control field bits");
-    ADD_NAME(COEF_ORDER_BITS, "Coeff order bits");
-    ADD_NAME(AC_HISTOGRAM_BITS, "AC histogram bits");
-    ADD_NAME(AC_BITS, "AC token bits");
-    ADD_NAME(MODULAR_AC_GROUP_BITS, "Modular AC group bits");
-    ADD_NAME(NUM_SMALL_BLOCKS, "Number of small blocks");
-    ADD_NAME(NUM_DCT4X8_BLOCKS, "Number of 4x8 blocks");
-    ADD_NAME(NUM_AFV_BLOCKS, "Number of AFV blocks");
-    ADD_NAME(NUM_DCT8_BLOCKS, "Number of 8x8 blocks");
-    ADD_NAME(NUM_DCT8X32_BLOCKS, "Number of 8x32 blocks");
-    ADD_NAME(NUM_DCT16_BLOCKS, "Number of 16x16 blocks");
-    ADD_NAME(NUM_DCT16X32_BLOCKS, "Number of 16x32 blocks");
-    ADD_NAME(NUM_DCT32_BLOCKS, "Number of 32x32 blocks");
-    ADD_NAME(NUM_DCT32X64_BLOCKS, "Number of 32x64 blocks");
-    ADD_NAME(NUM_DCT64_BLOCKS, "Number of 64x64 blocks");
-    ADD_NAME(NUM_BUTTERAUGLI_ITERS, "Butteraugli iters");
-    default:
-      return "";
-  };
-  return "";
-}
-#undef ADD_NAME
-
-void JxlStats::Print() const {
-  for (int i = 0; i < JXL_ENC_NUM_STATS; ++i) {
-    JxlEncoderStatsKey key = static_cast<JxlEncoderStatsKey>(i);
-    size_t value = JxlEncoderStatsGet(stats.get(), key);
-    if (value) printf("%-25s  %10" PRIuS "\n", JxlStatsName(key), value);
-  }
-}
 
 namespace {
 
@@ -198,7 +150,6 @@ void BenchmarkStats::Assimilate(const BenchmarkStats& victim) {
   distances.insert(distances.end(), victim.distances.begin(),
                    victim.distances.end());
   total_errors += victim.total_errors;
-  jxl_stats.Assimilate(victim.jxl_stats);
   if (extra_metrics.size() < victim.extra_metrics.size()) {
     extra_metrics.resize(victim.extra_metrics.size());
   }
@@ -208,9 +159,6 @@ void BenchmarkStats::Assimilate(const BenchmarkStats& victim) {
 }
 
 void BenchmarkStats::PrintMoreStats() const {
-  if (Args()->print_more_stats) {
-    jxl_stats.Print();
-  }
   if (Args()->print_distance_percentiles) {
     std::vector<float> sorted = distances;
     std::sort(sorted.begin(), sorted.end());
