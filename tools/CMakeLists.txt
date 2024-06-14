@@ -212,15 +212,13 @@ if(JPEGXL_ENABLE_DEVTOOLS)
   add_executable(jxl_from_tree jxl_from_tree.cc)
   add_executable(icc_simplify icc_simplify.cc)
 
-  if(JPEGXL_ENABLE_JPEGLI)
-    list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
-    add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
-    target_link_libraries(jpegli_dec_fuzzer_corpus
-      jpegli-static
-      jxl_tool
-      jxl_threads
-    )
-  endif()
+  list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
+  add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
+  target_link_libraries(jpegli_dec_fuzzer_corpus
+    jpegli-static
+    jxl_tool
+    jxl_threads
+  )
 endif()  # JPEGXL_ENABLE_DEVTOOLS
 
 # Benchmark tools.
@@ -333,24 +331,8 @@ endforeach()
 install(TARGETS ${TOOL_BINARIES} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 message(STATUS "Building tools: ${TOOL_BINARIES}")
 
-# djxl_fuzzer builds even when not JPEGXL_ENABLE_TOOLS
-set(FUZZER_BINARIES djxl_fuzzer)
-if(JPEGXL_ENABLE_TOOLS)
-  list(APPEND FUZZER_BINARIES
-    color_encoding_fuzzer
-    decode_basic_info_fuzzer
-    cjxl_fuzzer
-    streaming_fuzzer
-    icc_codec_fuzzer
-    fields_fuzzer
-    rans_fuzzer
-    set_from_bytes_fuzzer
-    transforms_fuzzer
-  )
-if(JPEGXL_ENABLE_JPEGLI)
-  list(APPEND FUZZER_BINARIES jpegli_dec_fuzzer)
-endif()
-endif()
+# jpegli_dec_fuzzer builds even when not JPEGXL_ENABLE_TOOLS
+set(FUZZER_BINARIES jpegli_dec_fuzzer)
 
 # Fuzzers.
 foreach(FUZZER IN LISTS FUZZER_BINARIES)
@@ -366,12 +348,7 @@ foreach(FUZZER IN LISTS FUZZER_BINARIES)
         "fuzzer_stub.cc" "${FUZZER}.cc")
   endif()  # JPEGXL_ENABLE_FUZZERS
   target_include_directories("${BINARY}" PRIVATE "${CMAKE_SOURCE_DIR}")
-  if(FUZZER STREQUAL djxl_fuzzer)
-    target_link_libraries("${BINARY}"
-      jxl_dec-internal
-      jxl_threads
-    )
-  elseif(FUZZER STREQUAL jpegli_dec_fuzzer)
+  if(FUZZER STREQUAL jpegli_dec_fuzzer)
     target_link_libraries("${BINARY}" jpegli-static)
   else()
     target_link_libraries("${BINARY}"
