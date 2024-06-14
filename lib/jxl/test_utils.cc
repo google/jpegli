@@ -31,7 +31,6 @@
 #include "lib/jxl/enc_cache.h"
 #include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_fields.h"
-#include "lib/jxl/enc_frame.h"
 #include "lib/jxl/enc_icc_codec.h"
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/frame_header.h"
@@ -584,110 +583,6 @@ Status ReadICC(BitReader* JXL_RESTRICT reader,
   JXL_RETURN_IF_ERROR(icc_reader.Init(reader, output_limit));
   JXL_RETURN_IF_ERROR(icc_reader.Process(reader, &icc_buffer));
   Bytes(icc_buffer).AppendTo(*icc);
-  return true;
-}
-
-namespace {  // For EncodeFile
-Status PrepareCodecMetadataFromIO(const CompressParams& cparams,
-                                  const CodecInOut* io,
-                                  CodecMetadata* metadata) {
-  *metadata = io->metadata;
-  size_t ups = 1;
-  if (cparams.already_downsampled) ups = cparams.resampling;
-
-  JXL_RETURN_IF_ERROR(metadata->size.Set(io->xsize() * ups, io->ysize() * ups));
-
-  // Keep ICC profile in lossless modes because a reconstructed profile may be
-  // slightly different (quantization).
-  // Also keep ICC in JPEG reconstruction mode as we need byte-exact profiles.
-  if (!cparams.IsLossless() && !io->Main().IsJPEG() && cparams.cms_set) {
-    metadata->m.color_encoding.DecideIfWantICC(cparams.cms);
-  }
-
-  metadata->m.xyb_encoded =
-      cparams.color_transform == ColorTransform::kXYB ? true : false;
-
-  // TODO(firsching): move this EncodeFile to test_utils / re-implement this
-  // using API functions
-  return true;
-}
-
-Status EncodePreview(const CompressParams& cparams, const ImageBundle& ib,
-                     const CodecMetadata* metadata, const JxlCmsInterface& cms,
-                     ThreadPool* pool, BitWriter* JXL_RESTRICT writer) {
-  BitWriter preview_writer;
-  // TODO(janwas): also support generating preview by downsampling
-  if (ib.HasColor()) {
-    AuxOut aux_out;
-    // TODO(lode): check if we want all extra channels and matching xyb_encoded
-    // for the preview, such that using the main ImageMetadata object for
-    // encoding this frame is warrented.
-    FrameInfo frame_info;
-    frame_info.is_preview = true;
-    JXL_RETURN_IF_ERROR(EncodeFrame(cparams, frame_info, metadata, ib, cms,
-                                    pool, &preview_writer, &aux_out));
-    preview_writer.ZeroPadToByte();
-  }
-
-  if (preview_writer.BitsWritten() != 0) {
-    writer->ZeroPadToByte();
-    writer->AppendByteAligned(preview_writer);
-  }
-
-  return true;
-}
-
-}  // namespace
-
-Status EncodeFile(const CompressParams& params, const CodecInOut* io,
-                  std::vector<uint8_t>* compressed, ThreadPool* pool) {
-  compressed->clear();
-  const JxlCmsInterface& cms = *JxlGetDefaultCms();
-  io->CheckMetadata();
-  BitWriter writer;
-
-  CompressParams cparams = params;
-  if (io->Main().color_transform != ColorTransform::kNone) {
-    // Set the color transform to YCbCr or XYB if the original image is such.
-    cparams.color_transform = io->Main().color_transform;
-  }
-
-  JXL_RETURN_IF_ERROR(ParamsPostInit(&cparams));
-
-  std::unique_ptr<CodecMetadata> metadata = jxl::make_unique<CodecMetadata>();
-  JXL_RETURN_IF_ERROR(PrepareCodecMetadataFromIO(cparams, io, metadata.get()));
-  JXL_RETURN_IF_ERROR(
-      WriteCodestreamHeaders(metadata.get(), &writer, /*aux_out*/ nullptr));
-
-  // Only send ICC (at least several hundred bytes) if fields aren't enough.
-  if (metadata->m.color_encoding.WantICC()) {
-    JXL_RETURN_IF_ERROR(WriteICC(metadata->m.color_encoding.ICC(), &writer,
-                                 kLayerHeader, /* aux_out */ nullptr));
-  }
-
-  if (metadata->m.have_preview) {
-    JXL_RETURN_IF_ERROR(EncodePreview(cparams, io->preview_frame,
-                                      metadata.get(), cms, pool, &writer));
-  }
-
-  // Each frame should start on byte boundaries.
-  BitWriter::Allotment allotment(&writer, 8);
-  writer.ZeroPadToByte();
-  allotment.ReclaimAndCharge(&writer, kLayerHeader, /* aux_out */ nullptr);
-
-  for (size_t i = 0; i < io->frames.size(); i++) {
-    FrameInfo info;
-    info.is_last = i == io->frames.size() - 1;
-    if (io->frames[i].use_for_next_frame) {
-      info.save_as_reference = 1;
-    }
-    JXL_RETURN_IF_ERROR(EncodeFrame(cparams, info, metadata.get(),
-                                    io->frames[i], cms, pool, &writer,
-                                    /* aux_out */ nullptr));
-  }
-
-  PaddedBytes output = std::move(writer).TakeBytes();
-  Bytes(output).AppendTo(*compressed);
   return true;
 }
 
