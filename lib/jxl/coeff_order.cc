@@ -18,8 +18,6 @@
 #include "lib/jxl/dec_bit_reader.h"
 #include "lib/jxl/entropy_coder.h"
 #include "lib/jxl/lehmer_code.h"
-#include "lib/jxl/modular/encoding/encoding.h"
-#include "lib/jxl/modular/modular_image.h"
 
 namespace jxl {
 

@@ -126,8 +126,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
   jxl/common.h
-  jxl/compressed_dc.cc
-  jxl/compressed_dc.h
   jxl/convolve-inl.h
   jxl/convolve.h
   jxl/convolve_separable5.cc
@@ -177,29 +175,10 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/image_ops.h
   jxl/inverse_mtf-inl.h
   jxl/lehmer_code.h
-  jxl/loop_filter.cc
-  jxl/loop_filter.h
   jxl/luminance.cc
   jxl/luminance.h
   jxl/memory_manager_internal.cc
   jxl/memory_manager_internal.h
-  jxl/modular/encoding/context_predict.h
-  jxl/modular/encoding/dec_ma.cc
-  jxl/modular/encoding/dec_ma.h
-  jxl/modular/encoding/encoding.cc
-  jxl/modular/encoding/encoding.h
-  jxl/modular/encoding/ma_common.h
-  jxl/modular/modular_image.cc
-  jxl/modular/modular_image.h
-  jxl/modular/options.h
-  jxl/modular/transform/palette.cc
-  jxl/modular/transform/palette.h
-  jxl/modular/transform/rct.cc
-  jxl/modular/transform/rct.h
-  jxl/modular/transform/squeeze.cc
-  jxl/modular/transform/squeeze.h
-  jxl/modular/transform/transform.cc
-  jxl/modular/transform/transform.h
   jxl/noise.h
   jxl/opsin_params.cc
   jxl/opsin_params.h

@@ -419,9 +419,6 @@ Status FrameHeader::VisitFields(Visitor* JXL_RESTRICT visitor) {
 
   JXL_QUIET_RETURN_IF_ERROR(VisitNameString(visitor, &name));
 
-  loop_filter.nonserialized_is_modular = is_modular;
-  JXL_RETURN_IF_ERROR(visitor->VisitNested(&loop_filter));
-
   JXL_QUIET_RETURN_IF_ERROR(visitor->BeginExtensions(&extensions));
   // Extensions: in chronological order of being added to the format.
   return visitor->EndExtensions();
@@ -481,8 +478,6 @@ std::string FrameHeader::DebugString() const {
     }
   }
   if (upsampling > 1) os << ",up=" << upsampling;
-  if (loop_filter.gab) os << ",Gaborish";
-  if (loop_filter.epf_iters > 0) os << ",epf=" << loop_filter.epf_iters;
   if (animation_frame.duration > 0) os << ",dur=" << animation_frame.duration;
   if (frame_type == FrameType::kRegularFrame ||
       frame_type == FrameType::kSkipProgressive) {
