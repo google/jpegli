@@ -15,7 +15,6 @@
 #include "lib/jxl/cms/opsin_params.h"
 #include "lib/jxl/fields.h"
 #include "lib/jxl/frame_header.h"
-#include "lib/jxl/quantizer.h"
 
 namespace jxl {
 BitDepth::BitDepth() { Bundle::Init(this); }
@@ -363,14 +362,6 @@ Status OpsinInverseMatrix::VisitFields(Visitor* JXL_RESTRICT visitor) {
       JXL_QUIET_RETURN_IF_ERROR(
           visitor->F16(default_inverse[j][i], &inverse_matrix[j][i]));
     }
-  }
-  for (int i = 0; i < 3; ++i) {
-    JXL_QUIET_RETURN_IF_ERROR(visitor->F16(
-        jxl::cms::kNegOpsinAbsorbanceBiasRGB[i], &opsin_biases[i]));
-  }
-  for (int i = 0; i < 4; ++i) {
-    JXL_QUIET_RETURN_IF_ERROR(
-        visitor->F16(kDefaultQuantBias[i], &quant_biases[i]));
   }
   return true;
 }

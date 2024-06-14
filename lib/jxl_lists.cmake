@@ -157,10 +157,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/headers.h
   jxl/huffman_table.cc
   jxl/huffman_table.h
-  jxl/icc_codec.cc
-  jxl/icc_codec.h
-  jxl/icc_codec_common.cc
-  jxl/icc_codec_common.h
   jxl/image.cc
   jxl/image.h
   jxl/image_bundle.cc
@@ -173,15 +169,8 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/lehmer_code.h
   jxl/luminance.cc
   jxl/luminance.h
-  jxl/noise.h
-  jxl/opsin_params.cc
-  jxl/opsin_params.h
   jxl/pack_signed.h
   jxl/padded_bytes.h
-  jxl/quant_weights.cc
-  jxl/quant_weights.h
-  jxl/quantizer.cc
-  jxl/quantizer.h
   jxl/sanitizers.h
   jxl/simd_util-inl.h
   jxl/simd_util.cc

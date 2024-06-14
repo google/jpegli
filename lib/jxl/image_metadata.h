@@ -141,8 +141,6 @@ struct OpsinInverseMatrix : public Fields {
   mutable bool all_default;
 
   Matrix3x3 inverse_matrix;
-  float opsin_biases[3];
-  float quant_biases[4];
 };
 
 // Information useful for mapping HDR images to lower dynamic range displays.
