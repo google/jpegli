@@ -145,9 +145,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/dec_external_image.h
   jxl/dec_huffman.cc
   jxl/dec_huffman.h
-  jxl/dec_xyb-inl.h
-  jxl/dec_xyb.cc
-  jxl/dec_xyb.h
   jxl/entropy_coder.cc
   jxl/entropy_coder.h
   jxl/field_encodings.h
@@ -202,14 +199,10 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/enc_comparator.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
-  jxl/enc_fields.cc
-  jxl/enc_fields.h
   jxl/enc_image_bundle.cc
   jxl/enc_image_bundle.h
   jxl/enc_xyb.cc
   jxl/enc_xyb.h
-  jxl/jpeg/enc_jpeg_data.cc
-  jxl/jpeg/enc_jpeg_data.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
