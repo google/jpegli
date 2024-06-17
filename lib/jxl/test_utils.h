@@ -121,12 +121,6 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
                           ThreadPool* pool = nullptr);
 
-float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms, ImageF* distmap = nullptr,
-                          ThreadPool* pool = nullptr,
-                          bool ignore_alpha = false);
-
 float ButteraugliDistance(const std::vector<ImageBundle>& frames0,
                           const std::vector<ImageBundle>& frames1,
                           const ButteraugliParams& params,

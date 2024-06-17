@@ -233,8 +233,8 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       params.intensity_target = 80.0;
 
       const JxlCmsInterface& cms = *JxlGetDefaultCms();
-      JXL_CHECK(ComputeScore(ib1, ib2, params, cms, &distance, &distmap,
-                             inner_pool, codec->IgnoreAlpha()));
+      distance = ButteraugliDistance(ib1, ib2, params, cms, &distmap,
+                                     inner_pool, codec->IgnoreAlpha());
     } else {
       // TODO(veluca): re-upsample and compute proper distance.
       distance = 1e+4f;
