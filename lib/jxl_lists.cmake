@@ -95,18 +95,7 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
   extras/enc/pnm.h
 )
 
-set(JPEGXL_INTERNAL_DEC_JPEG_SOURCES
-  jxl/jpeg/dec_jpeg_data.cc
-  jxl/jpeg/dec_jpeg_data.h
-  jxl/jpeg/dec_jpeg_output_chunk.h
-  jxl/jpeg/dec_jpeg_serialization_state.h
-  jxl/jpeg/jpeg_data.cc
-  jxl/jpeg/jpeg_data.h
-)
-
 set(JPEGXL_INTERNAL_DEC_SOURCES
-  jxl/alpha.cc
-  jxl/alpha.h
   jxl/cache_aligned.cc
   jxl/cache_aligned.h
   jxl/color_encoding_internal.cc
