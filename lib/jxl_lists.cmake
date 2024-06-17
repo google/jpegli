@@ -113,12 +113,8 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/field_encodings.h
   jxl/fields.cc
   jxl/fields.h
-  jxl/frame_dimensions.h
-  jxl/headers.cc
-  jxl/headers.h
   jxl/image.cc
   jxl/image.h
-  jxl/image_ops.cc
   jxl/image_ops.h
   jxl/pack_signed.h
   jxl/padded_bytes.h

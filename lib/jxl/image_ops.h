@@ -17,7 +17,6 @@
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/frame_dimensions.h"
 #include "lib/jxl/image.h"
 
 namespace jxl {
@@ -286,15 +285,6 @@ void ZeroFillImage(Image3<T>* image) {
     }
   }
 }
-
-// Same as above, but operates in-place. Assumes that the `in` image was
-// allocated large enough.
-void PadImageToBlockMultipleInPlace(Image3F* JXL_RESTRICT in,
-                                    size_t block_dim = kBlockDim);
-
-// Downsamples an image by a given factor.
-StatusOr<Image3F> DownsampleImage(const Image3F& opsin, size_t factor);
-StatusOr<ImageF> DownsampleImage(const ImageF& image, size_t factor);
 
 }  // namespace jxl
 

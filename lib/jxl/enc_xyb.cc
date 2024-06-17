@@ -323,67 +323,6 @@ void ToXYB(const ColorEncoding& c_current, float intensity_target,
   JXL_CHECK(LinearSRGBToXYB(premul_absorb, pool, image));
 }
 
-// Transform RGB to YCbCr.
-// Could be performed in-place (i.e. Y, Cb and Cr could alias R, B and B).
-Status RgbToYcbcr(const ImageF& r_plane, const ImageF& g_plane,
-                  const ImageF& b_plane, ImageF* y_plane, ImageF* cb_plane,
-                  ImageF* cr_plane, ThreadPool* pool) {
-  const HWY_FULL(float) df;
-  const size_t S = Lanes(df);  // Step.
-
-  const size_t xsize = r_plane.xsize();
-  const size_t ysize = r_plane.ysize();
-  if ((xsize == 0) || (ysize == 0)) return true;
-
-  // Full-range BT.601 as defined by JFIF Clause 7:
-  // https://www.itu.int/rec/T-REC-T.871-201105-I/en
-  const auto k128 = Set(df, 128.0f / 255);
-  const auto kR = Set(df, 0.299f);  // NTSC luma
-  const auto kG = Set(df, 0.587f);
-  const auto kB = Set(df, 0.114f);
-  const auto kAmpR = Set(df, 0.701f);
-  const auto kAmpB = Set(df, 0.886f);
-  const auto kDiffR = Add(kAmpR, kR);
-  const auto kDiffB = Add(kAmpB, kB);
-  const auto kNormR = Div(Set(df, 1.0f), (Add(kAmpR, Add(kG, kB))));
-  const auto kNormB = Div(Set(df, 1.0f), (Add(kR, Add(kG, kAmpB))));
-
-  constexpr size_t kGroupArea = kGroupDim * kGroupDim;
-  const size_t lines_per_group = DivCeil(kGroupArea, xsize);
-  const size_t num_stripes = DivCeil(ysize, lines_per_group);
-  const auto transform = [&](int idx, int /* thread*/) {
-    const size_t y0 = idx * lines_per_group;
-    const size_t y1 = std::min<size_t>(y0 + lines_per_group, ysize);
-    for (size_t y = y0; y < y1; ++y) {
-      const float* r_row = r_plane.ConstRow(y);
-      const float* g_row = g_plane.ConstRow(y);
-      const float* b_row = b_plane.ConstRow(y);
-      float* y_row = y_plane->Row(y);
-      float* cb_row = cb_plane->Row(y);
-      float* cr_row = cr_plane->Row(y);
-      for (size_t x = 0; x < xsize; x += S) {
-        const auto r = Load(df, r_row + x);
-        const auto g = Load(df, g_row + x);
-        const auto b = Load(df, b_row + x);
-        const auto r_base = Mul(r, kR);
-        const auto r_diff = Mul(r, kDiffR);
-        const auto g_base = Mul(g, kG);
-        const auto b_base = Mul(b, kB);
-        const auto b_diff = Mul(b, kDiffB);
-        const auto y_base = Add(r_base, Add(g_base, b_base));
-        const auto y_vec = Sub(y_base, k128);
-        const auto cb_vec = Mul(Sub(b_diff, y_base), kNormB);
-        const auto cr_vec = Mul(Sub(r_diff, y_base), kNormR);
-        Store(y_vec, df, y_row + x);
-        Store(cb_vec, df, cb_row + x);
-        Store(cr_vec, df, cr_row + x);
-      }
-    }
-  };
-  return RunOnPool(pool, 0, static_cast<int>(num_stripes), ThreadPool::NoInit,
-                   transform, "RgbToYcbCr");
-}
-
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
 }  // namespace jxl
@@ -431,14 +370,6 @@ void ScaleXYB(Image3F* opsin) {
     float* row2 = opsin->PlaneRow(2, y);
     ScaleXYBRow(row0, row1, row2, opsin->xsize());
   }
-}
-
-HWY_EXPORT(RgbToYcbcr);
-Status RgbToYcbcr(const ImageF& r_plane, const ImageF& g_plane,
-                  const ImageF& b_plane, ImageF* y_plane, ImageF* cb_plane,
-                  ImageF* cr_plane, ThreadPool* pool) {
-  return HWY_DYNAMIC_DISPATCH(RgbToYcbcr)(r_plane, g_plane, b_plane, y_plane,
-                                          cb_plane, cr_plane, pool);
 }
 
 }  // namespace jxl
