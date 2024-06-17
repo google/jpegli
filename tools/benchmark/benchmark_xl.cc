@@ -40,7 +40,6 @@
 #include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_butteraugli_comparator.h"
-#include "lib/jxl/enc_comparator.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_ops.h"
@@ -66,7 +65,6 @@ using ::jxl::ColorEncoding;
 using ::jxl::Image3F;
 using ::jxl::ImageBundle;
 using ::jxl::ImageF;
-using ::jxl::JxlButteraugliComparator;
 using ::jxl::Rng;
 using ::jxl::Status;
 using ::jxl::ThreadPool;
@@ -235,8 +233,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       params.intensity_target = 80.0;
 
       const JxlCmsInterface& cms = *JxlGetDefaultCms();
-      JxlButteraugliComparator comparator(params, cms);
-      JXL_CHECK(ComputeScore(ib1, ib2, &comparator, cms, &distance, &distmap,
+      JXL_CHECK(ComputeScore(ib1, ib2, params, cms, &distance, &distmap,
                              inner_pool, codec->IgnoreAlpha()));
     } else {
       // TODO(veluca): re-upsample and compute proper distance.
