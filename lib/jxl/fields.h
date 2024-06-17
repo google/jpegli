@@ -16,86 +16,11 @@
 
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/dec_bit_reader.h"
 #include "lib/jxl/field_encodings.h"
 
 namespace jxl {
 
-struct AuxOut;
-struct BitWriter;
-
 // Integer coders: BitsCoder (raw), U32Coder (table), U64Coder (varint).
-
-// Reads/writes a given (fixed) number of bits <= 32.
-namespace BitsCoder {
-size_t MaxEncodedBits(size_t bits);
-
-Status CanEncode(size_t bits, uint32_t value,
-                 size_t* JXL_RESTRICT encoded_bits);
-
-uint32_t Read(size_t bits, BitReader* JXL_RESTRICT reader);
-
-// Returns false if the value is too large to encode.
-Status Write(size_t bits, uint32_t value, BitWriter* JXL_RESTRICT writer);
-}  // namespace BitsCoder
-
-// Encodes u32 using a lookup table and/or extra bits, governed by a per-field
-// encoding `enc` which consists of four distributions `d` chosen via a 2-bit
-// selector (least significant = 0). Each d may have two modes:
-// - direct: if d.IsDirect(), the value is d.Direct();
-// - offset: the value is derived from d.ExtraBits() extra bits plus d.Offset();
-// This encoding is denser than Exp-Golomb or Gamma codes when both small and
-// large values occur.
-//
-// Examples:
-// Direct: U32Enc(Val(8), Val(16), Val(32), Bits(6)), value 32 => 10b.
-// Offset: U32Enc(Val(0), BitsOffset(1, 1), BitsOffset(2, 3), BitsOffset(8, 8))
-//   defines the following prefix code:
-//   00 -> 0
-//   01x -> 1..2
-//   10xx -> 3..7
-//   11xxxxxxxx -> 8..263
-namespace U32Coder {
-size_t MaxEncodedBits(U32Enc enc);
-Status CanEncode(U32Enc enc, uint32_t value, size_t* JXL_RESTRICT encoded_bits);
-uint32_t Read(U32Enc enc, BitReader* JXL_RESTRICT reader);
-
-// Returns false if the value is too large to encode.
-Status Write(U32Enc enc, uint32_t value, BitWriter* JXL_RESTRICT writer);
-
-// "private"
-Status ChooseSelector(U32Enc enc, uint32_t value,
-                      uint32_t* JXL_RESTRICT selector,
-                      size_t* JXL_RESTRICT total_bits);
-}  // namespace U32Coder
-
-// Encodes 64-bit unsigned integers with a fixed distribution, taking 2 bits
-// to encode 0, 6 bits to encode 1 to 16, 10 bits to encode 17 to 272, 15 bits
-// to encode up to 4095, and on the order of log2(value) * 1.125 bits for
-// larger values.
-namespace U64Coder {
-constexpr size_t MaxEncodedBits() { return 2 + 12 + 6 * (8 + 1) + (4 + 1); }
-
-uint64_t Read(BitReader* JXL_RESTRICT reader);
-
-// Returns false if the value is too large to encode.
-Status Write(uint64_t value, BitWriter* JXL_RESTRICT writer);
-
-// Can always encode, but useful because it also returns bit size.
-Status CanEncode(uint64_t value, size_t* JXL_RESTRICT encoded_bits);
-}  // namespace U64Coder
-
-// IEEE 754 half-precision (binary16). Refuses to read/write NaN/Inf.
-namespace F16Coder {
-constexpr size_t MaxEncodedBits() { return 16; }
-
-// Returns false if the bit representation is NaN or infinity
-Status Read(BitReader* JXL_RESTRICT reader, float* JXL_RESTRICT value);
-
-// Returns false if the value is too large to encode.
-Status Write(float value, BitWriter* JXL_RESTRICT writer);
-Status CanEncode(float value, size_t* JXL_RESTRICT encoded_bits);
-}  // namespace F16Coder
 
 // A "bundle" is a forward- and backward compatible collection of fields.
 // They are used for SizeHeader/FrameHeader/GroupHeader. Bundles can be
@@ -162,26 +87,6 @@ void SetDefault(Fields* JXL_RESTRICT fields);
 // Returns whether ALL fields (including `extensions`, if present) are equal
 // to their default value.
 bool AllDefault(const Fields& fields);
-
-// Returns max number of bits required to encode a T.
-size_t MaxBits(const Fields& fields);
-
-// Returns whether a header's fields can all be encoded, i.e. they have a
-// valid representation. If so, "*total_bits" is the exact number of bits
-// required. Called by Write.
-Status CanEncode(const Fields& fields, size_t* JXL_RESTRICT extension_bits,
-                 size_t* JXL_RESTRICT total_bits);
-
-Status Read(BitReader* reader, Fields* JXL_RESTRICT fields);
-
-// Returns whether enough bits are available to fully read this bundle using
-// Read. Also returns true in case of a codestream error (other than not being
-// large enough): that means enough bits are available to determine there's an
-// error, use Read to get such error status.
-// NOTE: this advances the BitReader, a different one pointing back at the
-// original bit position in the codestream must be created to use Read after
-// this.
-bool CanRead(BitReader* reader, Fields* JXL_RESTRICT fields);
 
 }  // namespace Bundle
 
@@ -362,8 +267,6 @@ class VisitorBase : public Visitor {
   ExtensionStates extension_states_;
 };
 }  // namespace fields_internal
-
-Status CheckHasEnoughBits(Visitor* visitor, size_t bits);
 
 }  // namespace jxl
 
