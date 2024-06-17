@@ -217,12 +217,6 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
   float distance = 1.0f;
 
   if (valid && !skip_butteraugli) {
-    CodecInOut ppf_io;
-    JXL_CHECK(ConvertPackedPixelFileToCodecInOut(ppf, inner_pool, &ppf_io));
-    CodecInOut ppf2_io;
-    JXL_CHECK(ConvertPackedPixelFileToCodecInOut(ppf2, inner_pool, &ppf2_io));
-    const ImageBundle& ib1 = ppf_io.Main();
-    const ImageBundle& ib2 = ppf2_io.Main();
     if (jxl::SameSize(ppf, ppf2)) {
       ButteraugliParams params;
       // Hack the default intensity target value to be 80.0, the intensity
@@ -247,7 +241,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     s->distance_p_norm +=
         ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm) *
         input_pixels;
-    JXL_ASSIGN_OR_DIE(Msssim msssim, ComputeSSIMULACRA2(ib1, ib2));
+    JXL_ASSIGN_OR_DIE(Msssim msssim, ComputeSSIMULACRA2(ppf, ppf2));
     s->ssimulacra2 += msssim.Score() * input_pixels;
     s->max_distance = std::max(s->max_distance, distance);
     s->distances.push_back(distance);
