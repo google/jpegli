@@ -37,7 +37,6 @@
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/cache_aligned.h"
-#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
@@ -59,7 +58,6 @@ namespace {
 
 using ::jxl::ButteraugliParams;
 using ::jxl::Bytes;
-using ::jxl::CodecInOut;
 using ::jxl::ColorEncoding;
 using ::jxl::Image3F;
 using ::jxl::ImageBundle;

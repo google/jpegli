@@ -111,7 +111,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/alpha.h
   jxl/cache_aligned.cc
   jxl/cache_aligned.h
-  jxl/codec_in_out.h
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
   jxl/common.h

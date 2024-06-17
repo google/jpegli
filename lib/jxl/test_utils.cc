@@ -24,7 +24,6 @@
 #include "lib/jxl/base/float.h"
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/frame_header.h"
@@ -112,25 +111,6 @@ std::vector<ColorEncodingDescriptor> AllEncodings() {
   }
 
   return all_encodings;
-}
-
-jxl::CodecInOut SomeTestImageToCodecInOut(const std::vector<uint8_t>& buf,
-                                          size_t num_channels, size_t xsize,
-                                          size_t ysize) {
-  jxl::CodecInOut io;
-  io.SetSize(xsize, ysize);
-  io.metadata.m.SetAlphaBits(16);
-  io.metadata.m.color_encoding = jxl::ColorEncoding::SRGB(
-      /*is_gray=*/num_channels == 1 || num_channels == 2);
-  JxlPixelFormat format = {static_cast<uint32_t>(num_channels), JXL_TYPE_UINT16,
-                           JXL_BIG_ENDIAN, 0};
-  JXL_CHECK(ConvertFromExternal(
-      jxl::Bytes(buf.data(), buf.size()), xsize, ysize,
-      jxl::ColorEncoding::SRGB(/*is_gray=*/num_channels < 3),
-      /*bits_per_sample=*/16, format,
-      /*pool=*/nullptr,
-      /*ib=*/&io.Main()));
-  return io;
 }
 
 bool Near(double expected, double value, double max_dist) {
