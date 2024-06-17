@@ -107,7 +107,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/convolve_slow.cc
   jxl/convolve_symmetric3.cc
   jxl/convolve_symmetric5.cc
-  jxl/dec_bit_reader.h
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
   jxl/field_encodings.h
@@ -127,8 +126,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/butteraugli/butteraugli.cc
   jxl/butteraugli/butteraugli.h
-  jxl/enc_bit_writer.cc
-  jxl/enc_bit_writer.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
   jxl/enc_image_bundle.cc
