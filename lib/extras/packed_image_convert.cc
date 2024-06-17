@@ -50,6 +50,44 @@ Status GetColorEncoding(const PackedPixelFile& ppf,
   return true;
 }
 
+float GetIntensityTarget(const extras::PackedPixelFile& ppf,
+                         const ColorEncoding& c_enc) {
+  if (ppf.info.intensity_target != 0) {
+    return ppf.info.intensity_target;
+  } else if (c_enc.Tf().IsPQ()) {
+    // Peak luminance of PQ as defined by SMPTE ST 2084:2014.
+    return 10000;
+  } else if (c_enc.Tf().IsHLG()) {
+    // Nominal display peak luminance used as a reference by
+    // Rec. ITU-R BT.2100-2.
+    return 1000;
+  } else {
+    // SDR
+    return kDefaultIntensityTarget;
+  }
+}
+
+Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
+                                       Image3F* color, ThreadPool* pool) {
+  JXL_RETURN_IF_ERROR(!ppf.frames.empty());
+  const extras::PackedImage& img = ppf.frames[0].color;
+  size_t bits_per_sample =
+      ppf.input_bitdepth.type == JXL_BIT_DEPTH_FROM_PIXEL_FORMAT
+      ? extras::PackedImage::BitsPerChannel(img.format.data_type)
+      : ppf.info.bits_per_sample;
+  for (size_t c = 0; c < ppf.info.num_color_channels; ++c) {
+    JXL_RETURN_IF_ERROR(ConvertFromExternal(
+        reinterpret_cast<const uint8_t*>(img.pixels()), img.pixels_size,
+        img.xsize, img.ysize, bits_per_sample, img.format, c, pool,
+        &color->Plane(c)));
+  }
+  if (ppf.info.num_color_channels == 1) {
+    CopyImageTo(color->Plane(0), &color->Plane(1));
+    CopyImageTo(color->Plane(0), &color->Plane(2));
+  }
+  return true;
+}
+
 Status ConvertPackedFrameToImageBundle(const JxlBasicInfo& info,
                                        const JxlBitDepth& input_bitdepth,
                                        const PackedFrame& frame,

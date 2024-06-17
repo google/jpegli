@@ -243,7 +243,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     s->psnr +=
         compressed->empty()
             ? 0
-            : jxl::ComputePSNR(ib1, ib2, *JxlGetDefaultCms()) * input_pixels;
+            : jxl::ComputePSNR(ppf, ppf2, *JxlGetDefaultCms()) * input_pixels;
     s->distance_p_norm +=
         ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm) *
         input_pixels;

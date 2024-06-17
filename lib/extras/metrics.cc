@@ -133,46 +133,54 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
   }
 }
 
-void ComputeSumOfSquares(const ImageBundle& ib1, const ImageBundle& ib2,
+void ComputeSumOfSquares(const extras::PackedPixelFile& a,
+                         const extras::PackedPixelFile& b,
                          const JxlCmsInterface& cms, double sum_of_squares[3]) {
+  const size_t xsize = a.xsize();
+  const size_t ysize = a.ysize();
+  const bool is_gray = a.info.num_color_channels == 1;
   // Convert to sRGB - closer to perception than linear.
-  const Image3F* srgb1 = &ib1.color();
-  Image3F copy1;
-  if (!ib1.IsSRGB()) {
-    JXL_CHECK(ApplyColorTransform(
-        ib1.c_current(), ib1.metadata()->IntensityTarget(), ib1.color(),
-        ib1.HasBlack() ? &ib1.black() : nullptr, Rect(ib1),
-        ColorEncoding::SRGB(ib1.IsGray()), cms, nullptr, &copy1));
-    srgb1 = &copy1;
-  }
-  const Image3F* srgb2 = &ib2.color();
-  Image3F copy2;
-  if (!ib2.IsSRGB()) {
-    JXL_CHECK(ApplyColorTransform(
-        ib2.c_current(), ib2.metadata()->IntensityTarget(), ib2.color(),
-        ib2.HasBlack() ? &ib2.black() : nullptr, Rect(ib2),
-        ColorEncoding::SRGB(ib2.IsGray()), cms, nullptr, &copy2));
-    srgb2 = &copy2;
-  }
+  ColorEncoding c_desired = ColorEncoding::SRGB(is_gray);
 
-  JXL_CHECK(SameSize(*srgb1, *srgb2));
+  JXL_ASSIGN_OR_DIE(Image3F srgb0, Image3F::Create(xsize, ysize));
+  JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &srgb0, nullptr));
+  JXL_ASSIGN_OR_DIE(Image3F srgb1, Image3F::Create(xsize, ysize));
+  JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &srgb1, nullptr));
+
+  ColorEncoding c_enc_a;
+  ColorEncoding c_enc_b;
+  JXL_CHECK(GetColorEncoding(a, &c_enc_a));
+  JXL_CHECK(GetColorEncoding(b, &c_enc_b));
+  float intensity_a = GetIntensityTarget(a, c_enc_a);
+  float intensity_b = GetIntensityTarget(b, c_enc_b);
+
+  if (!c_enc_a.SameColorEncoding(c_desired)) {
+    JXL_CHECK(ApplyColorTransform(
+        c_enc_a, intensity_a, srgb0, nullptr, Rect(srgb0), c_desired, cms,
+        nullptr, &srgb0));
+  }
+  if (!c_enc_b.SameColorEncoding(c_desired)) {
+    JXL_CHECK(ApplyColorTransform(
+        c_enc_b, intensity_b, srgb1, nullptr, Rect(srgb1), c_desired, cms,
+        nullptr, &srgb1));
+  }
 
   // TODO(veluca): SIMD.
   float yuvmatrix[3][3] = {{0.299, 0.587, 0.114},
                            {-0.14713, -0.28886, 0.436},
                            {0.615, -0.51499, -0.10001}};
-  for (size_t y = 0; y < srgb1->ysize(); ++y) {
+  for (size_t y = 0; y < ysize; ++y) {
+    const float* JXL_RESTRICT row0[3];
     const float* JXL_RESTRICT row1[3];
-    const float* JXL_RESTRICT row2[3];
     for (size_t j = 0; j < 3; j++) {
-      row1[j] = srgb1->ConstPlaneRow(j, y);
-      row2[j] = srgb2->ConstPlaneRow(j, y);
+      row0[j] = srgb0.ConstPlaneRow(j, y);
+      row1[j] = srgb1.ConstPlaneRow(j, y);
     }
-    for (size_t x = 0; x < srgb1->xsize(); ++x) {
+    for (size_t x = 0; x < xsize; ++x) {
       float cdiff[3] = {};
       // YUV conversion is linear, so we can run it on the difference.
       for (size_t j = 0; j < 3; j++) {
-        cdiff[j] = row1[j][x] - row2[j][x];
+        cdiff[j] = row0[j][x] - row1[j][x];
       }
       float yuvdiff[3] = {};
       for (size_t j = 0; j < 3; j++) {
@@ -239,44 +247,6 @@ float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
   return score;
 }
 
-Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
-                                       Image3F* color, ThreadPool* pool) {
-  JXL_RETURN_IF_ERROR(!ppf.frames.empty());
-  const extras::PackedImage& img = ppf.frames[0].color;
-  size_t bits_per_sample =
-      ppf.input_bitdepth.type == JXL_BIT_DEPTH_FROM_PIXEL_FORMAT
-      ? extras::PackedImage::BitsPerChannel(img.format.data_type)
-      : ppf.info.bits_per_sample;
-  for (size_t c = 0; c < ppf.info.num_color_channels; ++c) {
-    JXL_RETURN_IF_ERROR(ConvertFromExternal(
-        reinterpret_cast<const uint8_t*>(img.pixels()), img.pixels_size,
-        img.xsize, img.ysize, bits_per_sample, img.format, c, pool,
-        &color->Plane(c)));
-  }
-  if (ppf.info.num_color_channels == 1) {
-    CopyImageTo(color->Plane(0), &color->Plane(1));
-    CopyImageTo(color->Plane(0), &color->Plane(2));
-  }
-  return true;
-}
-
-float GetIntensityTarget(const extras::PackedPixelFile& ppf,
-                         const ColorEncoding& c_enc) {
-  if (ppf.info.intensity_target != 0) {
-    return ppf.info.intensity_target;
-  } else if (c_enc.Tf().IsPQ()) {
-    // Peak luminance of PQ as defined by SMPTE ST 2084:2014.
-    return 10000;
-  } else if (c_enc.Tf().IsHLG()) {
-    // Nominal display peak luminance used as a reference by
-    // Rec. ITU-R BT.2100-2.
-    return 1000;
-  } else {
-    // SDR
-    return kDefaultIntensityTarget;
-  }
-}
-
 }  // namespace
 
 float ButteraugliDistance(const extras::PackedPixelFile& a,
@@ -339,14 +309,22 @@ float Butteraugli3Norm(const extras::PackedPixelFile& a,
 }
 
 HWY_EXPORT(ComputeSumOfSquares);
-double ComputePSNR(const ImageBundle& ib1, const ImageBundle& ib2,
+double ComputePSNR(const extras::PackedPixelFile& a,
+                   const extras::PackedPixelFile& b,
                    const JxlCmsInterface& cms) {
-  if (!SameSize(ib1, ib2)) return 0.0;
+  if (a.xsize() != b.xsize() || a.ysize() != b.ysize()) {
+    fprintf(stderr, "Images must have the same size for PSNR.");
+    return 0.0;
+  }
+  if (a.info.num_color_channels != b.info.num_color_channels) {
+    fprintf(stderr, "Grayscale vs RGB comparison not supported.");
+    return 0.0;
+  }
   double sum_of_squares[3] = {};
-  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)(ib1, ib2, cms, sum_of_squares);
+  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)(a, b, cms, sum_of_squares);
   constexpr double kChannelWeights[3] = {6.0 / 8, 1.0 / 8, 1.0 / 8};
   double avg_psnr = 0;
-  const size_t input_pixels = ib1.xsize() * ib1.ysize();
+  const size_t input_pixels = a.xsize() * a.ysize();
   for (int i = 0; i < 3; ++i) {
     const double rmse = std::sqrt(sum_of_squares[i] / input_pixels);
     const double psnr =
