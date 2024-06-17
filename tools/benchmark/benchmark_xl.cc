@@ -231,8 +231,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       // TODO(szabadka) Support different intensity targets as well.
       params.intensity_target = 80.0;
 
-      const JxlCmsInterface& cms = *JxlGetDefaultCms();
-      distance = ButteraugliDistance(ib1, ib2, params, cms, &distmap,
+      distance = ButteraugliDistance(ppf, ppf2, params, &distmap,
                                      inner_pool, codec->IgnoreAlpha());
     } else {
       // TODO(veluca): re-upsample and compute proper distance.

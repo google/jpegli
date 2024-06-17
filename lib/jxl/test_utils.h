@@ -117,15 +117,6 @@ size_t ComparePixels(const uint8_t* a, const uint8_t* b, size_t xsize,
 double DistanceRMS(const uint8_t* a, const uint8_t* b, size_t xsize,
                    size_t ysize, const JxlPixelFormat& format);
 
-float ButteraugliDistance(const extras::PackedPixelFile& a,
-                          const extras::PackedPixelFile& b,
-                          ThreadPool* pool = nullptr,
-                          ImageF* distmap = nullptr);
-
-float Butteraugli3Norm(const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b,
-                       ThreadPool* pool = nullptr);
-
 class ThreadPoolForTests {
  public:
   explicit ThreadPoolForTests(int num_threads) {

@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "lib/extras/packed_image.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/image_bundle.h"
 
@@ -16,9 +17,9 @@ namespace jxl {
 
 // Computes the butteraugli distance and optionally the distmap of images in any
 // RGB color model, optionally with alpha channel.
-float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms,
+float ButteraugliDistance(const extras::PackedPixelFile& a,
+                          const extras::PackedPixelFile& b,
+                          ButteraugliParams params = ButteraugliParams(),
                           ImageF* distmap = nullptr,
                           ThreadPool* pool = nullptr,
                           bool ignore_alpha = false);
@@ -26,6 +27,10 @@ float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
 // Computes p-norm given the butteraugli distmap.
 double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
                         double p);
+
+float Butteraugli3Norm(const extras::PackedPixelFile& a,
+                       const extras::PackedPixelFile& b,
+                       ThreadPool* pool = nullptr);
 
 double ComputePSNR(const ImageBundle& ib1, const ImageBundle& ib2,
                    const JxlCmsInterface& cms);

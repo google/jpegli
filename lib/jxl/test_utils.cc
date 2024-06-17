@@ -392,25 +392,6 @@ double DistanceRMS(const uint8_t* a, const uint8_t* b, size_t xsize,
   return sqrt(sum);
 }
 
-float ButteraugliDistance(const extras::PackedPixelFile& a,
-                          const extras::PackedPixelFile& b, ThreadPool* pool,
-                          ImageF* distmap) {
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
-  // TODO(eustas): simplify?
-  return ButteraugliDistance(io0.frames[0], io1.frames[0], ButteraugliParams(),
-                             *JxlGetDefaultCms(), distmap, pool);
-}
-
-float Butteraugli3Norm(const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b, ThreadPool* pool) {
-  ImageF distmap;
-  ButteraugliDistance(a, b, pool, &distmap);
-  return ComputeDistanceP(distmap, ButteraugliParams(), 3);
-}
-
 }  // namespace test
 
 bool operator==(const jxl::Bytes& a, const jxl::Bytes& b) {
