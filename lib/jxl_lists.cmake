@@ -155,8 +155,6 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
   jxl/butteraugli/butteraugli.h
   jxl/enc_bit_writer.cc
   jxl/enc_bit_writer.h
-  jxl/enc_butteraugli_comparator.cc
-  jxl/enc_butteraugli_comparator.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
   jxl/enc_image_bundle.cc

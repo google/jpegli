@@ -119,13 +119,8 @@ double DistanceRMS(const uint8_t* a, const uint8_t* b, size_t xsize,
 
 float ButteraugliDistance(const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
-                          ThreadPool* pool = nullptr);
-
-float ButteraugliDistance(const std::vector<ImageBundle>& frames0,
-                          const std::vector<ImageBundle>& frames1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms, ImageF* distmap = nullptr,
-                          ThreadPool* pool = nullptr);
+                          ThreadPool* pool = nullptr,
+                          ImageF* distmap = nullptr);
 
 float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b,

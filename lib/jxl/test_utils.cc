@@ -25,7 +25,6 @@
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/codec_in_out.h"
-#include "lib/jxl/enc_butteraugli_comparator.h"
 #include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/frame_header.h"
@@ -394,28 +393,22 @@ double DistanceRMS(const uint8_t* a, const uint8_t* b, size_t xsize,
 }
 
 float ButteraugliDistance(const extras::PackedPixelFile& a,
-                          const extras::PackedPixelFile& b, ThreadPool* pool) {
+                          const extras::PackedPixelFile& b, ThreadPool* pool,
+                          ImageF* distmap) {
   CodecInOut io0;
   JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
   CodecInOut io1;
   JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
   // TODO(eustas): simplify?
   return ButteraugliDistance(io0.frames[0], io1.frames[0], ButteraugliParams(),
-                             *JxlGetDefaultCms(),
-                             /*distmap=*/nullptr, pool);
+                             *JxlGetDefaultCms(), distmap, pool);
 }
 
 float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b, ThreadPool* pool) {
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
-  ButteraugliParams ba;
   ImageF distmap;
-  ButteraugliDistance(io0.frames[0], io1.frames[0], ba, *JxlGetDefaultCms(),
-                      &distmap, pool);
-  return ComputeDistanceP(distmap, ba, 3);
+  ButteraugliDistance(a, b, pool, &distmap);
+  return ComputeDistanceP(distmap, ButteraugliParams(), 3);
 }
 
 }  // namespace test
