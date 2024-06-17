@@ -19,12 +19,14 @@
 #include <hwy/highway.h>
 
 #include "lib/extras/packed_image_convert.h"
+#include "lib/jxl/base/common.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_gamma_correct.h"
+#include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_image_bundle.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
@@ -236,6 +238,45 @@ float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
   }
   return score;
 }
+
+Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
+                                       Image3F* color, ThreadPool* pool) {
+  JXL_RETURN_IF_ERROR(!ppf.frames.empty());
+  const extras::PackedImage& img = ppf.frames[0].color;
+  size_t bits_per_sample =
+      ppf.input_bitdepth.type == JXL_BIT_DEPTH_FROM_PIXEL_FORMAT
+      ? extras::PackedImage::BitsPerChannel(img.format.data_type)
+      : ppf.info.bits_per_sample;
+  for (size_t c = 0; c < ppf.info.num_color_channels; ++c) {
+    JXL_RETURN_IF_ERROR(ConvertFromExternal(
+        reinterpret_cast<const uint8_t*>(img.pixels()), img.pixels_size,
+        img.xsize, img.ysize, bits_per_sample, img.format, c, pool,
+        &color->Plane(c)));
+  }
+  if (ppf.info.num_color_channels == 1) {
+    CopyImageTo(color->Plane(0), &color->Plane(1));
+    CopyImageTo(color->Plane(0), &color->Plane(2));
+  }
+  return true;
+}
+
+float GetIntensityTarget(const extras::PackedPixelFile& ppf,
+                         const ColorEncoding& c_enc) {
+  if (ppf.info.intensity_target != 0) {
+    return ppf.info.intensity_target;
+  } else if (c_enc.Tf().IsPQ()) {
+    // Peak luminance of PQ as defined by SMPTE ST 2084:2014.
+    return 10000;
+  } else if (c_enc.Tf().IsHLG()) {
+    // Nominal display peak luminance used as a reference by
+    // Rec. ITU-R BT.2100-2.
+    return 1000;
+  } else {
+    // SDR
+    return kDefaultIntensityTarget;
+  }
+}
+
 }  // namespace
 
 float ButteraugliDistance(const extras::PackedPixelFile& a,
@@ -252,89 +293,35 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
     return std::numeric_limits<float>::max();
   }
   const size_t xsize = a.xsize();
-  const size_t ysize = b.ysize();
+  const size_t ysize = a.ysize();
   const bool is_gray = a.info.num_color_channels == 1;
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
-
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
-  const ImageBundle& rgb0 = io0.frames[0];
-  const ImageBundle& rgb1 = io1.frames[0];
   const JxlCmsInterface& cms = *JxlGetDefaultCms();
+
+  JXL_ASSIGN_OR_DIE(Image3F rgb0, Image3F::Create(xsize, ysize));
+  JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &rgb0, pool));
+  JXL_ASSIGN_OR_DIE(Image3F rgb1, Image3F::Create(xsize, ysize));
+  JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &rgb1, pool));
 
   ColorEncoding c_enc_a;
   ColorEncoding c_enc_b;
   JXL_CHECK(GetColorEncoding(a, &c_enc_a));
   JXL_CHECK(GetColorEncoding(b, &c_enc_b));
+  float intensity_a = GetIntensityTarget(a, c_enc_a);
+  float intensity_b = GetIntensityTarget(b, c_enc_b);
 
-  JXL_ASSIGN_OR_DIE(Image3F linear_srgb0, Image3F::Create(xsize, ysize));
-  if (c_enc_a.SameColorEncoding(c_desired) && !rgb0.HasBlack()) {
-    CopyImageTo(rgb0.color(), &linear_srgb0);
-  } else{
+  if (!c_enc_a.SameColorEncoding(c_desired)) {
     JXL_CHECK(ApplyColorTransform(
-        c_enc_a, rgb0.metadata()->IntensityTarget(),
-        rgb0.color(), rgb0.HasBlack() ? &rgb0.black() : nullptr,
-        Rect(rgb0.color()), c_desired, cms, pool, &linear_srgb0));
+        c_enc_a, intensity_a, rgb0, nullptr, Rect(rgb0), c_desired, cms, pool,
+        &rgb0));
   }
-  JXL_ASSIGN_OR_DIE(Image3F linear_srgb1, Image3F::Create(xsize, ysize));
-  if (c_enc_b.SameColorEncoding(c_desired) && !rgb1.HasBlack()) {
-    CopyImageTo(rgb1.color(), &linear_srgb1);
-  } else{
+  if (!c_enc_b.SameColorEncoding(c_desired)) {
     JXL_CHECK(ApplyColorTransform(
-        c_enc_b, rgb1.metadata()->IntensityTarget(),
-        rgb1.color(), rgb1.HasBlack() ? &rgb1.black() : nullptr,
-        Rect(rgb1.color()), c_desired, cms, pool, &linear_srgb1));
+        c_enc_b, intensity_b, rgb1, nullptr, Rect(rgb1), c_desired, cms, pool,
+        &rgb1));
   }
 
-  // No alpha: skip blending, only need a single call to Butteraugli.
-  if (ignore_alpha || (!rgb0.HasAlpha() && !rgb1.HasAlpha())) {
-    return ComputeButteraugli(linear_srgb0, linear_srgb1, params, cms, distmap);
-  }
-
-  // Blend on black and white backgrounds
-
-  const float black = 0.0f;
-  const float white = 1.0f;
-  JXL_ASSIGN_OR_DIE(Image3F blended_black0, Image3F::Create(xsize, ysize));
-  JXL_ASSIGN_OR_DIE(Image3F blended_white0, Image3F::Create(xsize, ysize));
-  CopyImageTo(linear_srgb0, &blended_black0);
-  CopyImageTo(linear_srgb0, &blended_white0);
-  if (rgb0.HasAlpha()) {
-    AlphaBlend(black, rgb0.alpha(), &blended_black0);
-    AlphaBlend(white, rgb0.alpha(), &blended_white0);
-  }
-
-  JXL_ASSIGN_OR_DIE(Image3F blended_black1, Image3F::Create(xsize, ysize));
-  JXL_ASSIGN_OR_DIE(Image3F blended_white1, Image3F::Create(xsize, ysize));
-  CopyImageTo(linear_srgb1, &blended_black1);
-  CopyImageTo(linear_srgb1, &blended_white1);
-  if (rgb1.HasAlpha()) {
-    AlphaBlend(black, rgb1.alpha(), &blended_black1);
-    AlphaBlend(white, rgb1.alpha(), &blended_white1);
-  }
-
-  ImageF distmap_black;
-  ImageF distmap_white;
-  const float dist_black = ComputeButteraugli(
-      blended_black0, blended_black1, params, cms, &distmap_black);
-  const float dist_white = ComputeButteraugli(
-      blended_white0, blended_white1, params, cms, &distmap_white);
-
-  // distmap and return values are the max of distmap_black/white.
-  if (distmap != nullptr) {
-    JXL_ASSIGN_OR_DIE(*distmap, ImageF::Create(xsize, ysize));
-    for (size_t y = 0; y < ysize; ++y) {
-      const float* JXL_RESTRICT row_black = distmap_black.ConstRow(y);
-      const float* JXL_RESTRICT row_white = distmap_white.ConstRow(y);
-      float* JXL_RESTRICT row_out = distmap->Row(y);
-      for (size_t x = 0; x < xsize; ++x) {
-        row_out[x] = std::max(row_black[x], row_white[x]);
-      }
-    }
-  }
-  return std::max(dist_black, dist_white);
+  return ComputeButteraugli(rgb0, rgb1, params, cms, distmap);
 }
 
 HWY_EXPORT(ComputeDistanceP);
