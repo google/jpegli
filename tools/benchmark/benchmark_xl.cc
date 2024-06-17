@@ -39,7 +39,6 @@
 #include "lib/jxl/cache_aligned.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"
-#include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_ops.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec.h"
@@ -60,7 +59,6 @@ using ::jxl::ButteraugliParams;
 using ::jxl::Bytes;
 using ::jxl::ColorEncoding;
 using ::jxl::Image3F;
-using ::jxl::ImageBundle;
 using ::jxl::ImageF;
 using ::jxl::Rng;
 using ::jxl::Status;

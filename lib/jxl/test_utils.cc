@@ -28,7 +28,6 @@
 #include "lib/jxl/enc_params.h"
 #include "lib/jxl/frame_header.h"
 #include "lib/jxl/image.h"
-#include "lib/jxl/image_bundle.h"
 #include "lib/jxl/padded_bytes.h"
 
 #if !defined(TEST_DATA_PATH)

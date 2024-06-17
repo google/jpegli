@@ -40,6 +40,7 @@ Design:
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_xyb.h"
 #include "lib/jxl/image.h"
+#include "lib/jxl/image_ops.h"
 #include "lib/jxl/enc_image_bundle.h"
 #include "tools/gauss_blur.h"
 

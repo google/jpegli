@@ -24,7 +24,6 @@
 #include "lib/jxl/cms/transfer_functions-inl.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_image_bundle.h"
-#include "lib/jxl/image_bundle.h"
 #include "lib/jxl/image_ops.h"
 
 HWY_BEFORE_NAMESPACE();
@@ -398,15 +397,6 @@ void ToXYB(const ColorEncoding& c_current, float intensity_target,
            const JxlCmsInterface& cms, Image3F* const JXL_RESTRICT linear) {
   HWY_DYNAMIC_DISPATCH(ToXYB)
   (c_current, intensity_target, black, pool, image, cms, linear);
-}
-
-Status ToXYB(const ImageBundle& in, ThreadPool* pool, Image3F* JXL_RESTRICT xyb,
-             const JxlCmsInterface& cms, Image3F* JXL_RESTRICT linear) {
-  JXL_ASSIGN_OR_RETURN(*xyb, Image3F::Create(in.xsize(), in.ysize()));
-  CopyImageTo(in.color(), xyb);
-  ToXYB(in.c_current(), in.metadata()->IntensityTarget(),
-        in.HasBlack() ? &in.black() : nullptr, pool, xyb, cms, linear);
-  return true;
 }
 
 HWY_EXPORT(LinearRGBRowToXYB);
