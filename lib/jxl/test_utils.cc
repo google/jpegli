@@ -409,9 +409,8 @@ float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
                           const ButteraugliParams& params,
                           const JxlCmsInterface& cms, ImageF* distmap,
                           ThreadPool* pool, bool ignore_alpha) {
-  JxlButteraugliComparator comparator(params, cms);
   float distance;
-  JXL_CHECK(ComputeScore(rgb0, rgb1, &comparator, cms, &distance, distmap, pool,
+  JXL_CHECK(ComputeScore(rgb0, rgb1, params, cms, &distance, distmap, pool,
                          ignore_alpha));
   return distance;
 }
