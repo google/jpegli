@@ -25,7 +25,6 @@
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
-#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_params.h"
 
@@ -40,7 +39,6 @@
 namespace jxl {
 
 struct AuxOut;
-class CodecInOut;
 class PaddedBytes;
 struct PassesEncoderState;
 class ThreadPool;
@@ -80,12 +78,6 @@ static inline ::std::ostream& operator<<(::std::ostream& os,
 // ColorEncoding object call ColorEncodingFromDescriptor and then call
 // ColorEncoding::CreateProfile() on that object to generate a profile.
 std::vector<ColorEncodingDescriptor> AllEncodings();
-
-// Returns a CodecInOut based on the buf, xsize, ysize, and the assumption
-// that the buffer was created using `GetSomeTestImage`.
-jxl::CodecInOut SomeTestImageToCodecInOut(const std::vector<uint8_t>& buf,
-                                          size_t num_channels, size_t xsize,
-                                          size_t ysize);
 
 bool Near(double expected, double value, double max_dist);
 

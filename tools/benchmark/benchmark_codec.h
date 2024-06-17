@@ -19,7 +19,6 @@
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
-#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/image.h"
 #include "tools/args.h"
 #include "tools/benchmark/benchmark_args.h"
@@ -31,7 +30,6 @@
 namespace jpegxl {
 namespace tools {
 
-using ::jxl::CodecInOut;
 using ::jxl::Span;
 using ::jxl::extras::PackedPixelFile;
 
