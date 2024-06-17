@@ -7,8 +7,11 @@
 #include "lib/jxl/enc_butteraugli_comparator.h"
 
 #include "lib/jxl/base/status.h"
+#include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/enc_gamma_correct.h"
 #include "lib/jxl/enc_image_bundle.h"
+
+#include <memory>
 
 namespace jxl {
 
@@ -52,113 +55,33 @@ void AlphaBlend(float background_linear, ImageBundle* io_linear_srgb) {
   }
 }
 
-class JxlButteraugliComparator {
- public:
-  explicit JxlButteraugliComparator(const ButteraugliParams& params,
-                                    const JxlCmsInterface& cms);
-
-  Status SetReferenceImage(const ImageBundle& ref);
-  Status SetLinearReferenceImage(const Image3F& linear);
-
-  Status CompareWith(const ImageBundle& actual, ImageF* diffmap,
-                     float* score);
-
-  float GoodQualityScore() const;
-  float BadQualityScore() const;
-
- private:
-  ButteraugliParams params_;
-  JxlCmsInterface cms_;
-  std::unique_ptr<ButteraugliComparator> comparator_;
-  size_t xsize_ = 0;
-  size_t ysize_ = 0;
-};
-
-float ComputeScoreImpl(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                       const ButteraugliParams& params,
-                       const JxlCmsInterface& cms,
-                       ImageF* distmap) {
-  JxlButteraugliComparator comparator(params, cms);
-  JXL_CHECK(comparator.SetReferenceImage(rgb0));
-  float score;
-  JXL_CHECK(comparator.CompareWith(rgb1, distmap, &score));
+float ComputeButteraugliImpl(const ImageBundle& ref, const ImageBundle& actual,
+                             const ButteraugliParams& params,
+                             const JxlCmsInterface& cms,
+                             ImageF* distmap) {
+  std::unique_ptr<ButteraugliComparator> comparator;
+  JXL_ASSIGN_OR_DIE(comparator, ButteraugliComparator::Make(
+      ref.color(), params));
+  JXL_ASSIGN_OR_DIE(ImageF temp_diffmap,
+                    ImageF::Create(ref.xsize(), ref.ysize()));
+  JXL_CHECK(comparator->Diffmap(actual.color(), temp_diffmap));
+  float score = ButteraugliScoreFromDiffmap(temp_diffmap, &params);
+  if (distmap != nullptr) {
+    distmap->Swap(temp_diffmap);
+  }
   return score;
 }
 }  // namespace
 
-JxlButteraugliComparator::JxlButteraugliComparator(
-    const ButteraugliParams& params, const JxlCmsInterface& cms)
-    : params_(params), cms_(cms) {}
-
-Status JxlButteraugliComparator::SetReferenceImage(const ImageBundle& ref) {
-  const ImageBundle* ref_linear_srgb;
-  ImageMetadata metadata = *ref.metadata();
-  ImageBundle store(&metadata);
-  if (!TransformIfNeeded(ref, ColorEncoding::LinearSRGB(ref.IsGray()), cms_,
-                         /*pool=*/nullptr, &store, &ref_linear_srgb)) {
-    return false;
-  }
-  JXL_ASSIGN_OR_RETURN(comparator_, ButteraugliComparator::Make(
-                                        ref_linear_srgb->color(), params_));
-  xsize_ = ref.xsize();
-  ysize_ = ref.ysize();
-  return true;
-}
-
-Status JxlButteraugliComparator::SetLinearReferenceImage(
-    const Image3F& linear) {
-  JXL_ASSIGN_OR_RETURN(comparator_,
-                       ButteraugliComparator::Make(linear, params_));
-  xsize_ = linear.xsize();
-  ysize_ = linear.ysize();
-  return true;
-}
-
-Status JxlButteraugliComparator::CompareWith(const ImageBundle& actual,
-                                             ImageF* diffmap, float* score) {
-  if (!comparator_) {
-    return JXL_FAILURE("Must set reference image first");
-  }
-  if (xsize_ != actual.xsize() || ysize_ != actual.ysize()) {
-    return JXL_FAILURE("Images must have same size");
+float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
+                          const ButteraugliParams& params,
+                          const JxlCmsInterface& cms, ImageF* diffmap,
+                          ThreadPool* pool, bool ignore_alpha) {
+  if (rgb0.xsize() != rgb1.xsize() || rgb0.ysize() != rgb1.ysize()) {
+    fprintf(stderr, "Images must have the same size for butteraugli.");
+    return std::numeric_limits<float>::max();
   }
 
-  const ImageBundle* actual_linear_srgb;
-  ImageMetadata metadata = *actual.metadata();
-  ImageBundle store(&metadata);
-  if (!TransformIfNeeded(actual, ColorEncoding::LinearSRGB(actual.IsGray()),
-                         cms_,
-                         /*pool=*/nullptr, &store, &actual_linear_srgb)) {
-    return false;
-  }
-
-  JXL_ASSIGN_OR_RETURN(ImageF temp_diffmap, ImageF::Create(xsize_, ysize_));
-  JXL_RETURN_IF_ERROR(
-      comparator_->Diffmap(actual_linear_srgb->color(), temp_diffmap));
-
-  if (score != nullptr) {
-    *score = ButteraugliScoreFromDiffmap(temp_diffmap, &params_);
-  }
-  if (diffmap != nullptr) {
-    diffmap->Swap(temp_diffmap);
-  }
-
-  return true;
-}
-
-float JxlButteraugliComparator::GoodQualityScore() const {
-  return ButteraugliFuzzyInverse(1.5);
-}
-
-float JxlButteraugliComparator::BadQualityScore() const {
-  return ButteraugliFuzzyInverse(0.5);
-}
-
-Status ComputeScore(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                    const ButteraugliParams& params,
-                    const JxlCmsInterface& cms,
-                    float* score, ImageF* diffmap, ThreadPool* pool,
-                    bool ignore_alpha) {
   // Convert to linear sRGB (unless already in that space)
   ImageMetadata metadata0 = *rgb0.metadata();
   ImageBundle store0(&metadata0);
@@ -173,38 +96,37 @@ Status ComputeScore(const ImageBundle& rgb0, const ImageBundle& rgb1,
 
   // No alpha: skip blending, only need a single call to Butteraugli.
   if (ignore_alpha || (!rgb0.HasAlpha() && !rgb1.HasAlpha())) {
-    *score =
-        ComputeScoreImpl(*linear_srgb0, *linear_srgb1, params, cms, diffmap);
-    return true;
+    return ComputeButteraugliImpl(
+        *linear_srgb0, *linear_srgb1, params, cms, diffmap);
   }
 
   // Blend on black and white backgrounds
 
   const float black = 0.0f;
-  JXL_ASSIGN_OR_RETURN(ImageBundle blended_black0, linear_srgb0->Copy());
-  JXL_ASSIGN_OR_RETURN(ImageBundle blended_black1, linear_srgb1->Copy());
+  JXL_ASSIGN_OR_DIE(ImageBundle blended_black0, linear_srgb0->Copy());
+  JXL_ASSIGN_OR_DIE(ImageBundle blended_black1, linear_srgb1->Copy());
   AlphaBlend(black, &blended_black0);
   AlphaBlend(black, &blended_black1);
 
   const float white = 1.0f;
-  JXL_ASSIGN_OR_RETURN(ImageBundle blended_white0, linear_srgb0->Copy());
-  JXL_ASSIGN_OR_RETURN(ImageBundle blended_white1, linear_srgb1->Copy());
+  JXL_ASSIGN_OR_DIE(ImageBundle blended_white0, linear_srgb0->Copy());
+  JXL_ASSIGN_OR_DIE(ImageBundle blended_white1, linear_srgb1->Copy());
 
   AlphaBlend(white, &blended_white0);
   AlphaBlend(white, &blended_white1);
 
   ImageF diffmap_black;
   ImageF diffmap_white;
-  const float dist_black = ComputeScoreImpl(blended_black0, blended_black1,
-                                            params, cms, &diffmap_black);
-  const float dist_white = ComputeScoreImpl(blended_white0, blended_white1,
-                                            params, cms, &diffmap_white);
+  const float dist_black = ComputeButteraugliImpl(
+      blended_black0, blended_black1, params, cms, &diffmap_black);
+  const float dist_white = ComputeButteraugliImpl(
+      blended_white0, blended_white1, params, cms, &diffmap_white);
 
   // diffmap and return values are the max of diffmap_black/white.
   if (diffmap != nullptr) {
     const size_t xsize = rgb0.xsize();
     const size_t ysize = rgb0.ysize();
-    JXL_ASSIGN_OR_RETURN(*diffmap, ImageF::Create(xsize, ysize));
+    JXL_ASSIGN_OR_DIE(*diffmap, ImageF::Create(xsize, ysize));
     for (size_t y = 0; y < ysize; ++y) {
       const float* JXL_RESTRICT row_black = diffmap_black.ConstRow(y);
       const float* JXL_RESTRICT row_white = diffmap_white.ConstRow(y);
@@ -214,8 +136,7 @@ Status ComputeScore(const ImageBundle& rgb0, const ImageBundle& rgb1,
       }
     }
   }
-  *score = std::max(dist_black, dist_white);
-  return true;
+  return std::max(dist_black, dist_white);
 }
 
 }  // namespace jxl

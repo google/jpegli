@@ -405,16 +405,6 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
                              /*distmap=*/nullptr, pool);
 }
 
-float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms, ImageF* distmap,
-                          ThreadPool* pool, bool ignore_alpha) {
-  float distance;
-  JXL_CHECK(ComputeScore(rgb0, rgb1, params, cms, &distance, distmap, pool,
-                         ignore_alpha));
-  return distance;
-}
-
 float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b, ThreadPool* pool) {
   CodecInOut io0;

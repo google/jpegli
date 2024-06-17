@@ -10,8 +10,6 @@
 #include <jxl/cms_interface.h>
 #include <stddef.h>
 
-#include <memory>
-
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/image.h"
@@ -19,13 +17,14 @@
 
 namespace jxl {
 
-// Computes the score given images in any RGB color model, optionally with
-// alpha channel.
-Status ComputeScore(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                    const ButteraugliParams& params,
-                    const JxlCmsInterface& cms,
-                    float* score, ImageF* diffmap = nullptr,
-                    ThreadPool* pool = nullptr, bool ignore_alpha = false);
+// Computes the butteraugli distance and optionally the diffmap of images in any
+// RGB color model, optionally with alpha channel.
+float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
+                          const ButteraugliParams& params,
+                          const JxlCmsInterface& cms,
+                          ImageF* diffmap = nullptr,
+                          ThreadPool* pool = nullptr,
+                          bool ignore_alpha = false);
 
 }  // namespace jxl
 
