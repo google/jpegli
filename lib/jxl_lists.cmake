@@ -98,8 +98,6 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
 set(JPEGXL_INTERNAL_DEC_JPEG_SOURCES
   jxl/jpeg/dec_jpeg_data.cc
   jxl/jpeg/dec_jpeg_data.h
-  jxl/jpeg/dec_jpeg_data_writer.cc
-  jxl/jpeg/dec_jpeg_data_writer.h
   jxl/jpeg/dec_jpeg_output_chunk.h
   jxl/jpeg/dec_jpeg_serialization_state.h
   jxl/jpeg/jpeg_data.cc
@@ -133,8 +131,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/headers.h
   jxl/image.cc
   jxl/image.h
-  jxl/image_bundle.cc
-  jxl/image_bundle.h
   jxl/image_metadata.cc
   jxl/image_metadata.h
   jxl/image_ops.cc

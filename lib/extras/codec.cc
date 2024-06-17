@@ -17,7 +17,6 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/image_bundle.h"
 
 namespace jxl {
 Status Encode(const extras::PackedPixelFile& ppf, const extras::Codec codec,

@@ -25,6 +25,7 @@
 #include "lib/jxl/base/common.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/printf_macros.h"
+#include "lib/jxl/image_ops.h"
 #include "lib/jxl/sanitizers.h"
 
 HWY_BEFORE_NAMESPACE();
@@ -445,46 +446,6 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
         "ConvertUint"));
   }
   return true;
-}
-
-Status ConvertToExternal(const jxl::ImageBundle& ib, size_t bits_per_sample,
-                         bool float_out, size_t num_channels,
-                         JxlEndianness endianness, size_t stride,
-                         jxl::ThreadPool* pool, void* out_image,
-                         size_t out_size, const PixelCallback& out_callback,
-                         jxl::Orientation undo_orientation,
-                         bool unpremul_alpha) {
-  bool want_alpha = num_channels == 2 || num_channels == 4;
-  size_t color_channels = num_channels <= 2 ? 1 : 3;
-
-  const Image3F* color = &ib.color();
-  // Undo premultiplied alpha.
-  Image3F unpremul;
-  if (ib.AlphaIsPremultiplied() && ib.HasAlpha() && unpremul_alpha) {
-    JXL_ASSIGN_OR_RETURN(unpremul,
-                         Image3F::Create(color->xsize(), color->ysize()));
-    CopyImageTo(*color, &unpremul);
-    for (size_t y = 0; y < unpremul.ysize(); y++) {
-      UnpremultiplyAlpha(unpremul.PlaneRow(0, y), unpremul.PlaneRow(1, y),
-                         unpremul.PlaneRow(2, y), ib.alpha().Row(y),
-                         unpremul.xsize());
-    }
-    color = &unpremul;
-  }
-
-  const ImageF* channels[kConvertMaxChannels];
-  size_t c = 0;
-  for (; c < color_channels; c++) {
-    channels[c] = &color->Plane(c);
-  }
-  if (want_alpha) {
-    channels[c++] = ib.HasAlpha() ? &ib.alpha() : nullptr;
-  }
-  JXL_ASSERT(num_channels == c);
-
-  return ConvertChannelsToExternal(
-      channels, num_channels, bits_per_sample, float_out, endianness, stride,
-      pool, out_image, out_size, out_callback, undo_orientation);
 }
 
 }  // namespace jxl

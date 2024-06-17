@@ -185,8 +185,3 @@ endif()
 
 # Tests for the jxl library.
 include(jxl_tests.cmake)
-
-if(BUILD_TESTING)
-  # Google benchmark for the jxl library
-  include(jxl_benchmark.cmake)
-endif()
