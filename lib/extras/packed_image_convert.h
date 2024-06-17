@@ -19,6 +19,9 @@
 namespace jxl {
 namespace extras {
 
+Status GetColorEncoding(const PackedPixelFile& ppf,
+                        ColorEncoding* color_encoding);
+
 // Converts an external PackedPixelFile to the internal CodecInOut for use with
 // internal functions directly.
 Status ConvertPackedPixelFileToCodecInOut(const PackedPixelFile& ppf,

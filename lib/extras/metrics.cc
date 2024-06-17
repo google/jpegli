@@ -227,56 +227,70 @@ float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
                          ImageF* distmap) {
   std::unique_ptr<ButteraugliComparator> comparator;
   JXL_ASSIGN_OR_DIE(comparator, ButteraugliComparator::Make(ref, params));
-  JXL_ASSIGN_OR_DIE(ImageF temp_diffmap,
+  JXL_ASSIGN_OR_DIE(ImageF temp_distmap,
                     ImageF::Create(ref.xsize(), ref.ysize()));
-  JXL_CHECK(comparator->Diffmap(actual, temp_diffmap));
-  float score = ButteraugliScoreFromDiffmap(temp_diffmap, &params);
+  JXL_CHECK(comparator->Diffmap(actual, temp_distmap));
+  float score = ButteraugliScoreFromDiffmap(temp_distmap, &params);
   if (distmap != nullptr) {
-    distmap->Swap(temp_diffmap);
+    distmap->Swap(temp_distmap);
   }
   return score;
 }
 }  // namespace
 
-float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
-                          const ButteraugliParams& params,
-                          const JxlCmsInterface& cms, ImageF* diffmap,
-                          ThreadPool* pool, bool ignore_alpha) {
-  if (rgb0.xsize() != rgb1.xsize() || rgb0.ysize() != rgb1.ysize()) {
+float ButteraugliDistance(const extras::PackedPixelFile& a,
+                          const extras::PackedPixelFile& b,
+                          ButteraugliParams params,
+                          ImageF* distmap, ThreadPool* pool,
+                          bool ignore_alpha) {
+  if (a.xsize() != b.xsize() || a.ysize() != b.ysize()) {
     fprintf(stderr, "Images must have the same size for butteraugli.");
     return std::numeric_limits<float>::max();
   }
-  if (rgb0.IsGray() != rgb1.IsGray()) {
+  if (a.info.num_color_channels != b.info.num_color_channels) {
     fprintf(stderr, "Grayscale vs RGB comparison not supported.");
     return std::numeric_limits<float>::max();
   }
-  const size_t xsize = rgb0.xsize();
-  const size_t ysize = rgb0.ysize();
-  const bool is_gray = rgb0.IsGray();
+  const size_t xsize = a.xsize();
+  const size_t ysize = b.ysize();
+  const bool is_gray = a.info.num_color_channels == 1;
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
 
+  CodecInOut io0;
+  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
+  CodecInOut io1;
+  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
+  const ImageBundle& rgb0 = io0.frames[0];
+  const ImageBundle& rgb1 = io1.frames[0];
+  const JxlCmsInterface& cms = *JxlGetDefaultCms();
+
+  ColorEncoding c_enc_a;
+  ColorEncoding c_enc_b;
+  JXL_CHECK(GetColorEncoding(a, &c_enc_a));
+  JXL_CHECK(GetColorEncoding(b, &c_enc_b));
+
   JXL_ASSIGN_OR_DIE(Image3F linear_srgb0, Image3F::Create(xsize, ysize));
-  if (rgb0.c_current().SameColorEncoding(c_desired) && !rgb0.HasBlack()) {
+  if (c_enc_a.SameColorEncoding(c_desired) && !rgb0.HasBlack()) {
     CopyImageTo(rgb0.color(), &linear_srgb0);
   } else{
     JXL_CHECK(ApplyColorTransform(
-        rgb0.c_current(), rgb0.metadata()->IntensityTarget(),
+        c_enc_a, rgb0.metadata()->IntensityTarget(),
         rgb0.color(), rgb0.HasBlack() ? &rgb0.black() : nullptr,
         Rect(rgb0.color()), c_desired, cms, pool, &linear_srgb0));
   }
   JXL_ASSIGN_OR_DIE(Image3F linear_srgb1, Image3F::Create(xsize, ysize));
-  if (rgb1.c_current().SameColorEncoding(c_desired) && !rgb1.HasBlack()) {
+  if (c_enc_b.SameColorEncoding(c_desired) && !rgb1.HasBlack()) {
     CopyImageTo(rgb1.color(), &linear_srgb1);
   } else{
     JXL_CHECK(ApplyColorTransform(
-        rgb1.c_current(), rgb1.metadata()->IntensityTarget(),
+        c_enc_b, rgb1.metadata()->IntensityTarget(),
         rgb1.color(), rgb1.HasBlack() ? &rgb1.black() : nullptr,
         Rect(rgb1.color()), c_desired, cms, pool, &linear_srgb1));
   }
 
   // No alpha: skip blending, only need a single call to Butteraugli.
   if (ignore_alpha || (!rgb0.HasAlpha() && !rgb1.HasAlpha())) {
-    return ComputeButteraugli(linear_srgb0, linear_srgb1, params, cms, diffmap);
+    return ComputeButteraugli(linear_srgb0, linear_srgb1, params, cms, distmap);
   }
 
   // Blend on black and white backgrounds
@@ -301,40 +315,26 @@ float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
     AlphaBlend(white, rgb1.alpha(), &blended_white1);
   }
 
-  ImageF diffmap_black;
-  ImageF diffmap_white;
+  ImageF distmap_black;
+  ImageF distmap_white;
   const float dist_black = ComputeButteraugli(
-      blended_black0, blended_black1, params, cms, &diffmap_black);
+      blended_black0, blended_black1, params, cms, &distmap_black);
   const float dist_white = ComputeButteraugli(
-      blended_white0, blended_white1, params, cms, &diffmap_white);
+      blended_white0, blended_white1, params, cms, &distmap_white);
 
-  // diffmap and return values are the max of diffmap_black/white.
-  if (diffmap != nullptr) {
-    JXL_ASSIGN_OR_DIE(*diffmap, ImageF::Create(xsize, ysize));
+  // distmap and return values are the max of distmap_black/white.
+  if (distmap != nullptr) {
+    JXL_ASSIGN_OR_DIE(*distmap, ImageF::Create(xsize, ysize));
     for (size_t y = 0; y < ysize; ++y) {
-      const float* JXL_RESTRICT row_black = diffmap_black.ConstRow(y);
-      const float* JXL_RESTRICT row_white = diffmap_white.ConstRow(y);
-      float* JXL_RESTRICT row_out = diffmap->Row(y);
+      const float* JXL_RESTRICT row_black = distmap_black.ConstRow(y);
+      const float* JXL_RESTRICT row_white = distmap_white.ConstRow(y);
+      float* JXL_RESTRICT row_out = distmap->Row(y);
       for (size_t x = 0; x < xsize; ++x) {
         row_out[x] = std::max(row_black[x], row_white[x]);
       }
     }
   }
   return std::max(dist_black, dist_white);
-}
-
-float ButteraugliDistance(const extras::PackedPixelFile& a,
-                          const extras::PackedPixelFile& b,
-                          ButteraugliParams params,
-                          ImageF* distmap, ThreadPool* pool,
-                          bool ignore_alpha) {
-  CodecInOut io0;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
-  CodecInOut io1;
-  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
-  // TODO(eustas): simplify?
-  return ButteraugliDistance(io0.frames[0], io1.frames[0], params,
-                             *JxlGetDefaultCms(), distmap, pool, ignore_alpha);
 }
 
 HWY_EXPORT(ComputeDistanceP);
