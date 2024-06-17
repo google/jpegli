@@ -125,18 +125,12 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/fields.cc
   jxl/fields.h
   jxl/frame_dimensions.h
-  jxl/frame_header.cc
-  jxl/frame_header.h
   jxl/headers.cc
   jxl/headers.h
   jxl/image.cc
   jxl/image.h
-  jxl/image_metadata.cc
-  jxl/image_metadata.h
   jxl/image_ops.cc
   jxl/image_ops.h
-  jxl/luminance.cc
-  jxl/luminance.h
   jxl/pack_signed.h
   jxl/padded_bytes.h
   jxl/sanitizers.h

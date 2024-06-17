@@ -16,7 +16,6 @@
 #include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/image.h"
-#include "lib/jxl/image_metadata.h"
 
 namespace jxl {
 
@@ -63,8 +62,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
                                  bool float_out, JxlEndianness endianness,
                                  size_t stride, jxl::ThreadPool* pool,
                                  void* out_image, size_t out_size,
-                                 const PixelCallback& out_callback,
-                                 jxl::Orientation undo_orientation);
+                                 const PixelCallback& out_callback);
 
 }  // namespace jxl
 

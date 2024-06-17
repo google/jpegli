@@ -19,7 +19,6 @@
 #include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/enc_image_bundle.h"
 #include "lib/jxl/image_ops.h"
-#include "lib/jxl/luminance.h"
 
 namespace jxl {
 namespace extras {
@@ -114,7 +113,7 @@ PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
   JXL_CHECK(ConvertChannelsToExternal(
       channels, 3, ppf.info.bits_per_sample, float_samples, format.endianness,
       frame.color.stride, pool, frame.color.pixels(0, 0, 0),
-      frame.color.pixels_size, PixelCallback(), Orientation::kIdentity));
+      frame.color.pixels_size, PixelCallback()));
   ppf.frames.emplace_back(std::move(frame));
   return ppf;
 }
