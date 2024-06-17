@@ -9,9 +9,12 @@
 
 #include <stdint.h>
 
+#include <jxl/cms_interface.h>
+
 #include "lib/extras/packed_image.h"
+#include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
-#include "lib/jxl/image_bundle.h"
+#include "lib/jxl/image.h"
 
 namespace jxl {
 
@@ -32,7 +35,8 @@ float Butteraugli3Norm(const extras::PackedPixelFile& a,
                        const extras::PackedPixelFile& b,
                        ThreadPool* pool = nullptr);
 
-double ComputePSNR(const ImageBundle& ib1, const ImageBundle& ib2,
+double ComputePSNR(const extras::PackedPixelFile& a,
+                   const extras::PackedPixelFile& b,
                    const JxlCmsInterface& cms);
 
 }  // namespace jxl

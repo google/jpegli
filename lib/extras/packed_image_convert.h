@@ -13,6 +13,7 @@
 #include <jxl/types.h>
 
 #include "lib/extras/packed_image.h"
+#include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/codec_in_out.h"
 
@@ -22,10 +23,17 @@ namespace extras {
 Status GetColorEncoding(const PackedPixelFile& ppf,
                         ColorEncoding* color_encoding);
 
+float GetIntensityTarget(const extras::PackedPixelFile& ppf,
+                         const ColorEncoding& c_enc);
+
 // Converts an external PackedPixelFile to the internal CodecInOut for use with
 // internal functions directly.
 Status ConvertPackedPixelFileToCodecInOut(const PackedPixelFile& ppf,
                                           ThreadPool* pool, CodecInOut* io);
+
+Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
+                                       Image3F* color,
+                                       ThreadPool* pool = nullptr);
 
 PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
                                                 const ColorEncoding& c_enc,
