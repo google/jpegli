@@ -143,15 +143,6 @@ class ImageBundle {
     c_current_ = new_c_current;
   }
 
-  // TODO(lode): TransformTo and CopyTo are implemented in enc_image_bundle.cc,
-  // move these functions out of this header file and class, to
-  // enc_image_bundle.h.
-
-  // Transforms color to c_desired and sets c_current to c_desired. Alpha and
-  // metadata remains unchanged.
-  Status TransformTo(const ColorEncoding& c_desired, const JxlCmsInterface& cms,
-                     ThreadPool* pool = nullptr);
-
   // Detect 'real' bit depth, which can be lower than nominal bit depth
   // (this is common in PNG), returns 'real' bit depth
   size_t DetectRealBitdepth() const;

@@ -71,6 +71,44 @@ float ComputeButteraugliImpl(const ImageBundle& ref, const ImageBundle& actual,
   }
   return score;
 }
+
+Status TransformIfNeeded(const ImageBundle& in, const ColorEncoding& c_desired,
+                         const JxlCmsInterface& cms, ThreadPool* pool,
+                         ImageBundle* store, const ImageBundle** out) {
+  if (in.c_current().SameColorEncoding(c_desired) && !in.HasBlack()) {
+    *out = &in;
+    return true;
+  }
+  // TODO(janwas): avoid copying via createExternal+copyBackToIO
+  // instead of copy+createExternal+copyBackToIO
+  JXL_ASSIGN_OR_RETURN(Image3F color,
+                       Image3F::Create(in.color().xsize(), in.color().ysize()));
+  CopyImageTo(in.color(), &color);
+  store->SetFromImage(std::move(color), in.c_current());
+
+  // Must at least copy the alpha channel for use by external_image.
+  if (in.HasExtraChannels()) {
+    std::vector<ImageF> extra_channels;
+    for (const ImageF& extra_channel : in.extra_channels()) {
+      JXL_ASSIGN_OR_RETURN(ImageF ec, ImageF::Create(extra_channel.xsize(),
+                                                     extra_channel.ysize()));
+      CopyImageTo(extra_channel, &ec);
+      extra_channels.emplace_back(std::move(ec));
+    }
+    store->SetExtraChannels(std::move(extra_channels));
+  }
+
+
+  if (!ApplyColorTransform(
+          store->c_current(), store->metadata()->IntensityTarget(),
+          *store->color(), store->HasBlack() ? &store->black() : nullptr,
+          Rect(*store->color()), c_desired, cms, pool, store->color())) {
+    return false;
+  }
+  store->OverrideProfile(c_desired);
+  *out = store;
+  return true;
+}
 }  // namespace
 
 float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
