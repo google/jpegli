@@ -11,14 +11,18 @@
 
 #include <atomic>
 
+#include <jxl/cms.h>
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/metrics.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
+#include "lib/jxl/codec_in_out.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_gamma_correct.h"
 #include "lib/jxl/enc_image_bundle.h"
@@ -319,10 +323,32 @@ float ButteraugliDistance(const ImageBundle& rgb0, const ImageBundle& rgb1,
   return std::max(dist_black, dist_white);
 }
 
+float ButteraugliDistance(const extras::PackedPixelFile& a,
+                          const extras::PackedPixelFile& b,
+                          ButteraugliParams params,
+                          ImageF* distmap, ThreadPool* pool,
+                          bool ignore_alpha) {
+  CodecInOut io0;
+  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(a, pool, &io0));
+  CodecInOut io1;
+  JXL_CHECK(ConvertPackedPixelFileToCodecInOut(b, pool, &io1));
+  // TODO(eustas): simplify?
+  return ButteraugliDistance(io0.frames[0], io1.frames[0], params,
+                             *JxlGetDefaultCms(), distmap, pool, ignore_alpha);
+}
+
 HWY_EXPORT(ComputeDistanceP);
 double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
                         double p) {
   return HWY_DYNAMIC_DISPATCH(ComputeDistanceP)(distmap, params, p);
+}
+
+float Butteraugli3Norm(const extras::PackedPixelFile& a,
+                       const extras::PackedPixelFile& b, ThreadPool* pool) {
+  ButteraugliParams params;
+  ImageF distmap;
+  ButteraugliDistance(a, b, params, &distmap, pool);
+  return ComputeDistanceP(distmap, params, 3);
 }
 
 HWY_EXPORT(ComputeSumOfSquares);

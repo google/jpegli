@@ -27,6 +27,7 @@
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/enc/jpegli.h"
 #include "lib/extras/enc/jpg.h"
+#include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
@@ -39,8 +40,6 @@ namespace jxl {
 namespace extras {
 namespace {
 
-using test::Butteraugli3Norm;
-using test::ButteraugliDistance;
 using test::TestImage;
 
 Status ReadTestImage(const std::string& pathname, PackedPixelFile* ppf) {
