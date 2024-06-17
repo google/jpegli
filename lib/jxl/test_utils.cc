@@ -25,8 +25,6 @@
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/enc_external_image.h"
-#include "lib/jxl/enc_params.h"
-#include "lib/jxl/frame_header.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/padded_bytes.h"
 

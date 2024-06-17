@@ -17,7 +17,6 @@
 #include "lib/jxl/base/override.h"
 #include "lib/jxl/common.h"
 #include "lib/jxl/frame_dimensions.h"
-#include "lib/jxl/frame_header.h"
 
 namespace jxl {
 

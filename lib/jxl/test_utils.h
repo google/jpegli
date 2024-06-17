@@ -26,7 +26,6 @@
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/enc_params.h"
 
 #define TEST_LIBJPEG_SUPPORT()                                              \
   do {                                                                      \
@@ -125,13 +124,6 @@ class ThreadPoolForTests {
   JxlThreadParallelRunnerPtr runner_;
   std::unique_ptr<ThreadPool> pool_;
 };
-
-// `icc` may be empty afterwards - if so, call CreateProfile. Does not append,
-// clears any original data that was in icc.
-// If `output_limit` is not 0, then returns error if resulting profile would be
-// longer than `output_limit`
-Status ReadICC(BitReader* JXL_RESTRICT reader,
-               std::vector<uint8_t>* JXL_RESTRICT icc, size_t output_limit = 0);
 
 constexpr const char* BoolToCStr(bool b) { return b ? "true" : "false"; }
 
