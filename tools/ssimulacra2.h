@@ -9,8 +9,8 @@
 
 #include <vector>
 
+#include "lib/extras/packed_image.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/image_bundle.h"
 
 struct MsssimScale {
   double avg_ssim[3 * 2];
@@ -24,12 +24,9 @@ struct Msssim {
 };
 
 // Computes the SSIMULACRA 2 score between reference image 'orig' and
-// distorted image 'distorted'. In case of alpha transparency, assume
-// a gray background if intensity 'bg' (in range 0..1).
-jxl::StatusOr<Msssim> ComputeSSIMULACRA2(const jxl::ImageBundle &orig,
-                                         const jxl::ImageBundle &distorted,
-                                         float bg);
-jxl::StatusOr<Msssim> ComputeSSIMULACRA2(const jxl::ImageBundle &orig,
-                                         const jxl::ImageBundle &distorted);
+// distorted image 'distorted'.
+jxl::StatusOr<Msssim> ComputeSSIMULACRA2(
+    const jxl::extras::PackedPixelFile& orig,
+    const jxl::extras::PackedPixelFile& distorted);
 
 #endif  // TOOLS_SSIMULACRA2_H_

@@ -33,27 +33,30 @@ Design:
 #include <hwy/aligned_allocator.h>
 #include <utility>
 
+#include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/enc_xyb.h"
 #include "lib/jxl/image.h"
-#include "lib/jxl/image_bundle.h"
 #include "lib/jxl/enc_image_bundle.h"
 #include "tools/gauss_blur.h"
 
 namespace {
 
+using jxl::ColorEncoding;
 using jxl::Image3F;
-using jxl::ImageBundle;
 using jxl::ImageF;
+using jxl::Rect;
+using jxl::Status;
 using jxl::StatusOr;
+using jxl::extras::PackedPixelFile;
 
 const float kC2 = 0.0009f;
 const int kNumScales = 6;
 
-StatusOr<Image3F> Downsample(const Image3F& in, size_t fx, size_t fy) {
+Status Downsample(Image3F& in, size_t fx, size_t fy) {
   const size_t out_xsize = (in.xsize() + fx - 1) / fx;
   const size_t out_ysize = (in.ysize() + fy - 1) / fy;
   JXL_ASSIGN_OR_RETURN(Image3F out, Image3F::Create(out_xsize, out_ysize));
@@ -74,7 +77,9 @@ StatusOr<Image3F> Downsample(const Image3F& in, size_t fx, size_t fy) {
       }
     }
   }
-  return out;
+  in.ShrinkTo(out_xsize, out_ysize);
+  jxl::CopyImageTo(out, &in);
+  return true;
 }
 
 void Multiply(const Image3F& a, const Image3F& b, Image3F* mul) {
@@ -233,20 +238,6 @@ void MakePositiveXYB(Image3F& img) {
       rowB[x] = (rowB[x] - rowY[x]) + 0.55f;
       rowX[x] = rowX[x] * 14.f + 0.42f;
       rowY[x] += 0.01f;
-    }
-  }
-}
-
-void AlphaBlend(ImageBundle& img, float bg) {
-  for (size_t y = 0; y < img.ysize(); ++y) {
-    float* JXL_RESTRICT r = img.color()->PlaneRow(0, y);
-    float* JXL_RESTRICT g = img.color()->PlaneRow(1, y);
-    float* JXL_RESTRICT b = img.color()->PlaneRow(2, y);
-    const float* JXL_RESTRICT a = img.alpha()->Row(y);
-    for (size_t x = 0; x < img.xsize(); ++x) {
-      r[x] = a[x] * r[x] + (1.f - a[x]) * bg;
-      g[x] = a[x] * g[x] + (1.f - a[x]) * bg;
-      b[x] = a[x] * b[x] + (1.f - a[x]) * bg;
     }
   }
 }
@@ -436,41 +427,56 @@ double Msssim::Score() const {
   return ssim;
 }
 
-StatusOr<Msssim> ComputeSSIMULACRA2(const ImageBundle& orig,
-                                    const ImageBundle& dist, float bg) {
+StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
+                                    const PackedPixelFile& distorted) {
   Msssim msssim;
 
-  JXL_ASSIGN_OR_RETURN(Image3F img1,
-                       Image3F::Create(orig.xsize(), orig.ysize()));
-  JXL_ASSIGN_OR_RETURN(Image3F img2,
-                       Image3F::Create(img1.xsize(), img1.ysize()));
+  if (orig.xsize() != distorted.xsize() || orig.ysize() != distorted.ysize()) {
+    return JXL_FAILURE("Images must have the same size for SSIMULACRA2.");
 
-  JXL_ASSIGN_OR_RETURN(ImageBundle orig2, orig.Copy());
-  JXL_ASSIGN_OR_RETURN(ImageBundle dist2, dist.Copy());
+  }
+  if (orig.info.num_color_channels != distorted.info.num_color_channels) {
+    return JXL_FAILURE("Grayscale vs RGB comparison not supported.");
+  }
+  const size_t xsize = orig.xsize();
+  const size_t ysize = distorted.ysize();
+  const bool is_gray = orig.info.num_color_channels == 1;
+  ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
+  const JxlCmsInterface& cms = *JxlGetDefaultCms();
 
-  if (orig.HasAlpha()) AlphaBlend(orig2, bg);
-  if (dist.HasAlpha()) AlphaBlend(dist2, bg);
-  orig2.ClearExtraChannels();
-  dist2.ClearExtraChannels();
-
-  auto c_desired0 = jxl::ColorEncoding::LinearSRGB(orig2.IsGray());
-  JXL_CHECK(ApplyColorTransform(
-      orig2.c_current(), orig2.metadata()->IntensityTarget(), *orig2.color(),
-      orig2.HasBlack() ? &orig2.black() : nullptr, jxl::Rect(*orig2.color()),
-      c_desired0, *JxlGetDefaultCms(), nullptr, orig2.color()));
-  orig2.OverrideProfile(c_desired0);
-
-  auto c_desired1 = jxl::ColorEncoding::LinearSRGB(dist2.IsGray());
-  JXL_CHECK(ApplyColorTransform(
-      dist2.c_current(), dist2.metadata()->IntensityTarget(), *dist2.color(),
-      dist2.HasBlack() ? &dist2.black() : nullptr, jxl::Rect(*dist2.color()),
-      c_desired1, *JxlGetDefaultCms(), nullptr, dist2.color()));
-  dist2.OverrideProfile(c_desired1);
-
+  JXL_ASSIGN_OR_RETURN(Image3F orig2, Image3F::Create(xsize, ysize));
   JXL_RETURN_IF_ERROR(
-      jxl::ToXYB(orig2, nullptr, &img1, *JxlGetDefaultCms(), nullptr));
+      jxl::extras::ConvertPackedPixelFileToImage3F(orig, &orig2, nullptr));
+  JXL_ASSIGN_OR_RETURN(Image3F dist2, Image3F::Create(xsize, ysize));
   JXL_RETURN_IF_ERROR(
-      jxl::ToXYB(dist2, nullptr, &img2, *JxlGetDefaultCms(), nullptr));
+      jxl::extras::ConvertPackedPixelFileToImage3F(distorted, &dist2, nullptr));
+
+  ColorEncoding c_enc_orig;
+  ColorEncoding c_enc_dist;
+  JXL_CHECK(GetColorEncoding(orig, &c_enc_orig));
+  JXL_CHECK(GetColorEncoding(distorted, &c_enc_dist));
+  float intensity_orig = GetIntensityTarget(orig, c_enc_orig);
+  float intensity_dist = GetIntensityTarget(distorted, c_enc_dist);
+
+  if (!c_enc_orig.SameColorEncoding(c_desired)) {
+    JXL_CHECK(ApplyColorTransform(
+        c_enc_orig, intensity_orig, orig2, nullptr, Rect(orig2), c_desired, cms,
+        nullptr, &orig2));
+  }
+  if (!c_enc_dist.SameColorEncoding(c_desired)) {
+    JXL_CHECK(ApplyColorTransform(
+        c_enc_dist, intensity_dist, dist2, nullptr, Rect(dist2), c_desired, cms,
+        nullptr, &dist2));
+  }
+
+  JXL_ASSIGN_OR_RETURN(Image3F img1, Image3F::Create(xsize, ysize));
+  JXL_ASSIGN_OR_RETURN(Image3F img2, Image3F::Create(xsize, ysize));
+  jxl::CopyImageTo(orig2, &img1);
+  jxl::CopyImageTo(dist2, &img2);
+  jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
+             *JxlGetDefaultCms(), nullptr);
+  jxl::ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
+             *JxlGetDefaultCms(), nullptr);
   MakePositiveXYB(img1);
   MakePositiveXYB(img2);
 
@@ -483,18 +489,16 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const ImageBundle& orig,
       break;
     }
     if (scale) {
-      JXL_ASSIGN_OR_RETURN(Image3F tmp, Downsample(*orig2.color(), 2, 2));
-      orig2.SetFromImage(std::move(tmp),
-                         jxl::ColorEncoding::LinearSRGB(orig2.IsGray()));
-      JXL_ASSIGN_OR_RETURN(tmp, Downsample(*dist2.color(), 2, 2));
-      dist2.SetFromImage(std::move(tmp),
-                         jxl::ColorEncoding::LinearSRGB(dist2.IsGray()));
+      JXL_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
       img1.ShrinkTo(orig2.xsize(), orig2.ysize());
-      img2.ShrinkTo(orig2.xsize(), orig2.ysize());
-      JXL_RETURN_IF_ERROR(
-          jxl::ToXYB(orig2, nullptr, &img1, *JxlGetDefaultCms(), nullptr));
-      JXL_RETURN_IF_ERROR(
-          jxl::ToXYB(dist2, nullptr, &img2, *JxlGetDefaultCms(), nullptr));
+      jxl::CopyImageTo(orig2, &img1);
+      jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
+                 *JxlGetDefaultCms(), nullptr);
+      JXL_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
+      img2.ShrinkTo(dist2.xsize(), dist2.ysize());
+      jxl::CopyImageTo(dist2, &img2);
+      jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img2,
+                 *JxlGetDefaultCms(), nullptr);
       MakePositiveXYB(img1);
       MakePositiveXYB(img2);
     }
@@ -519,9 +523,4 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const ImageBundle& orig,
     msssim.scales.push_back(sscale);
   }
   return msssim;
-}
-
-StatusOr<Msssim> ComputeSSIMULACRA2(const ImageBundle& orig,
-                                    const ImageBundle& distorted) {
-  return ComputeSSIMULACRA2(orig, distorted, 0.5f);
 }

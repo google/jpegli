@@ -204,33 +204,6 @@ HWY_AFTER_NAMESPACE();
 namespace jxl {
 
 namespace {
-// color is linear, but blending happens in gamma-compressed space using
-// (gamma-compressed) grayscale background color, alpha image represents
-// weights of the sRGB colors in the [0 .. (1 << bit_depth) - 1] interval,
-// output image is in linear space.
-void AlphaBlend(float background_linear, const ImageF& alpha, Image3F* inout) {
-  const float background = LinearToSrgb8Direct(background_linear);
-
-  for (size_t y = 0; y < inout->ysize(); ++y) {
-    const float* JXL_RESTRICT row_a = alpha.ConstRow(y);
-    for (size_t c = 0; c < 3; ++c) {
-      float* JXL_RESTRICT row = inout->PlaneRow(c, y);
-      for (size_t x = 0; x < inout->xsize(); ++x) {
-        const float a = row_a[x];
-        if (a <= 0.f) {
-          row[x] = background_linear;
-        } else if (a < 1.f) {
-          const float w_fg = a;
-          const float w_bg = 1.0f - w_fg;
-          const float fg = w_fg * LinearToSrgb8Direct(row[x]);
-          const float bg = w_bg * background;
-          row[x] = Srgb8ToLinearDirect(fg + bg);
-        }
-      }
-    }
-  }
-}
-
 float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
                          const ButteraugliParams& params,
                          const JxlCmsInterface& cms,
