@@ -101,47 +101,4 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
   return true;
 }
 
-Status ImageBundle::TransformTo(const ColorEncoding& c_desired,
-                                const JxlCmsInterface& cms, ThreadPool* pool) {
-  JXL_RETURN_IF_ERROR(ApplyColorTransform(
-      c_current(), metadata_->IntensityTarget(), *color(),
-      HasBlack() ? &black() : nullptr, Rect(*color()), c_desired, cms, pool,
-      &color_));
-  c_current_ = c_desired;
-  return true;
-}
-
-Status TransformIfNeeded(const ImageBundle& in, const ColorEncoding& c_desired,
-                         const JxlCmsInterface& cms, ThreadPool* pool,
-                         ImageBundle* store, const ImageBundle** out) {
-  if (in.c_current().SameColorEncoding(c_desired) && !in.HasBlack()) {
-    *out = &in;
-    return true;
-  }
-  // TODO(janwas): avoid copying via createExternal+copyBackToIO
-  // instead of copy+createExternal+copyBackToIO
-  JXL_ASSIGN_OR_RETURN(Image3F color,
-                       Image3F::Create(in.color().xsize(), in.color().ysize()));
-  CopyImageTo(in.color(), &color);
-  store->SetFromImage(std::move(color), in.c_current());
-
-  // Must at least copy the alpha channel for use by external_image.
-  if (in.HasExtraChannels()) {
-    std::vector<ImageF> extra_channels;
-    for (const ImageF& extra_channel : in.extra_channels()) {
-      JXL_ASSIGN_OR_RETURN(ImageF ec, ImageF::Create(extra_channel.xsize(),
-                                                     extra_channel.ysize()));
-      CopyImageTo(extra_channel, &ec);
-      extra_channels.emplace_back(std::move(ec));
-    }
-    store->SetExtraChannels(std::move(extra_channels));
-  }
-
-  if (!store->TransformTo(c_desired, cms, pool)) {
-    return false;
-  }
-  *out = store;
-  return true;
-}
-
 }  // namespace jxl

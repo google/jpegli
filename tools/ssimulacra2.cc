@@ -40,6 +40,7 @@ Design:
 #include "lib/jxl/enc_xyb.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_bundle.h"
+#include "lib/jxl/enc_image_bundle.h"
 #include "tools/gauss_blur.h"
 
 namespace {
@@ -452,10 +453,19 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const ImageBundle& orig,
   orig2.ClearExtraChannels();
   dist2.ClearExtraChannels();
 
-  JXL_CHECK(orig2.TransformTo(jxl::ColorEncoding::LinearSRGB(orig2.IsGray()),
-                              *JxlGetDefaultCms()));
-  JXL_CHECK(dist2.TransformTo(jxl::ColorEncoding::LinearSRGB(dist2.IsGray()),
-                              *JxlGetDefaultCms()));
+  auto c_desired0 = jxl::ColorEncoding::LinearSRGB(orig2.IsGray());
+  JXL_CHECK(ApplyColorTransform(
+      orig2.c_current(), orig2.metadata()->IntensityTarget(), *orig2.color(),
+      orig2.HasBlack() ? &orig2.black() : nullptr, jxl::Rect(*orig2.color()),
+      c_desired0, *JxlGetDefaultCms(), nullptr, orig2.color()));
+  orig2.OverrideProfile(c_desired0);
+
+  auto c_desired1 = jxl::ColorEncoding::LinearSRGB(dist2.IsGray());
+  JXL_CHECK(ApplyColorTransform(
+      dist2.c_current(), dist2.metadata()->IntensityTarget(), *dist2.color(),
+      dist2.HasBlack() ? &dist2.black() : nullptr, jxl::Rect(*dist2.color()),
+      c_desired1, *JxlGetDefaultCms(), nullptr, dist2.color()));
+  dist2.OverrideProfile(c_desired1);
 
   JXL_RETURN_IF_ERROR(
       jxl::ToXYB(orig2, nullptr, &img1, *JxlGetDefaultCms(), nullptr));
