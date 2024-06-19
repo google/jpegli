@@ -196,15 +196,13 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
       Plane<hwy::float16_t> f16_cache;
       JXL_RETURN_IF_ERROR(RunOnPool(
           pool, 0, static_cast<uint32_t>(ysize),
-          [&](size_t num_threads) {
-            StatusOr<Plane<hwy::float16_t>> f16_cache_or =
-                Plane<hwy::float16_t>::Create(memory_manager, xsize,
-                                              num_channels * num_threads);
-            if (!f16_cache_or.ok()) return false;
-            f16_cache = std::move(f16_cache_or).value();
+          [&](size_t num_threads) -> Status {
+            JXL_ASSIGN_OR_RETURN(f16_cache, Plane<hwy::float16_t>::Create(
+                                                memory_manager, xsize,
+                                                num_channels * num_threads));
             return true;
           },
-          [&](const uint32_t task, const size_t thread) {
+          [&](const uint32_t task, const size_t thread) -> Status {
             const int64_t y = task;
             const float* JXL_RESTRICT row_in[kConvertMaxChannels];
             for (size_t c = 0; c < num_channels; c++) {
@@ -232,13 +230,14 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
                 std::swap(row_out[i + 0], row_out[i + 1]);
               }
             }
+            return true;
           },
           "ConvertF16"));
     } else if (bits_per_sample == 32) {
       JXL_RETURN_IF_ERROR(RunOnPool(
           pool, 0, static_cast<uint32_t>(ysize),
-          [&](size_t num_threads) { return true; },
-          [&](const uint32_t task, const size_t thread) {
+          [&](size_t num_threads) -> Status { return true; },
+          [&](const uint32_t task, const size_t thread) -> Status {
             const int64_t y = task;
             uint8_t* row_out =
                 &(reinterpret_cast<uint8_t*>(out_image))[stride * y];
@@ -251,6 +250,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
             } else {
               StoreFloatRow<StoreBEFloat>(row_in, num_channels, xsize, row_out);
             }
+            return true;
           },
           "ConvertFloat"));
     } else {
@@ -263,14 +263,13 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
     Plane<uint32_t> u32_cache;
     JXL_RETURN_IF_ERROR(RunOnPool(
         pool, 0, static_cast<uint32_t>(ysize),
-        [&](size_t num_threads) {
-          StatusOr<Plane<uint32_t>> u32_cache_or = Plane<uint32_t>::Create(
-              memory_manager, xsize, num_channels * num_threads);
-          if (!u32_cache_or.ok()) return false;
-          u32_cache = std::move(u32_cache_or).value();
+        [&](size_t num_threads) -> Status {
+          JXL_ASSIGN_OR_RETURN(
+              u32_cache, Plane<uint32_t>::Create(memory_manager, xsize,
+                                                 num_channels * num_threads));
           return true;
         },
-        [&](const uint32_t task, const size_t thread) {
+        [&](const uint32_t task, const size_t thread) -> Status {
           const int64_t y = task;
           uint8_t* row_out =
               &(reinterpret_cast<uint8_t*>(out_image))[stride * y];
@@ -296,6 +295,7 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
               StoreUintRow<StoreBE16>(row_u32, num_channels, xsize, 2, row_out);
             }
           }
+          return true;
         },
         "ConvertUint"));
   }
@@ -355,9 +355,8 @@ Status ConvertFromExternalNoSizeCheck(const uint8_t* data, size_t xsize,
       format.endianness == JXL_LITTLE_ENDIAN ||
       (format.endianness == JXL_NATIVE_ENDIAN && IsLittleEndian());
 
-  std::atomic<size_t> error_count = {0};
-
-  const auto convert_row = [&](const uint32_t task, size_t /*thread*/) {
+  const auto convert_row = [&](const uint32_t task,
+                               size_t /*thread*/) -> Status {
     const size_t y = task;
     size_t offset = y * stride + pixel_offset;
     float* JXL_RESTRICT row_out = channel->Row(y);
@@ -366,16 +365,13 @@ Status ConvertFromExternalNoSizeCheck(const uint8_t* data, size_t xsize,
     };
     if (!LoadFloatRow(data + offset, xsize, bytes_per_pixel, format.data_type,
                       little_endian, scale, save_value)) {
-      error_count++;
+      return JXL_FAILURE("unsupported pixel format data type");
     }
+    return true;
   };
   JXL_RETURN_IF_ERROR(RunOnPool(pool, 0, static_cast<uint32_t>(ysize),
                                 ThreadPool::NoInit, convert_row,
                                 "ConvertExtraChannel"));
-
-  if (error_count) {
-    JXL_FAILURE("unsupported pixel format data type");
-  }
 
   return true;
 }

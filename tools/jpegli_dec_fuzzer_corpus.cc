@@ -25,6 +25,7 @@
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/random.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/encode.h"
 #include "tools/file_io.h"
 #include "tools/thread_pool_internal.h"
@@ -354,9 +355,11 @@ int main(int argc, const char** argv) {
 
   jpegxl::tools::ThreadPoolInternal pool{num_threads};
   const auto generate = [&specs, dest_dir, regenerate, quiet](
-                            const uint32_t task, size_t /* thread */) {
+                            const uint32_t task,
+                            size_t /* thread */) -> jxl::Status {
     const ImageSpec& spec = specs[task];
     GenerateFile(dest_dir, spec, regenerate, quiet);
+    return true;
   };
   if (!RunOnPool(pool.get(), 0, specs.size(), jxl::ThreadPool::NoInit, generate,
                  "FuzzerCorpus")) {
