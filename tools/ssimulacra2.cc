@@ -73,13 +73,14 @@ void ToXYB(const ColorEncoding& c_current, float intensity_target,
                                      image));
   JXL_CHECK(RunOnPool(
       pool, 0, static_cast<uint32_t>(image->ysize()), jxl::ThreadPool::NoInit,
-      [&](const uint32_t task, size_t /*thread*/) {
+      [&](const uint32_t task, size_t /*thread*/) -> Status {
         const size_t y = static_cast<size_t>(task);
         float* JXL_RESTRICT row0 = image->PlaneRow(0, y);
         float* JXL_RESTRICT row1 = image->PlaneRow(1, y);
         float* JXL_RESTRICT row2 = image->PlaneRow(2, y);
         jxl::LinearRGBRowToXYB(row0, row1, row2, premul_absorb.get(),
                                image->xsize());
+        return true;
       },
       "LinearToXYB"));
 }

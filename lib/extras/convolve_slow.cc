@@ -89,19 +89,20 @@ void SlowSeparable(const ImageF& in, const Rect& in_rect,
   const float* horz_weights = &weights.horz[0];
   const float* vert_weights = &weights.vert[0];
 
-  const size_t ysize = in_rect.ysize();
-  JXL_CHECK(RunOnPool(
-      pool, 0, static_cast<uint32_t>(ysize), ThreadPool::NoInit,
-      [&](const uint32_t task, size_t /*thread*/) {
-        const int64_t y = task;
+  const auto process_row = [&](const uint32_t task,
+                               size_t /*thread*/) -> Status {
+    const int64_t y = task;
 
-        float* const JXL_RESTRICT row_out = out_rect.Row(out, y);
-        for (size_t x = 0; x < in_rect.xsize(); ++x) {
-          row_out[x] = SlowSeparablePixel(in, in_rect, x, y, /*radius=*/R,
-                                          horz_weights, vert_weights);
-        }
-      },
-      "SlowSeparable"));
+    float* const JXL_RESTRICT row_out = out_rect.Row(out, y);
+    for (size_t x = 0; x < in_rect.xsize(); ++x) {
+      row_out[x] = SlowSeparablePixel(in, in_rect, x, y, /*radius=*/R,
+                                      horz_weights, vert_weights);
+    }
+    return true;
+  };
+  const size_t ysize = in_rect.ysize();
+  JXL_CHECK(RunOnPool(pool, 0, static_cast<uint32_t>(ysize), ThreadPool::NoInit,
+                      process_row, "SlowSeparable"));
 }
 
 }  // namespace
