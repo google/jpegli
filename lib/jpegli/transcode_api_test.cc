@@ -40,7 +40,7 @@ void TranscodeWithJpegli(const std::vector<uint8_t>& jpeg_input,
     EXPECT_EQ(JPEG_REACHED_SOS,
               jpegli_read_header(&dinfo, /*require_image=*/TRUE));
     jvirt_barray_ptr* coef_arrays = jpegli_read_coefficients(&dinfo);
-    JXL_CHECK(coef_arrays != nullptr);
+    JPEGLI_TEST_ENSURE_TRUE(coef_arrays != nullptr);
     jpegli_create_compress(&cinfo);
     jpegli_mem_dest(&cinfo, &transcoded_data, &transcoded_size);
     jpegli_copy_critical_parameters(&dinfo, &cinfo);

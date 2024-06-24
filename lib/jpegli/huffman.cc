@@ -9,6 +9,7 @@
 #include <limits>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/error.h"
 

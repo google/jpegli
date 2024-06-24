@@ -6,7 +6,7 @@
 
 #include "lib/extras/enc/pgx.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "lib/base/byte_order.h"
 #include "lib/extras/codestream_header.h"
@@ -50,6 +50,7 @@ Status EncodeImagePGX(const PackedFrame& frame, const JxlBasicInfo& info,
   const PackedImage& color = frame.color;
   const JxlPixelFormat format = color.format;
   const uint8_t* in = reinterpret_cast<const uint8_t*>(color.pixels());
+  JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
   size_t data_bits_per_sample = PackedImage::BitsPerChannel(format.data_type);
   size_t bytes_per_sample = data_bits_per_sample / kBitsPerByte;
   size_t num_samples = info.xsize * info.ysize;

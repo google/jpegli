@@ -33,12 +33,11 @@
 #ifndef LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
 #define LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include <atomic>
 #include <condition_variable>  //NOLINT
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <mutex>               //NOLINT
 #include <thread>              //NOLINT
 #include <vector>

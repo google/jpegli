@@ -8,6 +8,7 @@
 
 #include "lib/base/testing.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/extras/test_utils.h"
 
 namespace jxl {
 
@@ -25,21 +26,15 @@ ColorEncoding ColorEncodingFromDescriptor(const ColorEncodingDescriptor& desc) {
   ColorEncoding c;
   c.SetColorSpace(desc.color_space);
   if (desc.color_space != ColorSpace::kXYB) {
-    JXL_CHECK(c.SetWhitePointType(desc.white_point));
+    ::jxl::test::Check(c.SetWhitePointType(desc.white_point));
     if (desc.color_space != ColorSpace::kGray) {
-      JXL_CHECK(c.SetPrimariesType(desc.primaries));
+      ::jxl::test::Check(c.SetPrimariesType(desc.primaries));
     }
     c.Tf().SetTransferFunction(desc.tf);
   }
   c.SetRenderingIntent(desc.rendering_intent);
-  JXL_CHECK(c.CreateICC());
+  ::jxl::test::Check(c.CreateICC());
   return c;
-}
-
-// Define the operator<< for tests.
-static inline ::std::ostream& operator<<(::std::ostream& os,
-                                         const ColorEncodingDescriptor& c) {
-  return os << "ColorEncoding/" << Description(ColorEncodingFromDescriptor(c));
 }
 
 // Returns ColorEncodingDescriptors, which are only used in tests. To obtain a

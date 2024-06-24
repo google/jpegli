@@ -59,19 +59,19 @@ using jxl::extras::PackedPixelFile;
 const float kC2 = 0.0009f;
 const int kNumScales = 6;
 
-void ToXYB(const ColorEncoding& c_current, float intensity_target,
-           const ImageF* black, jxl::ThreadPool* pool,
-           Image3F* JXL_RESTRICT image, const JxlCmsInterface& cms) {
-  if (black) JXL_ASSERT(SameSize(*image, *black));
+Status ToXYB(const ColorEncoding& c_current, float intensity_target,
+             const ImageF* black, jxl::ThreadPool* pool,
+             Image3F* JXL_RESTRICT image, const JxlCmsInterface& cms) {
+  if (black) JXL_ENSURE(SameSize(*image, *black));
   hwy::AlignedFreeUniquePtr<float[]> premul_absorb =
       hwy::AllocateAligned<float>(jxl::MaxVectorSize() * 12);
   jxl::ComputePremulAbsorb(intensity_target, premul_absorb.get());
   const ColorEncoding& c_linear_srgb =
       ColorEncoding::LinearSRGB(c_current.IsGray());
-  JXL_CHECK(jxl::ApplyColorTransform(c_current, intensity_target, *image, black,
-                                     Rect(*image), c_linear_srgb, cms, pool,
-                                     image));
-  JXL_CHECK(RunOnPool(
+  JXL_ENSURE(jxl::ApplyColorTransform(c_current, intensity_target, *image,
+                                      black, Rect(*image), c_linear_srgb, cms,
+                                      pool, image));
+  JXL_ENSURE(RunOnPool(
       pool, 0, static_cast<uint32_t>(image->ysize()), jxl::ThreadPool::NoInit,
       [&](const uint32_t task, size_t /*thread*/) -> Status {
         const size_t y = static_cast<size_t>(task);
@@ -83,6 +83,7 @@ void ToXYB(const ColorEncoding& c_current, float intensity_target,
         return true;
       },
       "LinearToXYB"));
+  return true;
 }
 
 Status Downsample(Image3F& in, size_t fx, size_t fy) {
@@ -108,8 +109,8 @@ Status Downsample(Image3F& in, size_t fx, size_t fy) {
       }
     }
   }
-  in.ShrinkTo(out_xsize, out_ysize);
-  jxl::CopyImageTo(out, &in);
+  JXL_RETURN_IF_ERROR(in.ShrinkTo(out_xsize, out_ysize));
+  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(out, &in));
   return true;
 }
 
@@ -137,26 +138,27 @@ class Blur {
     return result;
   }
 
-  void operator()(const ImageF& in, ImageF* JXL_RESTRICT out) {
-    FastGaussian(
+  Status BlurPlane(const ImageF& in, ImageF* JXL_RESTRICT out) {
+    JXL_RETURN_IF_ERROR(FastGaussian(
         rg_, in.xsize(), in.ysize(), [&](size_t y) { return in.ConstRow(y); },
         [&](size_t y) { return temp_.Row(y); },
-        [&](size_t y) { return out->Row(y); });
+        [&](size_t y) { return out->Row(y); }));
+    return true;
   }
 
   StatusOr<Image3F> operator()(const Image3F& in) {
     JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
     JXL_ASSIGN_OR_RETURN(
         Image3F out, Image3F::Create(memory_manager, in.xsize(), in.ysize()));
-    operator()(in.Plane(0), &out.Plane(0));
-    operator()(in.Plane(1), &out.Plane(1));
-    operator()(in.Plane(2), &out.Plane(2));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(0), &out.Plane(0)));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(1), &out.Plane(1)));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(2), &out.Plane(2)));
     return out;
   }
 
   // Allows reusing across scales.
-  void ShrinkTo(const size_t xsize, const size_t ysize) {
-    temp_.ShrinkTo(xsize, ysize);
+  Status ShrinkTo(const size_t xsize, const size_t ysize) {
+    return temp_.ShrinkTo(xsize, ysize);
   }
 
  private:
@@ -490,32 +492,32 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
 
   ColorEncoding c_enc_orig;
   ColorEncoding c_enc_dist;
-  JXL_CHECK(GetColorEncoding(orig, &c_enc_orig));
-  JXL_CHECK(GetColorEncoding(distorted, &c_enc_dist));
+  JXL_ENSURE(GetColorEncoding(orig, &c_enc_orig));
+  JXL_ENSURE(GetColorEncoding(distorted, &c_enc_dist));
   float intensity_orig = GetIntensityTarget(orig, c_enc_orig);
   float intensity_dist = GetIntensityTarget(distorted, c_enc_dist);
 
   if (!c_enc_orig.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_orig, intensity_orig, orig2, nullptr,
-                                  Rect(orig2), c_desired, cms, nullptr,
-                                  &orig2));
+    JXL_ENSURE(ApplyColorTransform(c_enc_orig, intensity_orig, orig2, nullptr,
+                                   Rect(orig2), c_desired, cms, nullptr,
+                                   &orig2));
   }
   if (!c_enc_dist.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_dist, intensity_dist, dist2, nullptr,
-                                  Rect(dist2), c_desired, cms, nullptr,
-                                  &dist2));
+    JXL_ENSURE(ApplyColorTransform(c_enc_dist, intensity_dist, dist2, nullptr,
+                                   Rect(dist2), c_desired, cms, nullptr,
+                                   &dist2));
   }
 
   JXL_ASSIGN_OR_RETURN(Image3F img1,
                        Image3F::Create(memory_manager, xsize, ysize));
   JXL_ASSIGN_OR_RETURN(Image3F img2,
                        Image3F::Create(memory_manager, xsize, ysize));
-  jxl::CopyImageTo(orig2, &img1);
-  jxl::CopyImageTo(dist2, &img2);
-  ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-        *JxlGetDefaultCms());
-  ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
-        *JxlGetDefaultCms());
+  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(orig2, &img1));
+  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(dist2, &img2));
+  JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
+                            *JxlGetDefaultCms()));
+  JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
+                            *JxlGetDefaultCms()));
   MakePositiveXYB(img1);
   MakePositiveXYB(img2);
 
@@ -529,20 +531,20 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
     }
     if (scale) {
       JXL_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
-      img1.ShrinkTo(orig2.xsize(), orig2.ysize());
-      jxl::CopyImageTo(orig2, &img1);
-      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-            *JxlGetDefaultCms());
+      JXL_RETURN_IF_ERROR(img1.ShrinkTo(orig2.xsize(), orig2.ysize()));
+      JXL_RETURN_IF_ERROR(jxl::CopyImageTo(orig2, &img1));
+      JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
+                                &img1, *JxlGetDefaultCms()));
       JXL_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
-      img2.ShrinkTo(dist2.xsize(), dist2.ysize());
-      jxl::CopyImageTo(dist2, &img2);
-      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img2,
-            *JxlGetDefaultCms());
+      JXL_RETURN_IF_ERROR(img2.ShrinkTo(dist2.xsize(), dist2.ysize()));
+      JXL_RETURN_IF_ERROR(jxl::CopyImageTo(dist2, &img2));
+      JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
+                                &img2, *JxlGetDefaultCms()));
       MakePositiveXYB(img1);
       MakePositiveXYB(img2);
     }
-    mul.ShrinkTo(img1.xsize(), img1.ysize());
-    blur.ShrinkTo(img1.xsize(), img1.ysize());
+    JXL_RETURN_IF_ERROR(mul.ShrinkTo(img1.xsize(), img1.ysize()));
+    JXL_RETURN_IF_ERROR(blur.ShrinkTo(img1.xsize(), img1.ysize()));
 
     Multiply(img1, img1, &mul);
     JXL_ASSIGN_OR_RETURN(Image3F sigma1_sq, blur(mul));

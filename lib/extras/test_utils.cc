@@ -24,6 +24,12 @@
 namespace jxl {
 namespace test {
 
+void Check(bool ok) {
+  if (!ok) {
+    JXL_CRASH();
+  }
+}
+
 #if defined(TEST_DATA_PATH)
 std::string GetTestDataPath(const std::string& filename) {
   return std::string(TEST_DATA_PATH "/") + filename;
@@ -43,7 +49,7 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
   std::ifstream file(full_path, std::ios::binary);
   std::vector<char> str((std::istreambuf_iterator<char>(file)),
                         std::istreambuf_iterator<char>());
-  JXL_CHECK(file.good());
+  Check(file.good());
   const uint8_t* raw = reinterpret_cast<const uint8_t*>(str.data());
   std::vector<uint8_t> data(raw, raw + str.size());
   printf("Test data %s is %d bytes long.\n", filename.c_str(),

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <atomic>
+#include <cmath>
 #include <limits>
 
 #undef HWY_TARGET_INCLUDE
@@ -131,40 +132,45 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
   }
 }
 
-void ComputeSumOfSquares(JxlMemoryManager* memory_manager,
-                         const extras::PackedPixelFile& a,
-                         const extras::PackedPixelFile& b,
-                         const JxlCmsInterface& cms, double sum_of_squares[3]) {
+Status ComputeSumOfSquares(JxlMemoryManager* memory_manager,
+                           const extras::PackedPixelFile& a,
+                           const extras::PackedPixelFile& b,
+                           const JxlCmsInterface& cms,
+                           double sum_of_squares[3]) {
+  sum_of_squares[0] = sum_of_squares[1] = sum_of_squares[2] =
+      std::numeric_limits<double>::max();
   const size_t xsize = a.xsize();
   const size_t ysize = a.ysize();
   const bool is_gray = a.info.num_color_channels == 1;
   // Convert to sRGB - closer to perception than linear.
   ColorEncoding c_desired = ColorEncoding::SRGB(is_gray);
 
-  JXL_ASSIGN_OR_DIE(Image3F srgb0,
-                    Image3F::Create(memory_manager, xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &srgb0, nullptr));
-  JXL_ASSIGN_OR_DIE(Image3F srgb1,
-                    Image3F::Create(memory_manager, xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &srgb1, nullptr));
+  JXL_ASSIGN_OR_RETURN(Image3F srgb0,
+                       Image3F::Create(memory_manager, xsize, ysize));
+  JXL_RETURN_IF_ERROR(ConvertPackedPixelFileToImage3F(a, &srgb0, nullptr));
+  JXL_ASSIGN_OR_RETURN(Image3F srgb1,
+                       Image3F::Create(memory_manager, xsize, ysize));
+  JXL_RETURN_IF_ERROR(ConvertPackedPixelFileToImage3F(b, &srgb1, nullptr));
 
   ColorEncoding c_enc_a;
   ColorEncoding c_enc_b;
-  JXL_CHECK(GetColorEncoding(a, &c_enc_a));
-  JXL_CHECK(GetColorEncoding(b, &c_enc_b));
+  JXL_RETURN_IF_ERROR(GetColorEncoding(a, &c_enc_a));
+  JXL_RETURN_IF_ERROR(GetColorEncoding(b, &c_enc_b));
   float intensity_a = GetIntensityTarget(a, c_enc_a);
   float intensity_b = GetIntensityTarget(b, c_enc_b);
 
   if (!c_enc_a.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_a, intensity_a, srgb0, nullptr,
-                                  Rect(srgb0), c_desired, cms, nullptr,
-                                  &srgb0));
+    JXL_RETURN_IF_ERROR(ApplyColorTransform(c_enc_a, intensity_a, srgb0,
+                                            nullptr, Rect(srgb0), c_desired,
+                                            cms, nullptr, &srgb0));
   }
   if (!c_enc_b.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_b, intensity_b, srgb1, nullptr,
-                                  Rect(srgb1), c_desired, cms, nullptr,
-                                  &srgb1));
+    JXL_RETURN_IF_ERROR(ApplyColorTransform(c_enc_b, intensity_b, srgb1,
+                                            nullptr, Rect(srgb1), c_desired,
+                                            cms, nullptr, &srgb1));
   }
+
+  sum_of_squares[0] = sum_of_squares[1] = sum_of_squares[2] = 0.0;
 
   // TODO(veluca): SIMD.
   float yuvmatrix[3][3] = {{0.299, 0.587, 0.114},
@@ -194,6 +200,7 @@ void ComputeSumOfSquares(JxlMemoryManager* memory_manager,
       }
     }
   }
+  return true;
 }
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
@@ -205,36 +212,37 @@ HWY_AFTER_NAMESPACE();
 namespace jxl {
 
 namespace {
-float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
-                         const ButteraugliParams& params,
-                         const JxlCmsInterface& cms, ImageF* distmap) {
+Status ComputeButteraugli(const Image3F& ref, const Image3F& actual,
+                          const ButteraugliParams& params,
+                          const JxlCmsInterface& cms, float& score,
+                          ImageF* distmap) {
   JxlMemoryManager* memory_manager = ref.memory_manager();
   std::unique_ptr<ButteraugliComparator> comparator;
-  JXL_ASSIGN_OR_DIE(comparator, ButteraugliComparator::Make(ref, params));
-  JXL_ASSIGN_OR_DIE(ImageF temp_distmap,
-                    ImageF::Create(memory_manager, ref.xsize(), ref.ysize()));
-  JXL_CHECK(comparator->Diffmap(actual, temp_distmap));
-  float score = ButteraugliScoreFromDiffmap(temp_distmap, &params);
+  JXL_ASSIGN_OR_RETURN(comparator, ButteraugliComparator::Make(ref, params));
+  JXL_ASSIGN_OR_RETURN(
+      ImageF temp_distmap,
+      ImageF::Create(memory_manager, ref.xsize(), ref.ysize()));
+  JXL_ENSURE(comparator->Diffmap(actual, temp_distmap));
+  score = ButteraugliScoreFromDiffmap(temp_distmap, &params);
   if (distmap != nullptr) {
     distmap->Swap(temp_distmap);
   }
-  return score;
+  return true;
 }
 
 }  // namespace
 
-float ButteraugliDistance(JxlMemoryManager* memory_manager,
-                          const extras::PackedPixelFile& a,
-                          const extras::PackedPixelFile& b,
-                          ButteraugliParams params, ImageF* distmap,
-                          ThreadPool* pool, bool ignore_alpha) {
+Status ButteraugliDistance(JxlMemoryManager* memory_manager,
+                           const extras::PackedPixelFile& a,
+                           const extras::PackedPixelFile& b,
+                           ButteraugliParams params, float& score,
+                           ImageF* distmap, ThreadPool* pool,
+                           bool ignore_alpha) {
   if (a.xsize() != b.xsize() || a.ysize() != b.ysize()) {
-    fprintf(stderr, "Images must have the same size for butteraugli.");
-    return std::numeric_limits<float>::max();
+    return JXL_FAILURE("Images must have the same size for butteraugli.");
   }
   if (a.info.num_color_channels != b.info.num_color_channels) {
-    fprintf(stderr, "Grayscale vs RGB comparison not supported.");
-    return std::numeric_limits<float>::max();
+    return JXL_FAILURE("Grayscale vs RGB comparison not supported.");
   }
   const size_t xsize = a.xsize();
   const size_t ysize = a.ysize();
@@ -242,30 +250,46 @@ float ButteraugliDistance(JxlMemoryManager* memory_manager,
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
   const JxlCmsInterface& cms = *JxlGetDefaultCms();
 
-  JXL_ASSIGN_OR_DIE(Image3F rgb0,
-                    Image3F::Create(memory_manager, xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &rgb0, pool));
-  JXL_ASSIGN_OR_DIE(Image3F rgb1,
-                    Image3F::Create(memory_manager, xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &rgb1, pool));
+  JXL_ASSIGN_OR_RETURN(Image3F rgb0,
+                       Image3F::Create(memory_manager, xsize, ysize));
+  JXL_ENSURE(ConvertPackedPixelFileToImage3F(a, &rgb0, pool));
+  JXL_ASSIGN_OR_RETURN(Image3F rgb1,
+                       Image3F::Create(memory_manager, xsize, ysize));
+  JXL_ENSURE(ConvertPackedPixelFileToImage3F(b, &rgb1, pool));
 
   ColorEncoding c_enc_a;
   ColorEncoding c_enc_b;
-  JXL_CHECK(GetColorEncoding(a, &c_enc_a));
-  JXL_CHECK(GetColorEncoding(b, &c_enc_b));
+  JXL_ENSURE(GetColorEncoding(a, &c_enc_a));
+  JXL_ENSURE(GetColorEncoding(b, &c_enc_b));
   float intensity_a = GetIntensityTarget(a, c_enc_a);
   float intensity_b = GetIntensityTarget(b, c_enc_b);
 
   if (!c_enc_a.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_a, intensity_a, rgb0, nullptr,
-                                  Rect(rgb0), c_desired, cms, pool, &rgb0));
+    JXL_ENSURE(ApplyColorTransform(c_enc_a, intensity_a, rgb0, nullptr,
+                                   Rect(rgb0), c_desired, cms, pool, &rgb0));
   }
   if (!c_enc_b.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_b, intensity_b, rgb1, nullptr,
-                                  Rect(rgb1), c_desired, cms, pool, &rgb1));
+    JXL_ENSURE(ApplyColorTransform(c_enc_b, intensity_b, rgb1, nullptr,
+                                   Rect(rgb1), c_desired, cms, pool, &rgb1));
   }
 
-  return ComputeButteraugli(rgb0, rgb1, params, cms, distmap);
+  JXL_RETURN_IF_ERROR(
+      ComputeButteraugli(rgb0, rgb1, params, cms, score, distmap));
+  return true;
+}
+
+float ButteraugliDistance(JxlMemoryManager* memory_manager,
+                          const extras::PackedPixelFile& a,
+                          const extras::PackedPixelFile& b,
+                          ButteraugliParams params, ImageF* distmap,
+                          ThreadPool* pool, bool ignore_alpha) {
+  float score = std::numeric_limits<float>::max();
+  if (!ButteraugliDistance(memory_manager, a, b, params, score, distmap, pool,
+                           ignore_alpha)) {
+    fprintf(stderr, "ButteraugliDistance failed.\n");
+    return std::numeric_limits<float>::max();
+  };
+  return score;
 }
 
 HWY_EXPORT(ComputeDistanceP);
@@ -297,8 +321,12 @@ double ComputePSNR(JxlMemoryManager* memory_manager,
     return 0.0;
   }
   double sum_of_squares[3] = {};
-  HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)
-  (memory_manager, a, b, cms, sum_of_squares);
+  Status ok = HWY_DYNAMIC_DISPATCH(ComputeSumOfSquares)(memory_manager, a, b,
+                                                        cms, sum_of_squares);
+  if (!ok) {
+    fprintf(stderr, "ComputeSumOfSquares failed.");
+    return 0.0;
+  }
   constexpr double kChannelWeights[3] = {6.0 / 8, 1.0 / 8, 1.0 / 8};
   double avg_psnr = 0;
   const size_t input_pixels = a.xsize() * a.ysize();

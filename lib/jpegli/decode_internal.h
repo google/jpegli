@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/huffman.h"

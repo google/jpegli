@@ -313,10 +313,6 @@ class Parser {
   const uint8_t* const end_;
 };
 
-Span<const uint8_t> MakeSpan(const char* str) {
-  return Bytes(reinterpret_cast<const uint8_t*>(str), strlen(str));
-}
-
 }  // namespace
 
 Status DecodeImagePNM(const Span<const uint8_t> bytes,
@@ -419,6 +415,7 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
       memcpy(row_out, row_in, frame->color.stride);
     }
   } else {
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(data_type));
     size_t pwidth = PackedImage::BitsPerChannel(data_type) / 8;
     for (size_t y = 0; y < header.ysize; ++y) {
       for (size_t x = 0; x < header.xsize; ++x) {
@@ -439,39 +436,13 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   return true;
 }
 
-void TestCodecPNM() {
-  size_t u = 77777;  // Initialized to wrong value.
-  double d = 77.77;
-// Failing to parse invalid strings results in a crash if `JXL_CRASH_ON_ERROR`
-// is defined and hence the tests fail. Therefore we only run these tests if
-// `JXL_CRASH_ON_ERROR` is not defined.
-#ifndef JXL_CRASH_ON_ERROR
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseUnsigned(&u));
+// Exposed for testing.
+Status PnmParseSigned(Bytes str, double* v) {
+  return Parser(str).ParseSigned(v);
+}
 
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseSigned(&d));
-#endif
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseUnsigned(&u));
-  JXL_CHECK(u == 1);
-
-  JXL_CHECK(true == Parser(MakeSpan("32")).ParseUnsigned(&u));
-  JXL_CHECK(u == 32);
-
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseSigned(&d));
-  JXL_CHECK(d == 1.0);
-  JXL_CHECK(true == Parser(MakeSpan("+2")).ParseSigned(&d));
-  JXL_CHECK(d == 2.0);
-  JXL_CHECK(true == Parser(MakeSpan("-3")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.0) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - 3.141592) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("-3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.141592) < 1E-15);
+Status PnmParseUnsigned(Bytes str, size_t* v) {
+  return Parser(str).ParseUnsigned(v);
 }
 
 }  // namespace extras

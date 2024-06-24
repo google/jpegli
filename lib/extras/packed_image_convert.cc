@@ -7,6 +7,7 @@
 #include "lib/extras/packed_image_convert.h"
 
 #include <cstdint>
+#include <cstdio>
 
 #include "lib/base/byte_order.h"
 #include "lib/base/common.h"
@@ -153,9 +154,9 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
                                  void* out_image, size_t out_size) {
   JXL_DASSERT(num_channels != 0 && num_channels <= kConvertMaxChannels);
   JXL_DASSERT(in_channels[0] != nullptr);
-  JXL_CHECK(float_out ? bits_per_sample == 16 || bits_per_sample == 32
-                      : bits_per_sample > 0 && bits_per_sample <= 16);
-  JXL_CHECK(out_image);
+  JXL_ENSURE(float_out ? bits_per_sample == 16 || bits_per_sample == 32
+                       : bits_per_sample > 0 && bits_per_sample <= 16);
+  JXL_ENSURE(out_image);
   JxlMemoryManager* memory_manager = in_channels[0]->memory_manager();
   std::vector<const ImageF*> channels;
   channels.assign(in_channels, in_channels + num_channels);
@@ -335,8 +336,8 @@ Status ConvertFromExternalNoSizeCheck(const uint8_t* data, size_t xsize,
     JXL_FAILURE("unsupported pixel format data type %d", format.data_type);
   }
 
-  JXL_ASSERT(channel->xsize() == xsize);
-  JXL_ASSERT(channel->ysize() == ysize);
+  JXL_ENSURE(channel->xsize() == xsize);
+  JXL_ENSURE(channel->ysize() == ysize);
 
   size_t bytes_per_channel = JxlDataTypeBytes(format.data_type);
   size_t bytes_per_pixel = format.num_channels * bytes_per_channel;
@@ -463,20 +464,20 @@ Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
         &color->Plane(c)));
   }
   if (ppf.info.num_color_channels == 1) {
-    CopyImageTo(color->Plane(0), &color->Plane(1));
-    CopyImageTo(color->Plane(0), &color->Plane(2));
+    JXL_RETURN_IF_ERROR(CopyImageTo(color->Plane(0), &color->Plane(1)));
+    JXL_RETURN_IF_ERROR(CopyImageTo(color->Plane(0), &color->Plane(2)));
   }
   return true;
 }
 
-PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
-                                                const ColorEncoding& c_enc,
-                                                JxlPixelFormat format,
-                                                ThreadPool* pool) {
-  PackedPixelFile ppf;
+StatusOr<PackedPixelFile> ConvertImage3FToPackedPixelFile(
+    const Image3F& image, const ColorEncoding& c_enc, JxlPixelFormat format,
+    ThreadPool* pool) {
+  PackedPixelFile ppf{};
   ppf.info.xsize = image.xsize();
   ppf.info.ysize = image.ysize();
   ppf.info.num_color_channels = 3;
+  JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
   ppf.info.bits_per_sample = PackedImage::BitsPerChannel(format.data_type);
   ppf.info.exponent_bits_per_sample = format.data_type == JXL_TYPE_FLOAT ? 8
                                       : format.data_type == JXL_TYPE_FLOAT16
@@ -484,14 +485,15 @@ PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
                                           : 0;
   ppf.color_encoding = c_enc.ToExternal();
   ppf.frames.clear();
-  JXL_ASSIGN_OR_DIE(PackedFrame frame,
-                    PackedFrame::Create(image.xsize(), image.ysize(), format));
+  JXL_ASSIGN_OR_RETURN(
+      PackedFrame frame,
+      PackedFrame::Create(image.xsize(), image.ysize(), format));
   const ImageF* channels[3];
   for (int c = 0; c < 3; ++c) {
     channels[c] = &image.Plane(c);
   }
   bool float_samples = ppf.info.exponent_bits_per_sample > 0;
-  JXL_CHECK(ConvertChannelsToExternal(
+  JXL_RETURN_IF_ERROR(ConvertChannelsToExternal(
       channels, 3, ppf.info.bits_per_sample, float_samples, format.endianness,
       frame.color.stride, pool, frame.color.pixels(0, 0, 0),
       frame.color.pixels_size));

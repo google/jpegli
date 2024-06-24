@@ -107,6 +107,15 @@ class PackedImage {
 
   size_t pixel_stride() const { return pixel_stride_; }
 
+  static Status ValidateDataType(JxlDataType data_type) {
+    if ((data_type != JXL_TYPE_UINT8) && (data_type != JXL_TYPE_UINT16) &&
+        (data_type != JXL_TYPE_FLOAT) && (data_type != JXL_TYPE_FLOAT16)) {
+      return JXL_FAILURE("Unhandled data type: %d",
+                         static_cast<int>(data_type));
+    }
+    return true;
+  }
+
   static size_t BitsPerChannel(JxlDataType data_type) {
     switch (data_type) {
       case JXL_TYPE_UINT8:
@@ -118,7 +127,8 @@ class PackedImage {
       case JXL_TYPE_FLOAT16:
         return 16;
       default:
-        JXL_ABORT("Unhandled JxlDataType");
+        JXL_DEBUG_ABORT("Unreachable");
+        return 0;
     }
   }
 
@@ -138,7 +148,8 @@ class PackedImage {
         return swap_endianness_ ? BSwapFloat(val) : val;
       }
       default:
-        JXL_ABORT("Unhandled JxlDataType");
+        JXL_DEBUG_ABORT("Unreachable");
+        return 0.0f;
     }
   }
 
@@ -164,7 +175,7 @@ class PackedImage {
         break;
       }
       default:
-        JXL_ABORT("Unhandled JxlDataType");
+        JXL_DEBUG_ABORT("Unreachable");
     }
   }
 

@@ -16,7 +16,7 @@ fi
 set -eux
 
 main() {
-  # Build the fuzzers in release mode but force the inclusion of JXL_DASSERT()
+  # Build the fuzzers in release mode but force the inclusion of JXL_DASSERT
   # checks.
   build_args=(
     -G Ninja
@@ -31,7 +31,7 @@ main() {
     -DJPEGXL_ENABLE_VIEWERS=OFF
     -DCMAKE_BUILD_TYPE=Release
   )
-  export CXXFLAGS="${CXXFLAGS} -DJXL_IS_DEBUG_BUILD=1"
+  export CXXFLAGS="${CXXFLAGS} -DJXL_IS_DEBUG_BUILD"
 
   mkdir -p ${WORK}
   cd ${WORK}

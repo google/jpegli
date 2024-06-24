@@ -7,6 +7,7 @@
 #include "tools/benchmark/benchmark_codec.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -24,6 +25,8 @@
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
 #include "tools/benchmark/benchmark_stats.h"
+#include "tools/cmdline.h"
+#include "tools/no_memory_manager.h"
 #include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
 
@@ -31,15 +34,17 @@ namespace jpegxl {
 namespace tools {
 
 using ::jxl::Image3F;
+using ::jxl::Status;
 
-void ImageCodec::ParseParameters(const std::string& parameters) {
+Status ImageCodec::ParseParameters(const std::string& parameters) {
   params_ = parameters;
   std::vector<std::string> parts = SplitString(parameters, ':');
   for (const auto& part : parts) {
     if (!ParseParam(part)) {
-      JXL_ABORT("Invalid parameter %s", part.c_str());
+      return JXL_FAILURE("Invalid parameter %s", part.c_str());
     }
   }
+  return true;
 }
 
 Status ImageCodec::ParseParam(const std::string& param) {
@@ -85,10 +90,13 @@ ImageCodecPtr CreateImageCodec(const std::string& description,
     result.reset(CreateNewJPEGCodec(*Args()));
   }
   if (!result.get()) {
-    JXL_ABORT("Unknown image codec: %s", name.c_str());
+    fprintf(stderr, "Unknown image codec: %s", name.c_str());
+    JPEGXL_TOOLS_CHECK(false);
   }
   result->set_description(description);
-  if (!parameters.empty()) result->ParseParameters(parameters);
+  if (!parameters.empty()) {
+    JPEGXL_TOOLS_CHECK(result->ParseParameters(parameters));
+  }
   return result;
 }
 
