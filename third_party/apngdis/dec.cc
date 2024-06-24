@@ -38,6 +38,7 @@
  */
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -265,7 +266,7 @@ JXL_INLINE Status DecodeHexNibble(const char c, uint32_t* JXL_RESTRICT nibble) {
     *nibble = 0;
     return JXL_FAILURE("Invalid metadata nibble");
   }
-  JXL_ASSERT(*nibble < 16);
+  JXL_ENSURE(*nibble < 16);
   return true;
 }
 
@@ -346,7 +347,7 @@ Status MaybeDecodeBase16(const char* key, const char* encoded,
     return JXL_FAILURE("Not enough bytes to parse %d bytes in hex",
                        bytes_to_decode);
   }
-  JXL_ASSERT(bytes->empty());
+  JXL_ENSURE(bytes->empty());
   bytes->reserve(bytes_to_decode);
 
   // Encoding: base16 with newline after 72 chars.
@@ -440,6 +441,7 @@ struct Pixels {
   std::unique_ptr<uint8_t[]> pixels;
   size_t pixels_size = 0;
   std::vector<uint8_t*> rows;
+  std::atomic<bool> has_error{false};
 
   Status Resize(size_t row_bytes, size_t num_rows) {
     size_t new_size = row_bytes * num_rows;  // it is assumed size is sane
@@ -513,8 +515,14 @@ void ProgressiveRead_OnInfo(png_structp png_ptr, png_infop info_ptr) {
 void ProgressiveRead_OnRow(png_structp png_ptr, png_bytep new_row,
                            png_uint_32 row_num, int pass) {
   Pixels* frame = reinterpret_cast<Pixels*>(png_get_progressive_ptr(png_ptr));
-  JXL_CHECK(frame);
-  JXL_CHECK(row_num < frame->rows.size());
+  if (!frame) {
+    JXL_DEBUG_ABORT("Internal logic error");
+    return;
+  }
+  if (row_num >= frame->rows.size()) {
+    frame->has_error = true;
+    return;
+  }
   png_progressive_combine_row(png_ptr, frame->rows[row_num], new_row);
 }
 
@@ -846,6 +854,9 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     if (!ctx.FinalizeStream(&ppf->metadata)) {
       return JXL_FAILURE("Failed to finalize PNG substream");
     }
+    if (ctx.frameRaw.has_error) {
+      return JXL_FAILURE("Internal error");
+    }
     // Allocates the frame buffer.
     const RectT<uint64_t>& vp = current_frame.viewport;
     size_t xsize = static_cast<size_t>(vp.xsize());
@@ -964,10 +975,10 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         if (!seen_idat) {
           // First IDAT means that all metadata is ready.
           seen_idat = true;
-          JXL_CHECK(image_rect.xsize() ==
-                    png_get_image_width(ctx.png_ptr, ctx.info_ptr));
-          JXL_CHECK(image_rect.ysize() ==
-                    png_get_image_height(ctx.png_ptr, ctx.info_ptr));
+          JXL_ENSURE(image_rect.xsize() ==
+                     png_get_image_width(ctx.png_ptr, ctx.info_ptr));
+          JXL_ENSURE(image_rect.ysize() ==
+                     png_get_image_height(ctx.png_ptr, ctx.info_ptr));
           JXL_RETURN_IF_ERROR(VerifyDimensions(constraints, image_rect.xsize(),
                                                image_rect.ysize()));
           ppf->info.xsize = image_rect.xsize();
@@ -1142,8 +1153,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     const auto& pixels = frame.pixels;
     size_t xsize = pixels.xsize;
     size_t ysize = pixels.ysize;
-    JXL_ASSERT(xsize == vp.xsize());
-    JXL_ASSERT(ysize == vp.ysize());
+    JXL_ENSURE(xsize == vp.xsize());
+    JXL_ENSURE(ysize == vp.ysize());
 
     // Before encountering a DISPOSE_OP_NONE frame, the canvas is filled with
     // 0, so DISPOSE_OP_BACKGROUND and DISPOSE_OP_PREVIOUS are equivalent.
@@ -1181,6 +1192,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
                              PackedImage::Create(pxs, pys, pixels.format));
         memset(new_data.pixels(), 0, new_data.pixels_size);
         for (size_t y = 0; y < ysize; y++) {
+          JXL_RETURN_IF_ERROR(
+              PackedImage::ValidateDataType(new_data.format.data_type));
           size_t bytes_per_pixel =
               PackedImage::BitsPerChannel(new_data.format.data_type) *
               new_data.format.num_channels / 8;

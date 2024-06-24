@@ -7,11 +7,11 @@
 #include "lib/extras/enc/jpegli.h"
 
 #include <setjmp.h>
-#include <stdint.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <hwy/aligned_allocator.h>
@@ -36,6 +36,13 @@
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/types.h"
+#include "lib/jxl/base/byte_order.h"
+#include "lib/jxl/base/common.h"
+#include "lib/jxl/base/data_parallel.h"
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/color_encoding_internal.h"
+#include "lib/jxl/enc_xyb.h"
+#include "lib/jxl/simd_util.h"
 
 namespace jxl {
 namespace extras {
@@ -540,6 +547,8 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         }
       } else {
         for (size_t y = 0; y < info.ysize; ++y) {
+          JXL_RETURN_IF_ERROR(
+              PackedImage::ValidateDataType(image.format.data_type));
           int bytes_per_channel =
               PackedImage::BitsPerChannel(image.format.data_type) / 8;
           int bytes_per_pixel = cinfo.num_components * bytes_per_channel;

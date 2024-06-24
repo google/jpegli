@@ -9,9 +9,7 @@
 
 // Command line parsing and arguments for benchmark_xl
 
-#include <stddef.h>
-
-#include <algorithm>
+#include <cstddef>
 #include <deque>
 #include <string>
 #include <vector>
@@ -20,6 +18,9 @@
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_hints.h"
+#include "lib/jxl/base/override.h"
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/color_encoding_internal.h"
 #include "tools/args.h"
 #include "tools/cmdline.h"
 
@@ -32,7 +33,8 @@ using ::jxl::Status;
 
 std::vector<std::string> SplitString(const std::string& s, char c);
 
-int ParseIntParam(const std::string& param, int lower_bound, int upper_bound);
+Status ParseIntParam(const std::string& param, int lower_bound, int upper_bound,
+                     int& val);
 
 struct BenchmarkArgs {
   using OptionId = jpegxl::tools::CommandLineParser::OptionId;

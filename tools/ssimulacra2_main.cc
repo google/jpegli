@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
-#include <utility>
 #include <vector>
 
 #include "lib/base/span.h"
@@ -16,6 +15,10 @@
 #include "lib/extras/packed_image.h"
 #include "tools/file_io.h"
 #include "tools/ssimulacra2.h"
+
+#define QUIT(M)               \
+  fprintf(stderr, "%s\n", M); \
+  return EXIT_FAILURE;
 
 int PrintUsage(char** argv) {
   fprintf(stderr, "Usage: %s orig.png distorted.png\n", argv[0]);
@@ -62,23 +65,32 @@ int main(int argc, char** argv) {
               argv[1 + i]);
       return 1;
     }
-    if (ppf[i].xsize() < 8 || ppf[i].ysize() < 8) {
-      fprintf(stderr, "Minimum image size is 8x8 pixels\n");
-      return 1;
+    if (io[i]->xsize() < 8 || io[i]->ysize() < 8) {
+      QUIT("Minimum image size is 8x8 pixels.");
     }
   }
   jxl::extras::PackedPixelFile& ppf1 = ppf[0];
   jxl::extras::PackedPixelFile& ppf2 = ppf[1];
 
-  if (ppf1.xsize() != ppf2.xsize() || ppf1.ysize() != ppf2.ysize()) {
-    fprintf(stderr, "Image size mismatch\n");
-    return 1;
+  if (io1.xsize() != io2.xsize() || io1.ysize() != io2.ysize()) {
+    QUIT("Image size mismatch.");
   }
 
-  jxl::StatusOr<Msssim> msssim_or = ComputeSSIMULACRA2(ppf1, ppf2);
-  if (!msssim_or.ok()) {
-    fprintf(stderr, "ComputeSSIMULACRA2 failed\n");
-    return 1;
+  if (!io1.Main().HasAlpha()) {
+    JXL_ASSIGN_OR_QUIT(Msssim msssim,
+                       ComputeSSIMULACRA2(io1.Main(), io2.Main()),
+                       "ComputeSSIMULACRA2 failed.");
+    printf("%.8f\n", msssim.Score());
+  } else {
+    // in case of alpha transparency: blend against dark and bright backgrounds
+    // and return the worst of both scores
+    JXL_ASSIGN_OR_QUIT(Msssim msssim0,
+                       ComputeSSIMULACRA2(io1.Main(), io2.Main(), 0.1f),
+                       "ComputeSSIMULACRA2 failed.");
+    JXL_ASSIGN_OR_QUIT(Msssim msssim1,
+                       ComputeSSIMULACRA2(io1.Main(), io2.Main(), 0.9f),
+                       "ComputeSSIMULACRA2 failed.");
+    printf("%.8f\n", std::min(msssim0.Score(), msssim1.Score()));
   }
   Msssim msssim = std::move(msssim_or).value();
   printf("%.8f\n", msssim.Score());

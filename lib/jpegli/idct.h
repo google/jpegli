@@ -9,10 +9,11 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
+#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 
-void ChooseInverseTransform(j_decompress_ptr cinfo);
+jxl::Status ChooseInverseTransform(j_decompress_ptr cinfo);
 
 }  // namespace jpegli
 

@@ -43,6 +43,8 @@
 #include "tools/benchmark/benchmark_file_io.h"
 #include "tools/benchmark/benchmark_stats.h"
 #include "tools/benchmark/benchmark_utils.h"
+#include "tools/cmdline.h"
+#include "tools/codec_config.h"
 #include "tools/file_io.h"
 #include "tools/speed_stats.h"
 #include "tools/ssimulacra2.h"
@@ -52,6 +54,8 @@ namespace jpegxl {
 namespace tools {
 namespace {
 
+#define QUIT(M) JPEGXL_TOOLS_ABORT(M)
+
 using ::jxl::ButteraugliParams;
 using ::jxl::Bytes;
 using ::jxl::ColorEncoding;
@@ -59,26 +63,98 @@ using ::jxl::Image3F;
 using ::jxl::ImageF;
 using ::jxl::Rng;
 using ::jxl::Status;
+using ::jxl::StatusOr;
 using ::jxl::ThreadPool;
 using ::jxl::extras::PackedPixelFile;
+
+class TrackingMemoryManager {
+ public:
+  explicit TrackingMemoryManager(JxlMemoryManager* inner) : inner_(inner) {
+    outer_.opaque = reinterpret_cast<void*>(this);
+    outer_.alloc = &Alloc;
+    outer_.free = &Free;
+  }
+
+  JxlMemoryManager* get() { return &outer_; }
+
+  void PrintStats() const {
+    fprintf(stderr, "Allocations: %" PRIuS " (max bytes in use: %E)\n",
+            static_cast<size_t>(num_allocations_),
+            static_cast<double>(max_bytes_in_use_));
+  }
+
+ private:
+  static void* Alloc(void* opaque, size_t size) {
+    if (opaque == nullptr) {
+      JXL_DEBUG_ABORT("Internal logic error");
+      return nullptr;
+    }
+    TrackingMemoryManager* self =
+        reinterpret_cast<TrackingMemoryManager*>(opaque);
+    void* result = self->inner_->alloc(self->inner_->opaque, size);
+    if (result != nullptr) {
+      std::lock_guard<std::mutex> guard(self->mutex_);
+      self->num_allocations_++;
+      self->bytes_in_use_ += size;
+      self->max_bytes_in_use_ =
+          std::max(self->max_bytes_in_use_, self->bytes_in_use_);
+      self->allocations_[result] = size;
+    }
+    return result;
+  }
+
+  static void Free(void* opaque, void* address) {
+    if (opaque == nullptr) {
+      JXL_DEBUG_ABORT("Internal logic error");
+      return;
+    }
+    if (address == nullptr) return;
+    TrackingMemoryManager* self =
+        reinterpret_cast<TrackingMemoryManager*>(opaque);
+    {
+      std::lock_guard<std::mutex> guard(self->mutex_);
+      auto entry = self->allocations_.find(address);
+      if (entry != self->allocations_.end()) {
+        self->num_allocations_--;
+        self->bytes_in_use_ -= entry->second;
+        self->allocations_.erase(entry);
+      } else {
+        JXL_DEBUG_ABORT("Internal logic error");
+      }
+    }
+    self->inner_->free(self->inner_->opaque, address);
+  }
+
+  std::unordered_map<void*, size_t> allocations_;
+  std::mutex mutex_;
+  uint64_t bytes_in_use_ = 0;
+  uint64_t max_bytes_in_use_ = 0;
+  uint64_t num_allocations_ = 0;
+  JxlMemoryManager outer_;
+  JxlMemoryManager* inner_;
+};
 
 Status WriteImage(const Image3F& image, ThreadPool* pool,
                   const std::string& base_filename) {
   JxlPixelFormat format = {3, JXL_TYPE_UINT8, JXL_BIG_ENDIAN, 0};
-  PackedPixelFile ppf = jxl::extras::ConvertImage3FToPackedPixelFile(
-      image, ColorEncoding::SRGB(), format, pool);
-  jxl::extras::EncodedImage encoded;
-  std::string heatmap_fn;
-  auto png_enc = jxl::extras::GetAPNGEncoder();
-  if (png_enc) {
-    heatmap_fn = base_filename + ".heatmap.png";
-    JXL_RETURN_IF_ERROR(png_enc->Encode(ppf, &encoded, pool));
-  } else {
-    heatmap_fn = base_filename + ".heatmap.ppm";
-    JXL_RETURN_IF_ERROR(
-        jxl::extras::GetPPMEncoder()->Encode(ppf, &encoded, pool));
-  }
-  return WriteFile(heatmap_fn, encoded.bitstreams[0]);
+  JXL_ASSIGN_OR_RETURN(PackedPixelFile ppf,
+                       jxl::extras::ConvertImage3FToPackedPixelFile(
+                           image, ColorEncoding::SRGB(), format, pool));
+  std::vector<uint8_t> encoded;
+  return Encode(ppf, filename, &encoded, pool) && WriteFile(filename, encoded);
+}
+
+Status ReadPNG(const std::string& filename, Image3F* image) {
+  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+  CodecInOut io{memory_manager};
+  std::vector<uint8_t> encoded;
+  JXL_RETURN_IF_ERROR(ReadFile(filename, &encoded));
+  JXL_RETURN_IF_ERROR(
+      jxl::SetFromBytes(jxl::Bytes(encoded), jxl::extras::ColorHints(), &io));
+  JXL_ASSIGN_OR_RETURN(*image,
+                       Image3F::Create(memory_manager, io.xsize(), io.ysize()));
+  JXL_RETURN_IF_ERROR(CopyImageTo(*io.Main().color(), image));
+  return true;
 }
 
 Status CreateNonSRGBICCProfile(PackedPixelFile* ppf) {
@@ -107,19 +183,19 @@ std::string CodecToExtension(const std::string& codec_name, char sep) {
   return result;
 }
 
-void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
-                const std::vector<std::string>& extra_metrics_commands,
-                ImageCodec* codec, ThreadPool* inner_pool,
-                std::vector<uint8_t>* compressed, BenchmarkStats* s) {
+Status DoCompress(const std::string& filename, const PackedPixelFile& ppf,
+                  const std::vector<std::string>& extra_metrics_commands,
+                  ImageCodec* codec, ThreadPool* inner_pool,
+                  std::vector<uint8_t>* compressed, BenchmarkStats* s) {
+  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
   ++s->total_input_files;
 
   if (ppf.frames.size() != 1) {
     // Multiple frames not supported.
-    s->total_errors++;
     if (!Args()->silent_errors) {
       JXL_WARNING("multiframe input image not supported %s", filename.c_str());
     }
-    return;
+    return false;
   }
   const size_t xsize = ppf.info.xsize;
   const size_t ysize = ppf.info.ysize;
@@ -137,41 +213,45 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     valid = false;
   }
 
-  std::string ext = FileExtension(filename);
-  if (valid && !Args()->decode_only) {
-    for (size_t i = 0; i < Args()->encode_reps; ++i) {
-      if (codec->CanRecompressJpeg() && (ext == ".jpg" || ext == ".jpeg")) {
-        std::vector<uint8_t> data_in;
-        JXL_CHECK(ReadFile(filename, &data_in));
-        JXL_CHECK(
-            codec->RecompressJpeg(filename, data_in, compressed, &speed_stats));
-      } else {
-        Status status = codec->Compress(filename, ppf, inner_pool, compressed,
-                                        &speed_stats);
-        if (!status) {
-          valid = false;
-          if (!Args()->silent_errors) {
-            std::string message = codec->GetErrorMessage();
-            if (!message.empty()) {
-              fprintf(stderr, "Error in %s codec: %s\n",
-                      codec->description().c_str(), message.c_str());
-            } else {
-              fprintf(stderr, "Error in %s codec\n",
-                      codec->description().c_str());
+  for (size_t generation = 0; generation <= Args()->generations; generation++) {
+    std::string ext = FileExtension(filename);
+    if (valid && !Args()->decode_only) {
+      for (size_t i = 0; i < Args()->encode_reps; ++i) {
+        if (codec->CanRecompressJpeg() && (ext == ".jpg" || ext == ".jpeg")) {
+          std::vector<uint8_t> data_in;
+          JXL_RETURN_IF_ERROR(ReadFile(filename, &data_in));
+          JXL_RETURN_IF_ERROR(codec->RecompressJpeg(filename, data_in,
+                                                    compressed, &speed_stats));
+        } else {
+          Status status = codec->Compress(filename, *ppf1, inner_pool,
+                                          compressed, &speed_stats);
+          if (!status) {
+            valid = false;
+            if (!Args()->silent_errors) {
+              std::string message = codec->GetErrorMessage();
+              if (!message.empty()) {
+                fprintf(stderr, "Error in %s codec: %s\n",
+                        codec->description().c_str(), message.c_str());
+              } else {
+                fprintf(stderr, "Error in %s codec\n",
+                        codec->description().c_str());
+              }
             }
           }
         }
       }
+      JXL_RETURN_IF_ERROR(speed_stats.GetSummary(&summary));
+      s->total_time_encode += summary.central_tendency;
     }
     JXL_CHECK(speed_stats.GetSummary(&summary));
     s->total_time_encode += summary.central_tendency;
   }
 
-  if (valid && Args()->decode_only) {
-    std::vector<uint8_t> data_in;
-    JXL_CHECK(ReadFile(filename, &data_in));
-    compressed->insert(compressed->end(), data_in.begin(), data_in.end());
-  }
+    if (valid && Args()->decode_only) {
+      std::vector<uint8_t> data_in;
+      JXL_RETURN_IF_ERROR(ReadFile(filename, &data_in));
+      compressed->insert(compressed->end(), data_in.begin(), data_in.end());
+    }
 
   // Decompress
   PackedPixelFile ppf2;
@@ -188,6 +268,8 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
         }
         valid = false;
       }
+      JXL_RETURN_IF_ERROR(speed_stats.GetSummary(&summary));
+      s->total_time_decode += summary.central_tendency;
     }
     for (const auto& frame : ppf2.frames) {
       s->total_input_pixels += frame.color.xsize * frame.color.ysize;
@@ -220,6 +302,14 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
   float distance = 1.0f;
 
   if (valid && !skip_butteraugli) {
+    CodecInOut ppf_io{memory_manager};
+    JXL_RETURN_IF_ERROR(
+        ConvertPackedPixelFileToCodecInOut(ppf, inner_pool, &ppf_io));
+    CodecInOut ppf2_io{memory_manager};
+    JXL_RETURN_IF_ERROR(
+        ConvertPackedPixelFileToCodecInOut(ppf2, inner_pool, &ppf2_io));
+    const ImageBundle& ib1 = ppf_io.Main();
+    const ImageBundle& ib2 = ppf2_io.Main();
     if (jxl::SameSize(ppf, ppf2)) {
       ButteraugliParams params;
       // Hack the default intensity target value to be 80.0, the intensity
@@ -228,24 +318,28 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       // TODO(szabadka) Support different intensity targets as well.
       params.intensity_target = 80.0;
 
-      distance = ButteraugliDistance(ppf, ppf2, params, &distmap, inner_pool,
-                                     codec->IgnoreAlpha());
+      const JxlCmsInterface& cms = *JxlGetDefaultCms();
+      JxlButteraugliComparator comparator(params, cms);
+      JXL_RETURN_IF_ERROR(ComputeScore(ib1, ib2, &comparator, cms, &distance,
+                                       &distmap, inner_pool,
+                                       codec->IgnoreAlpha()));
     } else {
       // TODO(veluca): re-upsample and compute proper distance.
       distance = 1e+4f;
-      JXL_ASSIGN_OR_DIE(distmap, ImageF::Create(1, 1));
+      JXL_ASSIGN_OR_RETURN(distmap, ImageF::Create(memory_manager, 1, 1));
       distmap.Row(0)[0] = distance;
     }
     // Update stats
     s->psnr +=
         compressed->empty()
             ? 0
-            : jxl::ComputePSNR(ppf, ppf2, *JxlGetDefaultCms()) * input_pixels;
-    s->distance_p_norm +=
-        ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm) *
-        input_pixels;
-    JXL_ASSIGN_OR_DIE(Msssim msssim, ComputeSSIMULACRA2(ppf, ppf2));
-    s->ssimulacra2 += msssim.Score() * input_pixels;
+            : jxl::ComputePSNR(ib1, ib2, *JxlGetDefaultCms()) * input_pixels;
+    double pnorm =
+        ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm);
+    s->distance_p_norm += pnorm * input_pixels;
+    JXL_ASSIGN_OR_RETURN(Msssim msssim, ComputeSSIMULACRA2(ib1, ib2));
+    double ssimulacra2 = msssim.Score();
+    s->ssimulacra2 += ssimulacra2 * input_pixels;
     s->max_distance = std::max(s->max_distance, distance);
     s->distances.push_back(distance);
   }
@@ -261,16 +355,21 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     std::string compressed_fn =
         outdir + "/" + name + CodecToExtension(codec_name, ':');
     std::string decompressed_fn = compressed_fn + Args()->output_extension;
-    JXL_CHECK(MakeDir(outdir));
+    std::string heatmap_fn;
+    if (jxl::extras::GetAPNGEncoder()) {
+      heatmap_fn = compressed_fn + ".heatmap.png";
+    } else {
+      heatmap_fn = compressed_fn + ".heatmap.ppm";
+    }
+    JXL_RETURN_IF_ERROR(MakeDir(outdir));
     if (Args()->save_compressed) {
-      JXL_CHECK(WriteFile(compressed_fn, *compressed));
+      JXL_RETURN_IF_ERROR(WriteFile(compressed_fn, *compressed));
     }
     if (Args()->save_decompressed && valid) {
       // TODO(szabadka): Handle Args()->mul_output
-      jxl::extras::EncodedImage encoded;
-      JXL_CHECK(jxl::extras::Encoder::FromExtension(Args()->output_extension)
-                    ->Encode(ppf2, &encoded, inner_pool));
-      JXL_CHECK(WriteFile(decompressed_fn, encoded.bitstreams[0]));
+      std::vector<uint8_t> encoded;
+      JXL_RETURN_IF_ERROR(jxl::Encode(ppf2, decompressed_fn, &encoded));
+      JXL_RETURN_IF_ERROR(WriteFile(decompressed_fn, encoded));
       if (!skip_butteraugli) {
         float good = Args()->heatmap_good > 0.0f
                          ? Args()->heatmap_good
@@ -279,9 +378,9 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
                         ? Args()->heatmap_bad
                         : jxl::ButteraugliFuzzyInverse(0.5);
         if (Args()->save_heatmap) {
-          JXL_ASSIGN_OR_DIE(Image3F heatmap,
-                            CreateHeatMapImage(distmap, good, bad));
-          JXL_CHECK(WriteImage(heatmap, inner_pool, compressed_fn));
+          JXL_ASSIGN_OR_RETURN(Image3F heatmap,
+                               CreateHeatMapImage(distmap, good, bad));
+          JXL_RETURN_IF_ERROR(WriteImage(heatmap, inner_pool, heatmap_fn));
         }
       }
     }
@@ -293,16 +392,15 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     std::string tmp_in_fn;
     std::string tmp_out_fn;
     std::string tmp_res_fn;
-    JXL_CHECK(tmp_in.GetFileName(&tmp_in_fn));
-    JXL_CHECK(tmp_out.GetFileName(&tmp_out_fn));
-    JXL_CHECK(tmp_res.GetFileName(&tmp_res_fn));
+    JXL_RETURN_IF_ERROR(tmp_in.GetFileName(&tmp_in_fn));
+    JXL_RETURN_IF_ERROR(tmp_out.GetFileName(&tmp_out_fn));
+    JXL_RETURN_IF_ERROR(tmp_res.GetFileName(&tmp_res_fn));
 
-    jxl::extras::EncodedImage encoded;
-    JXL_CHECK(jxl::extras::GetPFMEncoder()->Encode(ppf, &encoded, inner_pool));
-    JXL_CHECK(WriteFile(tmp_in_fn, encoded.bitstreams[0]));
-    encoded.bitstreams.clear();
-    JXL_CHECK(jxl::extras::GetPFMEncoder()->Encode(ppf2, &encoded, inner_pool));
-    JXL_CHECK(WriteFile(tmp_out_fn, encoded.bitstreams[0]));
+    std::vector<uint8_t> encoded;
+    JXL_RETURN_IF_ERROR(jxl::Encode(ppf, tmp_in_fn, &encoded));
+    JXL_RETURN_IF_ERROR(WriteFile(tmp_in_fn, encoded));
+    JXL_RETURN_IF_ERROR(jxl::Encode(ppf2, tmp_out_fn, &encoded));
+    JXL_RETURN_IF_ERROR(WriteFile(tmp_out_fn, encoded));
     // TODO(szabadka) Handle custom intensity target.
     std::string intensity_target = "255";
     for (const auto& extra_metrics_command : extra_metrics_commands) {
@@ -331,6 +429,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     fprintf(stderr, ".");
     fflush(stderr);
   }
+  return true;
 }
 
 // Makes a base64 data URI for embedded image in HTML
@@ -366,11 +465,11 @@ struct Task {
   BenchmarkStats stats;
 };
 
-void WriteHtmlReport(const std::string& codec_desc,
-                     const std::vector<std::string>& fnames,
-                     const std::vector<const Task*>& tasks,
-                     const std::vector<const PackedPixelFile*>& images,
-                     bool add_heatmap, bool self_contained) {
+Status WriteHtmlReport(const std::string& codec_desc,
+                       const std::vector<std::string>& fnames,
+                       const std::vector<const Task*>& tasks,
+                       const std::vector<const PackedPixelFile*>& images,
+                       bool add_heatmap, bool self_contained) {
   std::string toggle_js =
       "<script type=\"text/javascript\">\n"
       "  var codecname = '" +
@@ -545,7 +644,8 @@ void WriteHtmlReport(const std::string& codec_desc,
   out_html.append("</body>\n").append(toggle_js);
   std::string fname_index =
       std::string(outdir).append("/index.").append(codec_name).append(".html");
-  JXL_CHECK(WriteFile(fname_index, out_html));
+  JXL_RETURN_IF_ERROR(WriteFile(fname_index, out_html));
+  return true;
 }
 
 // Prints the detailed and aggregate statistics, in the correct order but as
@@ -575,7 +675,7 @@ struct StatPrinter {
     }
   }
 
-  void TaskDone(size_t task_index, const Task& t) {
+  Status TaskDone(size_t task_index, const Task& t) {
     std::lock_guard<std::mutex> guard(mutex);
     tasks_done_++;
     if (Args()->print_details || Args()->show_progress) {
@@ -595,15 +695,15 @@ struct StatPrinter {
       // rendered at the very end, else the details or progress would be
       // rendered in-between the table rows.
       if (tasks_done_ == tasks_->size()) {
-        PrintStatsHeader();
+        JXL_RETURN_IF_ERROR(PrintStatsHeader());
         for (size_t i = 0; i < methods_->size(); i++) {
-          PrintStats((*methods_)[i], i);
+          JXL_RETURN_IF_ERROR(PrintStats((*methods_)[i], i));
         }
-        PrintStatsFooter();
+        JXL_RETURN_IF_ERROR(PrintStatsFooter());
       }
     } else {
       if (tasks_done_ == 1) {
-        PrintStatsHeader();
+        JXL_RETURN_IF_ERROR(PrintStatsHeader());
       }
       // Render lines of the table as soon as it is ready and all previous
       // lines have been printed.
@@ -612,14 +712,16 @@ struct StatPrinter {
           t.idx_method == stats_printed_) {
         while (stats_printed_ < stats_done_.size() &&
                stats_done_[stats_printed_] == fnames_->size()) {
-          PrintStats((*methods_)[stats_printed_], stats_printed_);
+          JXL_RETURN_IF_ERROR(
+              PrintStats((*methods_)[stats_printed_], stats_printed_));
           stats_printed_++;
         }
       }
       if (tasks_done_ == tasks_->size()) {
-        PrintStatsFooter();
+        JXL_RETURN_IF_ERROR(PrintStatsFooter());
       }
     }
+    return true;
   }
 
   void PrintDetails(const Task& t) const {
@@ -679,7 +781,7 @@ struct StatPrinter {
     fflush(stdout);
   }
 
-  void PrintStats(const std::string& method, size_t idx_method) {
+  Status PrintStats(const std::string& method, size_t idx_method) {
     // Assimilate all tasks with the same idx_method.
     BenchmarkStats method_stats;
     std::vector<const PackedPixelFile*> images;
@@ -691,26 +793,28 @@ struct StatPrinter {
         tasks.push_back(&t);
       }
     }
+    JXL_ENSURE(method_stats.total_input_files == fnames_->size());
 
     std::string out;
 
-    method_stats.PrintMoreStats();  // not concurrent
-    out += method_stats.PrintLine(method, fnames_->size());
+    JXL_RETURN_IF_ERROR(method_stats.PrintMoreStats());  // not concurrent
+    out += method_stats.PrintLine(method);
 
     if (Args()->write_html_report) {
-      WriteHtmlReport(method, *fnames_, tasks, images,
-                      Args()->save_heatmap && Args()->html_report_add_heatmap,
-                      Args()->html_report_self_contained);
+      JXL_RETURN_IF_ERROR(WriteHtmlReport(
+          method, *fnames_, tasks, images,
+          Args()->save_heatmap && Args()->html_report_add_heatmap,
+          Args()->html_report_self_contained));
     }
 
-    stats_aggregate_.push_back(
-        method_stats.ComputeColumns(method, fnames_->size()));
+    stats_aggregate_.push_back(method_stats.ComputeColumns(method));
 
     printf("%s", out.c_str());
     fflush(stdout);
+    return true;
   }
 
-  void PrintStatsHeader() const {
+  Status PrintStatsHeader() const {
     if (Args()->markdown) {
       if (Args()->show_progress) {
         fprintf(stderr, "\n");
@@ -718,18 +822,27 @@ struct StatPrinter {
       }
       printf("```\n");
     }
-    if (fnames_->size() == 1) printf("%s\n", (*fnames_)[0].c_str());
-    printf("%s", PrintHeader(*extra_metrics_names_).c_str());
+    if (fnames_->size() == 1) {
+      printf("%s\n", (*fnames_)[0].c_str());
+    } else {
+      printf("%" PRIuS " images\n", fnames_->size());
+    }
+    JXL_ASSIGN_OR_RETURN(std::string header,
+                         PrintHeader(*extra_metrics_names_));
+    printf("%s", header.c_str());
     fflush(stdout);
+    return true;
   }
 
-  void PrintStatsFooter() const {
-    printf(
-        "%s",
-        PrintAggregate(extra_metrics_names_->size(), stats_aggregate_).c_str());
+  Status PrintStatsFooter() const {
+    JXL_ASSIGN_OR_RETURN(
+        std::string aggregate,
+        PrintAggregate(extra_metrics_names_->size(), stats_aggregate_));
+    printf("%s", aggregate.c_str());
     if (Args()->markdown) printf("```\n");
     printf("\n");
     fflush(stdout);
+    return true;
   }
 
   const std::vector<std::string>* methods_;
@@ -758,15 +871,20 @@ class Benchmark {
 
  public:
   // Return the exit code of the program.
-  static int Run() {
-    int ret = EXIT_SUCCESS;
+  static Status Run() {
+    JxlMemoryManager default_memory_manager;
+    JXL_RETURN_IF_ERROR(
+        jxl::MemoryManagerInit(&default_memory_manager, nullptr));
+    TrackingMemoryManager memory_manager(&default_memory_manager);
+    bool ok = true;
     {
       const StringVec methods = GetMethods();
       const StringVec extra_metrics_names = GetExtraMetricsNames();
       const StringVec extra_metrics_commands = GetExtraMetricsCommands();
       const StringVec fnames = GetFilenames();
       // (non-const because Task.stats are updated)
-      std::vector<Task> tasks = CreateTasks(methods, fnames);
+      JXL_ASSIGN_OR_RETURN(std::vector<Task> tasks,
+                           CreateTasks(methods, fnames, memory_manager.get()));
 
       std::unique_ptr<ThreadPoolInternal> pool;
       std::vector<std::unique_ptr<ThreadPoolInternal>> inner_pools;
@@ -777,14 +895,16 @@ class Benchmark {
 
       if (RunTasks(methods, extra_metrics_names, extra_metrics_commands, fnames,
                    loaded_images, pool->get(), inner_pools, &tasks) != 0) {
-        ret = EXIT_FAILURE;
+        ok = false;
         if (!Args()->silent_errors) {
           fprintf(stderr, "There were error(s) in the benchmark.\n");
         }
       }
     }
 
-    return ret;
+    memory_manager.PrintStats();
+    if (!ok) return JXL_FAILURE("RunTasks error");
+    return true;
   }
 
  private:
@@ -885,7 +1005,7 @@ class Benchmark {
         it = metrics.erase(it);
       } else {
         auto s = SplitString(*it, ':');
-        JXL_CHECK(s.size() == 2);
+        JPEGXL_TOOLS_CHECK(s.size() == 2);
         *it = s[1];
         ++it;
       }
@@ -893,11 +1013,62 @@ class Benchmark {
     return metrics;
   }
 
+  static StringVec SampleFromInput(const StringVec& fnames,
+                                   const std::string& sample_tmp_dir,
+                                   int num_samples, size_t size) {
+    JPEGXL_TOOLS_CHECK(!sample_tmp_dir.empty());
+    fprintf(stderr, "Creating samples of %" PRIuS "x%" PRIuS " tiles...\n",
+            size, size);
+    StringVec fnames_out;
+    std::vector<Image3F> images;
+    std::vector<size_t> offsets;
+    size_t total_num_tiles = 0;
+    for (const auto& fname : fnames) {
+      Image3F img;
+      JPEGXL_TOOLS_CHECK(ReadPNG(fname, &img));
+      JPEGXL_TOOLS_CHECK(img.xsize() >= size);
+      JPEGXL_TOOLS_CHECK(img.ysize() >= size);
+      total_num_tiles += (img.xsize() - size + 1) * (img.ysize() - size + 1);
+      offsets.push_back(total_num_tiles);
+      images.emplace_back(std::move(img));
+    }
+    JPEGXL_TOOLS_CHECK(MakeDir(sample_tmp_dir));
+    Rng rng(0);
+    for (int i = 0; i < num_samples; ++i) {
+      int val = rng.UniformI(0, offsets.back());
+      size_t idx = (std::lower_bound(offsets.begin(), offsets.end(), val) -
+                    offsets.begin());
+      JPEGXL_TOOLS_CHECK(idx < images.size());
+      const Image3F& img = images[idx];
+      int x0 = rng.UniformI(0, img.xsize() - size);
+      int y0 = rng.UniformI(0, img.ysize() - size);
+      JXL_ASSIGN_OR_QUIT(
+          Image3F sample,
+          Image3F::Create(jpegxl::tools::NoMemoryManager(), size, size),
+          "Allocation failure.");
+      for (size_t c = 0; c < 3; ++c) {
+        for (size_t y = 0; y < size; ++y) {
+          const float* JXL_RESTRICT row_in = img.PlaneRow(c, y0 + y);
+          float* JXL_RESTRICT row_out = sample.PlaneRow(c, y);
+          memcpy(row_out, &row_in[x0], size * sizeof(row_out[0]));
+        }
+      }
+      std::string fn_output =
+          StringPrintf("%s/%s.crop_%dx%d+%d+%d.png", sample_tmp_dir.c_str(),
+                       FileBaseName(fnames[idx]).c_str(), size, size, x0, y0);
+      ThreadPool* null_pool = nullptr;
+      JPEGXL_TOOLS_CHECK(WriteImage(sample, null_pool, fn_output));
+      fnames_out.push_back(fn_output);
+    }
+    fprintf(stderr, "Created %d sample tiles\n", num_samples);
+    return fnames_out;
+  }
+
   static StringVec GetFilenames() {
     StringVec fnames;
-    JXL_CHECK(MatchFiles(Args()->input, &fnames));
+    JPEGXL_TOOLS_CHECK(MatchFiles(Args()->input, &fnames));
     if (fnames.empty()) {
-      JXL_ABORT("No input file matches pattern: '%s'", Args()->input.c_str());
+      JPEGXL_TOOLS_ABORT("No input file matches pattern");
     }
     if (Args()->print_details) {
       std::sort(fnames.begin(), fnames.end());
@@ -944,13 +1115,15 @@ class Benchmark {
       }
       return true;
     };
-    JXL_CHECK(jxl::RunOnPool(pool, 0, static_cast<uint32_t>(fnames.size()),
-                             ThreadPool::NoInit, process_image, "Load images"));
+    JPEGXL_TOOLS_CHECK(
+        jxl::RunOnPool(pool, 0, static_cast<uint32_t>(fnames.size()),
+                       ThreadPool::NoInit, process_image, "Load images"));
     return loaded_images;
   }
 
-  static std::vector<Task> CreateTasks(const StringVec& methods,
-                                       const StringVec& fnames) {
+  static StatusOr<std::vector<Task>> CreateTasks(
+      const StringVec& methods, const StringVec& fnames,
+      JxlMemoryManager* memory_manager) {
     std::vector<Task> tasks;
     tasks.reserve(methods.size() * fnames.size());
     for (size_t idx_image = 0; idx_image < fnames.size(); ++idx_image) {
@@ -963,7 +1136,7 @@ class Benchmark {
         // t.stats is default-initialized.
       }
     }
-    JXL_ASSERT(tasks.size() == tasks.capacity());
+    JXL_ENSURE(tasks.size() == tasks.capacity());
     return tasks;
   }
 
@@ -998,15 +1171,18 @@ class Benchmark {
       const PackedPixelFile& image = loaded_images[t.idx_image];
       t.image = &image;
       std::vector<uint8_t> compressed;
-      DoCompress(fnames[t.idx_image], image, extra_metrics_commands,
-                 t.codec.get(), inner_pools[thread]->get(), &compressed,
-                 &t.stats);
-      printer.TaskDone(i, t);
+      if (!DoCompress(fnames[t.idx_image], image, extra_metrics_commands,
+                      t.codec.get(), inner_pools[thread]->get(), &compressed,
+                      &t.stats)) {
+        t.stats.total_errors++;
+      } else if (!printer.TaskDone(i, t)) {
+        t.stats.total_errors++;
+      }
       errors_thread[8 * thread] += t.stats.total_errors;
       return true;
     };
-    JXL_CHECK(jxl::RunOnPool(pool, 0, tasks->size(), init, do_task,
-                             "Benchmark tasks"));
+    JPEGXL_TOOLS_CHECK(jxl::RunOnPool(pool, 0, tasks->size(), init, do_task,
+                                      "Benchmark tasks"));
     if (Args()->show_progress) fprintf(stderr, "\n");
     return std::accumulate(errors_thread.begin(), errors_thread.end(),
                            static_cast<size_t>(0));
@@ -1014,22 +1190,25 @@ class Benchmark {
 };
 
 int BenchmarkMain(int argc, const char** argv) {
-  JXL_CHECK(Args()->AddCommandLineOptions());
+  fprintf(stderr, "benchmark_xl %s\n",
+          jpegxl::tools::CodecConfigString(JxlDecoderVersion()).c_str());
+
+  JPEGXL_TOOLS_CHECK(Args()->AddCommandLineOptions());
 
   if (!Args()->Parse(argc, argv)) {
     fprintf(stderr, "Use '%s -h' for more information\n", argv[0]);
-    return 1;
+    return EXIT_FAILURE;
   }
 
   if (Args()->cmdline.HelpFlagPassed()) {
     Args()->PrintHelp();
-    return 0;
+    return EXIT_SUCCESS;
   }
   if (!Args()->ValidateArgs()) {
     fprintf(stderr, "Use '%s -h' for more information\n", argv[0]);
-    return 1;
+    return EXIT_FAILURE;
   }
-  return Benchmark::Run();
+  return Benchmark::Run() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 }  // namespace

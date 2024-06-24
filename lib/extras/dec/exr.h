@@ -9,9 +9,8 @@
 
 // Decodes OpenEXR images in memory.
 
-#include "lib/base/data_parallel.h"
-#include "lib/base/span.h"
-#include "lib/base/status.h"
+#include <cstdint>
+
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/packed_image.h"
 

@@ -133,34 +133,27 @@ double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
 void ComputeSumOfSquares(const extras::PackedPixelFile& a,
                          const extras::PackedPixelFile& b,
                          const JxlCmsInterface& cms, double sum_of_squares[3]) {
-  const size_t xsize = a.xsize();
-  const size_t ysize = a.ysize();
-  const bool is_gray = a.info.num_color_channels == 1;
+  sum_of_squares[0] = sum_of_squares[1] = sum_of_squares[2] =
+      std::numeric_limits<double>::max();
   // Convert to sRGB - closer to perception than linear.
-  ColorEncoding c_desired = ColorEncoding::SRGB(is_gray);
-
-  JXL_ASSIGN_OR_DIE(Image3F srgb0, Image3F::Create(xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(a, &srgb0, nullptr));
-  JXL_ASSIGN_OR_DIE(Image3F srgb1, Image3F::Create(xsize, ysize));
-  JXL_CHECK(ConvertPackedPixelFileToImage3F(b, &srgb1, nullptr));
-
-  ColorEncoding c_enc_a;
-  ColorEncoding c_enc_b;
-  JXL_CHECK(GetColorEncoding(a, &c_enc_a));
-  JXL_CHECK(GetColorEncoding(b, &c_enc_b));
-  float intensity_a = GetIntensityTarget(a, c_enc_a);
-  float intensity_b = GetIntensityTarget(b, c_enc_b);
-
-  if (!c_enc_a.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_a, intensity_a, srgb0, nullptr,
-                                  Rect(srgb0), c_desired, cms, nullptr,
-                                  &srgb0));
+  const Image3F* srgb1 = &ib1.color();
+  Image3F copy1;
+  if (!ib1.IsSRGB()) {
+    if (!ib1.CopyTo(Rect(ib1), ColorEncoding::SRGB(ib1.IsGray()), cms, &copy1))
+      return;
+    srgb1 = &copy1;
   }
-  if (!c_enc_b.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(c_enc_b, intensity_b, srgb1, nullptr,
-                                  Rect(srgb1), c_desired, cms, nullptr,
-                                  &srgb1));
+  const Image3F* srgb2 = &ib2.color();
+  Image3F copy2;
+  if (!ib2.IsSRGB()) {
+    if (!ib2.CopyTo(Rect(ib2), ColorEncoding::SRGB(ib2.IsGray()), cms, &copy2))
+      return;
+    srgb2 = &copy2;
   }
+
+  if (!SameSize(*srgb1, *srgb2)) return;
+
+  sum_of_squares[0] = sum_of_squares[1] = sum_of_squares[2] = 0.0;
 
   // TODO(veluca): SIMD.
   float yuvmatrix[3][3] = {{0.299, 0.587, 0.114},

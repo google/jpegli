@@ -68,10 +68,12 @@
     EXPECT_TRUE(F) << _.str(); \
   }
 
-#define JXL_ASSERT_OK(F)       \
+#define JXL_TEST_ASSERT_OK(F)  \
   {                            \
     std::stringstream _;       \
     ASSERT_TRUE(F) << _.str(); \
   }
 
-#endif  // LIB_JXL_BASE_TESTING_H_
+#define QUIT(M) FAIL() << M;
+
+#endif  // LIB_JXL_TESTING_H_

@@ -9,10 +9,13 @@
 
 // Metadata for color space conversions.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <jxl/cms_interface.h>
+#include <jxl/color_encoding.h>
+#include <jxl/types.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>  // free
 #include <hwy/base.h>
 #include <ostream>
@@ -176,9 +179,10 @@ struct ColorEncoding {
 
   // Returns true if `icc` is assigned and decoded successfully.
   Status SetICC(IccBytes&& icc, const JxlCmsInterface* cms) {
-    JXL_ASSERT(cms != nullptr);
-    JXL_ASSERT(!icc.empty());
-    return storage_.SetFieldsFromICC(std::move(icc), *cms);
+    JXL_ENSURE(cms != nullptr);
+    JXL_ENSURE(!icc.empty());
+    want_icc_ = storage_.SetFieldsFromICC(std::move(icc), *cms);
+    return want_icc_;
   }
 
   // Sets the raw ICC profile bytes, without parsing the ICC, and without
@@ -187,7 +191,7 @@ struct ColorEncoding {
   // used anymore after this and functions such as IsSRGB return false no matter
   // what the contents of the icc profile.
   void SetICCRaw(IccBytes&& icc) {
-    JXL_ASSERT(!icc.empty());
+    JXL_DASSERT(!icc.empty());
     storage_.icc = std::move(icc);
     storage_.have_fields = false;
   }
@@ -241,7 +245,7 @@ struct ColorEncoding {
   Status SetSRGB(const ColorSpace cs,
                  const RenderingIntent ri = RenderingIntent::kRelative) {
     storage_.icc.clear();
-    JXL_ASSERT(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
+    JXL_ENSURE(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
     storage_.color_space = cs;
     storage_.white_point = WhitePoint::kD65;
     storage_.primaries = Primaries::kSRGB;
@@ -256,12 +260,10 @@ struct ColorEncoding {
   CIExy GetWhitePoint() const { return storage_.GetWhitePoint(); }
 
   WhitePoint GetWhitePointType() const { return storage_.white_point; }
-  Status SetWhitePointType(const WhitePoint& wp) {
-    JXL_DASSERT(storage_.have_fields);
-    storage_.white_point = wp;
-    return true;
+  Status SetWhitePointType(const WhitePoint& wp);
+  Status GetPrimaries(PrimariesCIExy& p) const {
+    return storage_.GetPrimaries(p);
   }
-  PrimariesCIExy GetPrimaries() const { return storage_.GetPrimaries(); }
 
   Primaries GetPrimariesType() const { return storage_.primaries; }
   Status SetPrimariesType(const Primaries& p) {

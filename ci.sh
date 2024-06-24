@@ -482,7 +482,7 @@ cmd_release() {
 
 cmd_opt() {
   CMAKE_BUILD_TYPE="RelWithDebInfo"
-  CMAKE_CXX_FLAGS+=" -DJXL_DEBUG_BUILD -DJXL_DEBUG_ON_ERROR"
+  CMAKE_CXX_FLAGS+=" -DJXL_IS_DEBUG_BUILD"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -575,9 +575,9 @@ cmd_msanfuzz() {
 
 cmd_asan() {
   SANITIZER="asan"
-  CMAKE_C_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_C_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
-  CMAKE_CXX_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_CXX_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
   strip_dead_code
   cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
@@ -587,7 +587,6 @@ cmd_asan() {
 cmd_tsan() {
   SANITIZER="tsan"
   local tsan_args=(
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DTHREAD_SANITIZER
     ${UBSAN_FLAGS[@]}
@@ -615,7 +614,6 @@ cmd_msan() {
     -fsanitize=memory
     -fno-omit-frame-pointer
 
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DMEMORY_SANITIZER
 

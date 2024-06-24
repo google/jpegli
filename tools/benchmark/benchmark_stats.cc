@@ -158,8 +158,16 @@ void BenchmarkStats::Assimilate(const BenchmarkStats& victim) {
   }
 }
 
-void BenchmarkStats::PrintMoreStats() const {
-  if (Args()->print_distance_percentiles) {
+::jxl::Status BenchmarkStats::PrintMoreStats() const {
+  if (Args()->print_more_stats) {
+    jxl_stats.Print();
+  }
+  if (Args()->print_distance_percentiles && distances.size() > 1) {
+    const auto& descriptors = GetColumnDescriptors(0);
+    int spaces = 0;
+    for (int i = 0; i < 4; i++) spaces += descriptors[i].width;
+    JXL_ENSURE(distances.size() == pnorms.size());
+    JXL_ENSURE(distances.size() == ssimulacra2s.size());
     std::vector<float> sorted = distances;
     std::sort(sorted.begin(), sorted.end());
     int p50idx = 0.5 * distances.size();
@@ -167,11 +175,11 @@ void BenchmarkStats::PrintMoreStats() const {
     printf("50th/90th percentile distance: %.8f  %.8f\n", sorted[p50idx],
            sorted[p90idx]);
   }
+  return true;
 }
 
 std::vector<ColumnValue> BenchmarkStats::ComputeColumns(
-    const std::string& codec_desc, size_t corpus_size) const {
-  JXL_CHECK(total_input_files == corpus_size);
+    const std::string& codec_desc) const {
   const double comp_bpp = total_compressed_size * 8.0 / total_input_pixels;
   const double adj_comp_bpp =
       total_adj_compressed_size * 8.0 / total_input_pixels;
@@ -241,13 +249,13 @@ static std::string PrintFormattedEntries(
   return out + "\n";
 }
 
-std::string BenchmarkStats::PrintLine(const std::string& codec_desc,
-                                      size_t corpus_size) const {
-  std::vector<ColumnValue> values = ComputeColumns(codec_desc, corpus_size);
+std::string BenchmarkStats::PrintLine(const std::string& codec_desc) const {
+  std::vector<ColumnValue> values = ComputeColumns(codec_desc);
   return PrintFormattedEntries(extra_metrics.size(), values);
 }
 
-std::string PrintHeader(const std::vector<std::string>& extra_metrics_names) {
+::jxl::StatusOr<std::string> PrintHeader(
+    const std::vector<std::string>& extra_metrics_names) {
   std::string out;
   // Extra metrics are handled separately.
   const auto& descriptors = GetColumnDescriptors(0);
@@ -262,8 +270,8 @@ std::string PrintHeader(const std::vector<std::string>& extra_metrics_names) {
   }
   for (const std::string& em : extra_metrics_names) {
     int numspaces = ExtraMetricDescriptor().width - em.size();
-    JXL_CHECK(numspaces >= 1);
-    out += std::string(numspaces, ' ');
+    JXL_ENSURE(numspaces >= 1);
+    out += std::string(std::max(numspaces, 1), ' ');
     out += em;
   }
   out += '\n';
@@ -276,14 +284,14 @@ std::string PrintHeader(const std::vector<std::string>& extra_metrics_names) {
   return out + "\n";
 }
 
-std::string PrintAggregate(
+::jxl::StatusOr<std::string> PrintAggregate(
     size_t num_extra_metrics,
     const std::vector<std::vector<ColumnValue>>& aggregate) {
   const auto& descriptors = GetColumnDescriptors(num_extra_metrics);
 
   for (const auto& column : aggregate) {
     // Check when statistics has wrong amount of column entries
-    JXL_CHECK(column.size() == descriptors.size());
+    JXL_ENSURE(column.size() == descriptors.size());
   }
 
   std::vector<ColumnValue> result(descriptors.size());
@@ -324,7 +332,7 @@ std::string PrintAggregate(
     } else if (type == TYPE_POSITIVE_FLOAT) {
       result[i].f = geomean;
     } else {
-      JXL_ABORT("unknown entry type");
+      JXL_DEBUG_ABORT("Unreachable");
     }
   }
 

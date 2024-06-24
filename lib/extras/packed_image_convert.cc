@@ -7,126 +7,61 @@
 #include "lib/extras/packed_image_convert.h"
 
 #include <cstdint>
+#include <cstdio>
 
-#include "lib/base/byte_order.h"
-#include "lib/base/common.h"
-#include "lib/base/compiler_specific.h"
-#include "lib/base/float.h"
-#include "lib/base/printf_macros.h"
-#include "lib/base/rect.h"
-#include "lib/base/sanitizers.h"
-#include "lib/base/status.h"
-#include "lib/base/types.h"
-#include "lib/cms/cms.h"
-#include "lib/cms/color_encoding.h"
-#include "lib/cms/color_encoding_internal.h"
-#include "lib/extras/image_color_transform.h"
-#include "lib/extras/image_ops.h"
-
-#undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/extras/packed_image_convert.cc"
-#include <hwy/foreach_target.h>
-#include <hwy/highway.h>
-
-HWY_BEFORE_NAMESPACE();
-namespace jxl {
-namespace HWY_NAMESPACE {
-
-// These templates are not found via ADL.
-using hwy::HWY_NAMESPACE::Clamp;
-using hwy::HWY_NAMESPACE::Mul;
-using hwy::HWY_NAMESPACE::NearestInt;
-
-// TODO(jon): check if this can be replaced by a FloatToU16 function
-void FloatToU32(const float* in, uint32_t* out, size_t num, float mul,
-                size_t bits_per_sample) {
-  const HWY_FULL(float) d;
-  const hwy::HWY_NAMESPACE::Rebind<uint32_t, decltype(d)> du;
-
-  // Unpoison accessing partially-uninitialized vectors with memory sanitizer.
-  // This is because we run NearestInt() on the vector, which triggers MSAN even
-  // it is safe to do so since the values are not mixed between lanes.
-  const size_t num_round_up = RoundUpTo(num, Lanes(d));
-  msan::UnpoisonMemory(in + num, sizeof(in[0]) * (num_round_up - num));
-
-  const auto one = Set(d, 1.0f);
-  const auto scale = Set(d, mul);
-  for (size_t x = 0; x < num; x += Lanes(d)) {
-    auto v = Load(d, in + x);
-    // Clamp turns NaN to 'min'.
-    v = Clamp(v, Zero(d), one);
-    auto i = NearestInt(Mul(v, scale));
-    Store(BitCast(du, i), du, out + x);
-  }
-
-  // Poison back the output.
-  msan::PoisonMemory(out + num, sizeof(out[0]) * (num_round_up - num));
-}
-
-void FloatToF16(const float* in, hwy::float16_t* out, size_t num) {
-  const HWY_FULL(float) d;
-  const hwy::HWY_NAMESPACE::Rebind<hwy::float16_t, decltype(d)> du;
-
-  // Unpoison accessing partially-uninitialized vectors with memory sanitizer.
-  // This is because we run DemoteTo() on the vector which triggers msan.
-  const size_t num_round_up = RoundUpTo(num, Lanes(d));
-  msan::UnpoisonMemory(in + num, sizeof(in[0]) * (num_round_up - num));
-
-  for (size_t x = 0; x < num; x += Lanes(d)) {
-    auto v = Load(d, in + x);
-    auto v16 = DemoteTo(du, v);
-    Store(v16, du, out + x);
-  }
-
-  // Poison back the output.
-  msan::PoisonMemory(out + num, sizeof(out[0]) * (num_round_up - num));
-}
-
-// NOLINTNEXTLINE(google-readability-namespace-comments)
-}  // namespace HWY_NAMESPACE
-}  // namespace jxl
-HWY_AFTER_NAMESPACE();
-
-#if HWY_ONCE
+#include "lib/extras/packed_image.h"
+#include "lib/jxl/base/rect.h"
+#include "lib/jxl/base/status.h"
+#include "lib/jxl/color_encoding_internal.h"
+#include "lib/jxl/dec_external_image.h"
+#include "lib/jxl/enc_external_image.h"
+#include "lib/jxl/enc_image_bundle.h"
+#include "lib/jxl/luminance.h"
 
 namespace jxl {
 namespace extras {
 
-namespace {
-
-// Stores a float in big endian
-void StoreBEFloat(float value, uint8_t* p) {
-  uint32_t u;
-  memcpy(&u, &value, 4);
-  StoreBE32(u, p);
-}
-
-// Stores a float in little endian
-void StoreLEFloat(float value, uint8_t* p) {
-  uint32_t u;
-  memcpy(&u, &value, 4);
-  StoreLE32(u, p);
-}
-
-}  // namespace
-
-HWY_EXPORT(FloatToU32);
-HWY_EXPORT(FloatToF16);
-
-namespace {
-
-using StoreFuncType = void(uint32_t value, uint8_t* dest);
-template <StoreFuncType StoreFunc>
-void StoreUintRow(uint32_t* JXL_RESTRICT* rows_u32, size_t num_channels,
-                  size_t xsize, size_t bytes_per_sample,
-                  uint8_t* JXL_RESTRICT out) {
-  for (size_t x = 0; x < xsize; ++x) {
-    for (size_t c = 0; c < num_channels; c++) {
-      StoreFunc(rows_u32[c][x],
-                out + (num_channels * x + c) * bytes_per_sample);
-    }
+Status ConvertPackedFrameToImageBundle(const JxlBasicInfo& info,
+                                       const JxlBitDepth& input_bitdepth,
+                                       const PackedFrame& frame,
+                                       const CodecInOut& io, ThreadPool* pool,
+                                       ImageBundle* bundle) {
+  JxlMemoryManager* memory_manager = io.memory_manager;
+  JXL_ENSURE(frame.color.pixels() != nullptr);
+  size_t frame_bits_per_sample;
+  if (input_bitdepth.type == JXL_BIT_DEPTH_FROM_PIXEL_FORMAT) {
+    JXL_RETURN_IF_ERROR(
+        PackedImage::ValidateDataType(frame.color.format.data_type));
+    frame_bits_per_sample =
+        PackedImage::BitsPerChannel(frame.color.format.data_type);
+  } else {
+    frame_bits_per_sample = info.bits_per_sample;
   }
-}
+  JXL_ENSURE(frame_bits_per_sample != 0);
+  // It is ok for the frame.color.format.num_channels to not match the
+  // number of channels on the image.
+  JXL_ENSURE(1 <= frame.color.format.num_channels &&
+             frame.color.format.num_channels <= 4);
+
+  const Span<const uint8_t> span(
+      static_cast<const uint8_t*>(frame.color.pixels()),
+      frame.color.pixels_size);
+  JXL_ENSURE(Rect(frame.frame_info.layer_info.crop_x0,
+                  frame.frame_info.layer_info.crop_y0,
+                  frame.frame_info.layer_info.xsize,
+                  frame.frame_info.layer_info.ysize)
+                 .IsInside(Rect(0, 0, info.xsize, info.ysize)));
+  if (info.have_animation) {
+    bundle->duration = frame.frame_info.duration;
+    bundle->blend = frame.frame_info.layer_info.blend_info.blendmode > 0;
+    bundle->use_for_next_frame =
+        frame.frame_info.layer_info.save_as_reference > 0;
+    bundle->origin.x0 = frame.frame_info.layer_info.crop_x0;
+    bundle->origin.y0 = frame.frame_info.layer_info.crop_y0;
+  }
+  bundle->name = frame.name;  // frame.frame_info.name_length is ignored here.
+  JXL_ENSURE(io.metadata.m.color_encoding.IsGray() ==
+             (frame.color.format.num_channels <= 2));
 
 template <void(StoreFunc)(float, uint8_t*)>
 void StoreFloatRow(const float* JXL_RESTRICT* rows_in, size_t num_channels,
@@ -138,238 +73,58 @@ void StoreFloatRow(const float* JXL_RESTRICT* rows_in, size_t num_channels,
   }
 }
 
-void JXL_INLINE Store8(uint32_t value, uint8_t* dest) { *dest = value & 0xff; }
-
-}  // namespace
-
-// Maximum number of channels for the ConvertChannelsToExternal function.
-const size_t kConvertMaxChannels = 4;
-
-Status ConvertChannelsToExternal(const ImageF* in_channels[],
-                                 size_t num_channels, size_t bits_per_sample,
-                                 bool float_out, JxlEndianness endianness,
-                                 size_t stride, jxl::ThreadPool* pool,
-                                 void* out_image, size_t out_size) {
-  JXL_DASSERT(num_channels != 0 && num_channels <= kConvertMaxChannels);
-  JXL_DASSERT(in_channels[0] != nullptr);
-  JXL_CHECK(float_out ? bits_per_sample == 16 || bits_per_sample == 32
-                      : bits_per_sample > 0 && bits_per_sample <= 16);
-  JXL_CHECK(out_image);
-  std::vector<const ImageF*> channels;
-  channels.assign(in_channels, in_channels + num_channels);
-
-  const size_t bytes_per_channel = DivCeil(bits_per_sample, jxl::kBitsPerByte);
-  const size_t bytes_per_pixel = num_channels * bytes_per_channel;
-
-  // First channel may not be nullptr.
-  size_t xsize = channels[0]->xsize();
-  size_t ysize = channels[0]->ysize();
-  if (stride < bytes_per_pixel * xsize) {
-    return JXL_FAILURE("stride is smaller than scanline width in bytes: %" PRIuS
-                       " vs %" PRIuS,
-                       stride, bytes_per_pixel * xsize);
-  }
-  if (out_size < (ysize - 1) * stride + bytes_per_pixel * xsize) {
-    return JXL_FAILURE("out_size is too small to store image");
-  }
-
-  const bool little_endian =
-      endianness == JXL_LITTLE_ENDIAN ||
-      (endianness == JXL_NATIVE_ENDIAN && IsLittleEndian());
-
-  // Handle the case where a channel is nullptr by creating a single row with
-  // ones to use instead.
-  ImageF ones;
-  for (size_t c = 0; c < num_channels; ++c) {
-    if (!channels[c]) {
-      JXL_ASSIGN_OR_RETURN(ones, ImageF::Create(xsize, 1));
-      FillImage(1.0f, &ones);
-      break;
-    }
-  }
-
-  if (float_out) {
-    if (bits_per_sample == 16) {
-      bool swap_endianness = little_endian != IsLittleEndian();
-      Plane<hwy::float16_t> f16_cache;
-      JXL_RETURN_IF_ERROR(RunOnPool(
-          pool, 0, static_cast<uint32_t>(ysize),
-          [&](size_t num_threads) {
-            StatusOr<Plane<hwy::float16_t>> f16_cache_or =
-                Plane<hwy::float16_t>::Create(xsize,
-                                              num_channels * num_threads);
-            if (!f16_cache_or.ok()) return false;
-            f16_cache = std::move(f16_cache_or).value();
-            return true;
-          },
-          [&](const uint32_t task, const size_t thread) {
-            const int64_t y = task;
-            const float* JXL_RESTRICT row_in[kConvertMaxChannels];
-            for (size_t c = 0; c < num_channels; c++) {
-              row_in[c] = channels[c] ? channels[c]->Row(y) : ones.Row(0);
-            }
-            hwy::float16_t* JXL_RESTRICT row_f16[kConvertMaxChannels];
-            for (size_t c = 0; c < num_channels; c++) {
-              row_f16[c] = f16_cache.Row(c + thread * num_channels);
-              HWY_DYNAMIC_DISPATCH(FloatToF16)
-              (row_in[c], row_f16[c], xsize);
-            }
-            uint8_t* row_out =
-                &(reinterpret_cast<uint8_t*>(out_image))[stride * y];
-            // interleave the one scanline
-            hwy::float16_t* row_f16_out =
-                reinterpret_cast<hwy::float16_t*>(row_out);
-            for (size_t x = 0; x < xsize; x++) {
-              for (size_t c = 0; c < num_channels; c++) {
-                row_f16_out[x * num_channels + c] = row_f16[c][x];
-              }
-            }
-            if (swap_endianness) {
-              size_t size = xsize * num_channels * 2;
-              for (size_t i = 0; i < size; i += 2) {
-                std::swap(row_out[i + 0], row_out[i + 1]);
-              }
-            }
-          },
-          "ConvertF16"));
-    } else if (bits_per_sample == 32) {
-      JXL_RETURN_IF_ERROR(RunOnPool(
-          pool, 0, static_cast<uint32_t>(ysize),
-          [&](size_t num_threads) { return true; },
-          [&](const uint32_t task, const size_t thread) {
-            const int64_t y = task;
-            uint8_t* row_out =
-                &(reinterpret_cast<uint8_t*>(out_image))[stride * y];
-            const float* JXL_RESTRICT row_in[kConvertMaxChannels];
-            for (size_t c = 0; c < num_channels; c++) {
-              row_in[c] = channels[c] ? channels[c]->Row(y) : ones.Row(0);
-            }
-            if (little_endian) {
-              StoreFloatRow<StoreLEFloat>(row_in, num_channels, xsize, row_out);
-            } else {
-              StoreFloatRow<StoreBEFloat>(row_in, num_channels, xsize, row_out);
-            }
-          },
-          "ConvertFloat"));
-    } else {
-      return JXL_FAILURE("float other than 16-bit and 32-bit not supported");
-    }
-  } else {
-    // Multiplier to convert from floating point 0-1 range to the integer
-    // range.
-    float mul = (1ull << bits_per_sample) - 1;
-    Plane<uint32_t> u32_cache;
-    JXL_RETURN_IF_ERROR(RunOnPool(
-        pool, 0, static_cast<uint32_t>(ysize),
-        [&](size_t num_threads) {
-          StatusOr<Plane<uint32_t>> u32_cache_or =
-              Plane<uint32_t>::Create(xsize, num_channels * num_threads);
-          if (!u32_cache_or.ok()) return false;
-          u32_cache = std::move(u32_cache_or).value();
-          return true;
-        },
-        [&](const uint32_t task, const size_t thread) {
-          const int64_t y = task;
-          uint8_t* row_out =
-              &(reinterpret_cast<uint8_t*>(out_image))[stride * y];
-          const float* JXL_RESTRICT row_in[kConvertMaxChannels];
-          for (size_t c = 0; c < num_channels; c++) {
-            row_in[c] = channels[c] ? channels[c]->Row(y) : ones.Row(0);
-          }
-          uint32_t* JXL_RESTRICT row_u32[kConvertMaxChannels];
-          for (size_t c = 0; c < num_channels; c++) {
-            row_u32[c] = u32_cache.Row(c + thread * num_channels);
-            // row_u32[] is a per-thread temporary row storage, this isn't
-            // intended to be initialized on a previous run.
-            msan::PoisonMemory(row_u32[c], xsize * sizeof(row_u32[c][0]));
-            HWY_DYNAMIC_DISPATCH(FloatToU32)
-            (row_in[c], row_u32[c], xsize, mul, bits_per_sample);
-          }
-          if (bits_per_sample <= 8) {
-            StoreUintRow<Store8>(row_u32, num_channels, xsize, 1, row_out);
-          } else {
-            if (little_endian) {
-              StoreUintRow<StoreLE16>(row_u32, num_channels, xsize, 2, row_out);
-            } else {
-              StoreUintRow<StoreBE16>(row_u32, num_channels, xsize, 2, row_out);
-            }
-          }
-        },
-        "ConvertUint"));
+  bundle->extra_channels().resize(io.metadata.m.extra_channel_info.size());
+  for (size_t i = 0; i < frame.extra_channels.size(); i++) {
+    const auto& ppf_ec = frame.extra_channels[i];
+    JXL_ASSIGN_OR_RETURN(
+        bundle->extra_channels()[i],
+        ImageF::Create(memory_manager, ppf_ec.xsize, ppf_ec.ysize));
+    JXL_RETURN_IF_ERROR(BufferToImageF(
+        ppf_ec.format, ppf_ec.xsize, ppf_ec.ysize, ppf_ec.pixels(),
+        ppf_ec.pixels_size, pool, &bundle->extra_channels()[i]));
   }
   return true;
 }
 
-namespace {
-
-size_t JxlDataTypeBytes(JxlDataType data_type) {
-  switch (data_type) {
-    case JXL_TYPE_UINT8:
-      return 1;
-    case JXL_TYPE_UINT16:
-      return 2;
-    case JXL_TYPE_FLOAT16:
-      return 2;
-    case JXL_TYPE_FLOAT:
-      return 4;
-    default:
-      return 0;
-  }
-}
-
-}  // namespace
-
-Status ConvertFromExternalNoSizeCheck(const uint8_t* data, size_t xsize,
-                                      size_t ysize, size_t stride,
-                                      size_t bits_per_sample,
-                                      JxlPixelFormat format, size_t c,
-                                      ThreadPool* pool, ImageF* channel) {
-  if (format.data_type == JXL_TYPE_UINT8) {
-    JXL_RETURN_IF_ERROR(bits_per_sample > 0 && bits_per_sample <= 8);
-  } else if (format.data_type == JXL_TYPE_UINT16) {
-    JXL_RETURN_IF_ERROR(bits_per_sample > 8 && bits_per_sample <= 16);
-  } else if (format.data_type != JXL_TYPE_FLOAT16 &&
-             format.data_type != JXL_TYPE_FLOAT) {
-    JXL_FAILURE("unsupported pixel format data type %d", format.data_type);
+Status ConvertPackedPixelFileToCodecInOut(const PackedPixelFile& ppf,
+                                          ThreadPool* pool, CodecInOut* io) {
+  JxlMemoryManager* memory_manager = io->memory_manager;
+  const bool has_alpha = ppf.info.alpha_bits != 0;
+  JXL_ENSURE(!ppf.frames.empty());
+  if (has_alpha) {
+    JXL_ENSURE(ppf.info.alpha_bits == ppf.info.bits_per_sample);
+    JXL_ENSURE(ppf.info.alpha_exponent_bits ==
+               ppf.info.exponent_bits_per_sample);
   }
 
-  JXL_ASSERT(channel->xsize() == xsize);
-  JXL_ASSERT(channel->ysize() == ysize);
+  const bool is_gray = (ppf.info.num_color_channels == 1);
+  JXL_ENSURE(ppf.info.num_color_channels == 1 ||
+             ppf.info.num_color_channels == 3);
 
-  size_t bytes_per_channel = JxlDataTypeBytes(format.data_type);
-  size_t bytes_per_pixel = format.num_channels * bytes_per_channel;
-  size_t pixel_offset = c * bytes_per_channel;
-  // Only for uint8/16.
-  float scale = 1.0f;
-  if (format.data_type == JXL_TYPE_UINT8) {
-    // We will do an integer multiplication by 257 in LoadFloatRow so that a
-    // UINT8 value and the corresponding UINT16 value convert to the same float
-    scale = 1.0f / (257 * ((1ull << bits_per_sample) - 1));
-  } else {
-    scale = 1.0f / ((1ull << bits_per_sample) - 1);
-  }
+  // Convert the image metadata
+  JXL_RETURN_IF_ERROR(io->SetSize(ppf.info.xsize, ppf.info.ysize));
+  io->metadata.m.bit_depth.bits_per_sample = ppf.info.bits_per_sample;
+  io->metadata.m.bit_depth.exponent_bits_per_sample =
+      ppf.info.exponent_bits_per_sample;
+  io->metadata.m.bit_depth.floating_point_sample =
+      ppf.info.exponent_bits_per_sample != 0;
+  io->metadata.m.modular_16_bit_buffer_sufficient =
+      ppf.info.exponent_bits_per_sample == 0 && ppf.info.bits_per_sample <= 12;
 
   const bool little_endian =
       format.endianness == JXL_LITTLE_ENDIAN ||
       (format.endianness == JXL_NATIVE_ENDIAN && IsLittleEndian());
 
-  std::atomic<size_t> error_count = {0};
+  io->metadata.m.xyb_encoded = !FROM_JXL_BOOL(ppf.info.uses_original_profile);
+  JXL_ENSURE(ppf.info.orientation > 0 && ppf.info.orientation <= 8);
+  io->metadata.m.orientation = ppf.info.orientation;
 
-  const auto convert_row = [&](const uint32_t task, size_t /*thread*/) {
-    const size_t y = task;
-    size_t offset = y * stride + pixel_offset;
-    float* JXL_RESTRICT row_out = channel->Row(y);
-    const auto save_value = [&](size_t index, float value) {
-      row_out[index] = value;
-    };
-    if (!LoadFloatRow(data + offset, xsize, bytes_per_pixel, format.data_type,
-                      little_endian, scale, save_value)) {
-      error_count++;
-    }
-  };
-  JXL_RETURN_IF_ERROR(RunOnPool(pool, 0, static_cast<uint32_t>(ysize),
-                                ThreadPool::NoInit, convert_row,
-                                "ConvertExtraChannel"));
+  // Convert animation metadata
+  JXL_ENSURE(ppf.frames.size() == 1 || ppf.info.have_animation);
+  io->metadata.m.have_animation = FROM_JXL_BOOL(ppf.info.have_animation);
+  io->metadata.m.animation.tps_numerator = ppf.info.animation.tps_numerator;
+  io->metadata.m.animation.tps_denominator = ppf.info.animation.tps_denominator;
+  io->metadata.m.animation.num_loops = ppf.info.animation.num_loops;
 
   if (error_count) {
     JXL_FAILURE("unsupported pixel format data type");
@@ -471,14 +226,14 @@ Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
   return true;
 }
 
-PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
-                                                const ColorEncoding& c_enc,
-                                                JxlPixelFormat format,
-                                                ThreadPool* pool) {
-  PackedPixelFile ppf;
+StatusOr<PackedPixelFile> ConvertImage3FToPackedPixelFile(
+    const Image3F& image, const ColorEncoding& c_enc, JxlPixelFormat format,
+    ThreadPool* pool) {
+  PackedPixelFile ppf{};
   ppf.info.xsize = image.xsize();
   ppf.info.ysize = image.ysize();
   ppf.info.num_color_channels = 3;
+  JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
   ppf.info.bits_per_sample = PackedImage::BitsPerChannel(format.data_type);
   ppf.info.exponent_bits_per_sample = format.data_type == JXL_TYPE_FLOAT ? 8
                                       : format.data_type == JXL_TYPE_FLOAT16
@@ -486,14 +241,15 @@ PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
                                           : 0;
   ppf.color_encoding = c_enc.ToExternal();
   ppf.frames.clear();
-  JXL_ASSIGN_OR_DIE(PackedFrame frame,
-                    PackedFrame::Create(image.xsize(), image.ysize(), format));
+  JXL_ASSIGN_OR_RETURN(
+      PackedFrame frame,
+      PackedFrame::Create(image.xsize(), image.ysize(), format));
   const ImageF* channels[3];
   for (int c = 0; c < 3; ++c) {
     channels[c] = &image.Plane(c);
   }
   bool float_samples = ppf.info.exponent_bits_per_sample > 0;
-  JXL_CHECK(ConvertChannelsToExternal(
+  JXL_RETURN_IF_ERROR(ConvertChannelsToExternal(
       channels, 3, ppf.info.bits_per_sample, float_samples, format.endianness,
       frame.color.stride, pool, frame.color.pixels(0, 0, 0),
       frame.color.pixels_size));
@@ -501,6 +257,120 @@ PackedPixelFile ConvertImage3FToPackedPixelFile(const Image3F& image,
   return ppf;
 }
 
+// Allows converting from internal CodecInOut to external PackedPixelFile
+Status ConvertCodecInOutToPackedPixelFile(const CodecInOut& io,
+                                          const JxlPixelFormat& pixel_format,
+                                          const ColorEncoding& c_desired,
+                                          ThreadPool* pool,
+                                          PackedPixelFile* ppf) {
+  JxlMemoryManager* memory_manager = io.memory_manager;
+  const bool has_alpha = io.metadata.m.HasAlpha();
+  JXL_ENSURE(!io.frames.empty());
+
+  if (has_alpha) {
+    JXL_ENSURE(io.metadata.m.GetAlphaBits() ==
+               io.metadata.m.bit_depth.bits_per_sample);
+    const auto* alpha_channel = io.metadata.m.Find(ExtraChannel::kAlpha);
+    JXL_ENSURE(alpha_channel->bit_depth.exponent_bits_per_sample ==
+               io.metadata.m.bit_depth.exponent_bits_per_sample);
+    ppf->info.alpha_bits = alpha_channel->bit_depth.bits_per_sample;
+    ppf->info.alpha_exponent_bits =
+        alpha_channel->bit_depth.exponent_bits_per_sample;
+    ppf->info.alpha_premultiplied =
+        TO_JXL_BOOL(alpha_channel->alpha_associated);
+  }
+
+  // Convert the image metadata
+  ppf->info.xsize = io.metadata.size.xsize();
+  ppf->info.ysize = io.metadata.size.ysize();
+  ppf->info.num_color_channels = io.metadata.m.color_encoding.Channels();
+  ppf->info.bits_per_sample = io.metadata.m.bit_depth.bits_per_sample;
+  ppf->info.exponent_bits_per_sample =
+      io.metadata.m.bit_depth.exponent_bits_per_sample;
+
+  ppf->info.intensity_target = io.metadata.m.tone_mapping.intensity_target;
+  ppf->info.linear_below = io.metadata.m.tone_mapping.linear_below;
+  ppf->info.min_nits = io.metadata.m.tone_mapping.min_nits;
+  ppf->info.relative_to_max_display =
+      TO_JXL_BOOL(io.metadata.m.tone_mapping.relative_to_max_display);
+
+  ppf->info.uses_original_profile = TO_JXL_BOOL(!io.metadata.m.xyb_encoded);
+  JXL_ENSURE(0 < io.metadata.m.orientation && io.metadata.m.orientation <= 8);
+  ppf->info.orientation =
+      static_cast<JxlOrientation>(io.metadata.m.orientation);
+  ppf->info.num_color_channels = io.metadata.m.color_encoding.Channels();
+
+  // Convert animation metadata
+  JXL_ENSURE(io.frames.size() == 1 || io.metadata.m.have_animation);
+  ppf->info.have_animation = TO_JXL_BOOL(io.metadata.m.have_animation);
+  ppf->info.animation.tps_numerator = io.metadata.m.animation.tps_numerator;
+  ppf->info.animation.tps_denominator = io.metadata.m.animation.tps_denominator;
+  ppf->info.animation.num_loops = io.metadata.m.animation.num_loops;
+
+  // Convert the color encoding
+  ppf->icc.assign(c_desired.ICC().begin(), c_desired.ICC().end());
+  ppf->primary_color_representation =
+      c_desired.WantICC() ? PackedPixelFile::kIccIsPrimary
+                          : PackedPixelFile::kColorEncodingIsPrimary;
+  ppf->color_encoding = c_desired.ToExternal();
+
+  // Convert the extra blobs
+  ppf->metadata.exif = io.blobs.exif;
+  ppf->metadata.iptc = io.blobs.iptc;
+  ppf->metadata.jhgm = io.blobs.jhgm;
+  ppf->metadata.jumbf = io.blobs.jumbf;
+  ppf->metadata.xmp = io.blobs.xmp;
+  const bool float_out = pixel_format.data_type == JXL_TYPE_FLOAT ||
+                         pixel_format.data_type == JXL_TYPE_FLOAT16;
+  // Convert the pixels
+  ppf->frames.clear();
+  for (const auto& frame : io.frames) {
+    JXL_ENSURE(frame.metadata()->bit_depth.bits_per_sample != 0);
+    // It is ok for the frame.color().kNumPlanes to not match the
+    // number of channels on the image.
+    const uint32_t alpha_channels = has_alpha ? 1 : 0;
+    const uint32_t num_channels =
+        frame.metadata()->color_encoding.Channels() + alpha_channels;
+    JxlPixelFormat format{/*num_channels=*/num_channels,
+                          /*data_type=*/pixel_format.data_type,
+                          /*endianness=*/pixel_format.endianness,
+                          /*align=*/pixel_format.align};
+
+    JXL_ASSIGN_OR_RETURN(PackedFrame packed_frame,
+                         PackedFrame::Create(frame.oriented_xsize(),
+                                             frame.oriented_ysize(), format));
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(pixel_format.data_type));
+    const size_t bits_per_sample =
+        float_out ? packed_frame.color.BitsPerChannel(pixel_format.data_type)
+                  : ppf->info.bits_per_sample;
+    packed_frame.name = frame.name;
+    packed_frame.frame_info.name_length = frame.name.size();
+    // Color transform
+    JXL_ASSIGN_OR_RETURN(ImageBundle ib, frame.Copy());
+    const ImageBundle* to_color_transform = &ib;
+    ImageMetadata metadata = io.metadata.m;
+    ImageBundle store(memory_manager, &metadata);
+    const ImageBundle* transformed;
+    // TODO(firsching): handle the transform here.
+    JXL_RETURN_IF_ERROR(TransformIfNeeded(*to_color_transform, c_desired,
+                                          *JxlGetDefaultCms(), pool, &store,
+                                          &transformed));
+
+    JXL_RETURN_IF_ERROR(ConvertToExternal(
+        *transformed, bits_per_sample, float_out, format.num_channels,
+        format.endianness,
+        /* stride_out=*/packed_frame.color.stride, pool,
+        packed_frame.color.pixels(), packed_frame.color.pixels_size,
+        /*out_callback=*/{}, frame.metadata()->GetOrientation()));
+
+    // TODO(firsching): Convert the extra channels, beside one potential alpha
+    // channel. FIXME!
+    JXL_ENSURE(frame.extra_channels().size() <= (has_alpha ? 1 : 0));
+    ppf->frames.push_back(std::move(packed_frame));
+  }
+
+  return true;
+}
 }  // namespace extras
 }  // namespace jxl
 #endif  // HWY_ONCE

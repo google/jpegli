@@ -23,12 +23,12 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
                            Image3F* out) {
   ColorSpaceTransform c_transform(cms);
   // Changing IsGray is probably a bug.
-  JXL_CHECK(c_current.IsGray() == c_desired.IsGray());
+  JXL_ENSURE(c_current.IsGray() == c_desired.IsGray());
   bool is_gray = c_current.IsGray();
   if (out->xsize() < rect.xsize() || out->ysize() < rect.ysize()) {
     JXL_ASSIGN_OR_RETURN(*out, Image3F::Create(rect.xsize(), rect.ysize()));
   } else {
-    out->ShrinkTo(rect.xsize(), rect.ysize());
+    JXL_RETURN_IF_ERROR(out->ShrinkTo(rect.xsize(), rect.ysize()));
   }
   const auto init = [&](const size_t num_threads) -> Status {
     JXL_RETURN_IF_ERROR(c_transform.Init(c_current, c_desired, intensity_target,
@@ -90,6 +90,66 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
   };
   JXL_RETURN_IF_ERROR(RunOnPool(pool, 0, rect.ysize(), init, transform_row,
                                 "Colorspace transform"));
+  return true;
+}
+
+namespace {
+
+// Copies ib:rect, converts, and copies into out.
+Status CopyToT(const ImageMetadata* metadata, const ImageBundle* ib,
+               const Rect& rect, const ColorEncoding& c_desired,
+               const JxlCmsInterface& cms, ThreadPool* pool, Image3F* out) {
+  return ApplyColorTransform(ib->c_current(), metadata->IntensityTarget(),
+                             ib->color(), ib->black(), rect, c_desired, cms,
+                             pool, out);
+}
+
+}  // namespace
+
+Status ImageBundle::TransformTo(const ColorEncoding& c_desired,
+                                const JxlCmsInterface& cms, ThreadPool* pool) {
+  JXL_RETURN_IF_ERROR(CopyTo(Rect(color_), c_desired, cms, &color_, pool));
+  c_current_ = c_desired;
+  return true;
+}
+Status ImageBundle::CopyTo(const Rect& rect, const ColorEncoding& c_desired,
+                           const JxlCmsInterface& cms, Image3F* out,
+                           ThreadPool* pool) const {
+  return CopyToT(metadata_, this, rect, c_desired, cms, pool, out);
+}
+Status TransformIfNeeded(const ImageBundle& in, const ColorEncoding& c_desired,
+                         const JxlCmsInterface& cms, ThreadPool* pool,
+                         ImageBundle* store, const ImageBundle** out) {
+  if (in.c_current().SameColorEncoding(c_desired) && !in.HasBlack()) {
+    *out = &in;
+    return true;
+  }
+  JxlMemoryManager* memory_manager = in.memory_manager();
+  // TODO(janwas): avoid copying via createExternal+copyBackToIO
+  // instead of copy+createExternal+copyBackToIO
+  JXL_ASSIGN_OR_RETURN(
+      Image3F color,
+      Image3F::Create(memory_manager, in.color().xsize(), in.color().ysize()));
+  JXL_RETURN_IF_ERROR(CopyImageTo(in.color(), &color));
+  JXL_RETURN_IF_ERROR(store->SetFromImage(std::move(color), in.c_current()));
+
+  // Must at least copy the alpha channel for use by external_image.
+  if (in.HasExtraChannels()) {
+    std::vector<ImageF> extra_channels;
+    for (const ImageF& extra_channel : in.extra_channels()) {
+      JXL_ASSIGN_OR_RETURN(ImageF ec,
+                           ImageF::Create(memory_manager, extra_channel.xsize(),
+                                          extra_channel.ysize()));
+      JXL_RETURN_IF_ERROR(CopyImageTo(extra_channel, &ec));
+      extra_channels.emplace_back(std::move(ec));
+    }
+    JXL_RETURN_IF_ERROR(store->SetExtraChannels(std::move(extra_channels)));
+  }
+
+  if (!store->TransformTo(c_desired, cms, pool)) {
+    return false;
+  }
+  *out = store;
   return true;
 }
 

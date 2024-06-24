@@ -50,7 +50,6 @@ namespace {
 using jxl::ColorEncoding;
 using jxl::Image3F;
 using jxl::ImageF;
-using jxl::Rect;
 using jxl::Status;
 using jxl::StatusOr;
 using jxl::extras::PackedPixelFile;
@@ -131,24 +130,27 @@ class Blur {
     return result;
   }
 
-  void operator()(const ImageF& in, ImageF* JXL_RESTRICT out) {
-    FastGaussian(
+  Status BlurPlane(const ImageF& in, ImageF* JXL_RESTRICT out) {
+    JXL_RETURN_IF_ERROR(FastGaussian(
         rg_, in.xsize(), in.ysize(), [&](size_t y) { return in.ConstRow(y); },
         [&](size_t y) { return temp_.Row(y); },
-        [&](size_t y) { return out->Row(y); });
+        [&](size_t y) { return out->Row(y); }));
+    return true;
   }
 
   StatusOr<Image3F> operator()(const Image3F& in) {
-    JXL_ASSIGN_OR_RETURN(Image3F out, Image3F::Create(in.xsize(), in.ysize()));
-    operator()(in.Plane(0), &out.Plane(0));
-    operator()(in.Plane(1), &out.Plane(1));
-    operator()(in.Plane(2), &out.Plane(2));
+    JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+    JXL_ASSIGN_OR_RETURN(
+        Image3F out, Image3F::Create(memory_manager, in.xsize(), in.ysize()));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(0), &out.Plane(0)));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(1), &out.Plane(1)));
+    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(2), &out.Plane(2)));
     return out;
   }
 
   // Allows reusing across scales.
-  void ShrinkTo(const size_t xsize, const size_t ysize) {
-    temp_.ShrinkTo(xsize, ysize);
+  Status ShrinkTo(const size_t xsize, const size_t ysize) {
+    return temp_.ShrinkTo(xsize, ysize);
   }
 
  private:
@@ -458,17 +460,25 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
                                     const PackedPixelFile& distorted) {
   Msssim msssim;
 
-  if (orig.xsize() != distorted.xsize() || orig.ysize() != distorted.ysize()) {
-    return JXL_FAILURE("Images must have the same size for SSIMULACRA2.");
-  }
-  if (orig.info.num_color_channels != distorted.info.num_color_channels) {
-    return JXL_FAILURE("Grayscale vs RGB comparison not supported.");
-  }
-  const size_t xsize = orig.xsize();
-  const size_t ysize = distorted.ysize();
-  const bool is_gray = orig.info.num_color_channels == 1;
-  ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
-  const JxlCmsInterface& cms = *JxlGetDefaultCms();
+  JXL_ASSIGN_OR_RETURN(
+      Image3F img1,
+      Image3F::Create(memory_manager, orig.xsize(), orig.ysize()));
+  JXL_ASSIGN_OR_RETURN(
+      Image3F img2,
+      Image3F::Create(memory_manager, img1.xsize(), img1.ysize()));
+
+  JXL_ASSIGN_OR_RETURN(ImageBundle orig2, orig.Copy());
+  JXL_ASSIGN_OR_RETURN(ImageBundle dist2, dist.Copy());
+
+  if (orig.HasAlpha()) AlphaBlend(orig2, bg);
+  if (dist.HasAlpha()) AlphaBlend(dist2, bg);
+  orig2.ClearExtraChannels();
+  dist2.ClearExtraChannels();
+
+  JXL_RETURN_IF_ERROR(orig2.TransformTo(
+      jxl::ColorEncoding::LinearSRGB(orig2.IsGray()), *JxlGetDefaultCms()));
+  JXL_RETURN_IF_ERROR(dist2.TransformTo(
+      jxl::ColorEncoding::LinearSRGB(dist2.IsGray()), *JxlGetDefaultCms()));
 
   JXL_ASSIGN_OR_RETURN(Image3F orig2, Image3F::Create(xsize, ysize));
   JXL_RETURN_IF_ERROR(
@@ -515,21 +525,23 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
       break;
     }
     if (scale) {
-      JXL_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
-      img1.ShrinkTo(orig2.xsize(), orig2.ysize());
-      jxl::CopyImageTo(orig2, &img1);
-      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-            *JxlGetDefaultCms());
-      JXL_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
-      img2.ShrinkTo(dist2.xsize(), dist2.ysize());
-      jxl::CopyImageTo(dist2, &img2);
-      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img2,
-            *JxlGetDefaultCms());
+      JXL_ASSIGN_OR_RETURN(Image3F tmp, Downsample(*orig2.color(), 2, 2));
+      JXL_RETURN_IF_ERROR(orig2.SetFromImage(
+          std::move(tmp), jxl::ColorEncoding::LinearSRGB(orig2.IsGray())));
+      JXL_ASSIGN_OR_RETURN(tmp, Downsample(*dist2.color(), 2, 2));
+      JXL_RETURN_IF_ERROR(dist2.SetFromImage(
+          std::move(tmp), jxl::ColorEncoding::LinearSRGB(dist2.IsGray())));
+      JXL_RETURN_IF_ERROR(img1.ShrinkTo(orig2.xsize(), orig2.ysize()));
+      JXL_RETURN_IF_ERROR(img2.ShrinkTo(orig2.xsize(), orig2.ysize()));
+      JXL_RETURN_IF_ERROR(
+          jxl::ToXYB(orig2, nullptr, &img1, *JxlGetDefaultCms(), nullptr));
+      JXL_RETURN_IF_ERROR(
+          jxl::ToXYB(dist2, nullptr, &img2, *JxlGetDefaultCms(), nullptr));
       MakePositiveXYB(img1);
       MakePositiveXYB(img2);
     }
-    mul.ShrinkTo(img1.xsize(), img1.ysize());
-    blur.ShrinkTo(img1.xsize(), img1.ysize());
+    JXL_RETURN_IF_ERROR(mul.ShrinkTo(img1.xsize(), img1.ysize()));
+    JXL_RETURN_IF_ERROR(blur.ShrinkTo(img1.xsize(), img1.ysize()));
 
     Multiply(img1, img1, &mul);
     JXL_ASSIGN_OR_RETURN(Image3F sigma1_sq, blur(mul));
