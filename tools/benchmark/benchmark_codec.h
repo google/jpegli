@@ -28,6 +28,7 @@ namespace jpegxl {
 namespace tools {
 
 using ::jxl::Span;
+using ::jxl::Status;
 using ::jxl::extras::PackedPixelFile;
 
 // Thread-compatible.
@@ -44,7 +45,7 @@ class ImageCodec {
   void set_description(const std::string& desc) { description_ = desc; }
   const std::string& description() const { return description_; }
 
-  virtual void ParseParameters(const std::string& parameters);
+  virtual Status ParseParameters(const std::string& parameters);
 
   virtual Status ParseParam(const std::string& param);
 

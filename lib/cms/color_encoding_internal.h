@@ -9,10 +9,9 @@
 
 // Metadata for color space conversions.
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>  // free
 #include <hwy/base.h>
 #include <ostream>
@@ -176,8 +175,8 @@ struct ColorEncoding {
 
   // Returns true if `icc` is assigned and decoded successfully.
   Status SetICC(IccBytes&& icc, const JxlCmsInterface* cms) {
-    JXL_ASSERT(cms != nullptr);
-    JXL_ASSERT(!icc.empty());
+    JXL_ENSURE(cms != nullptr);
+    JXL_ENSURE(!icc.empty());
     return storage_.SetFieldsFromICC(std::move(icc), *cms);
   }
 
@@ -187,7 +186,7 @@ struct ColorEncoding {
   // used anymore after this and functions such as IsSRGB return false no matter
   // what the contents of the icc profile.
   void SetICCRaw(IccBytes&& icc) {
-    JXL_ASSERT(!icc.empty());
+    JXL_DASSERT(!icc.empty());
     storage_.icc = std::move(icc);
     storage_.have_fields = false;
   }
@@ -241,7 +240,7 @@ struct ColorEncoding {
   Status SetSRGB(const ColorSpace cs,
                  const RenderingIntent ri = RenderingIntent::kRelative) {
     storage_.icc.clear();
-    JXL_ASSERT(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
+    JXL_ENSURE(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
     storage_.color_space = cs;
     storage_.white_point = WhitePoint::kD65;
     storage_.primaries = Primaries::kSRGB;
@@ -257,16 +256,18 @@ struct ColorEncoding {
 
   WhitePoint GetWhitePointType() const { return storage_.white_point; }
   Status SetWhitePointType(const WhitePoint& wp) {
-    JXL_DASSERT(storage_.have_fields);
+    JXL_ENSURE(storage_.have_fields);
     storage_.white_point = wp;
     return true;
   }
-  PrimariesCIExy GetPrimaries() const { return storage_.GetPrimaries(); }
+  Status GetPrimaries(PrimariesCIExy& p) const {
+    return storage_.GetPrimaries(p);
+  }
 
   Primaries GetPrimariesType() const { return storage_.primaries; }
   Status SetPrimariesType(const Primaries& p) {
-    JXL_DASSERT(storage_.have_fields);
-    JXL_ASSERT(HasPrimaries());
+    JXL_ENSURE(storage_.have_fields);
+    JXL_ENSURE(HasPrimaries());
     storage_.primaries = p;
     return true;
   }
@@ -306,14 +307,18 @@ struct ColorEncoding {
     c_rgb->storage_.white_point = WhitePoint::kD65;
     c_rgb->storage_.primaries = pr;
     c_rgb->storage_.tf.SetTransferFunction(tf);
-    JXL_CHECK(c_rgb->CreateICC());
+    Status status = c_rgb->CreateICC();
+    (void)status;
+    JXL_DASSERT(status);
 
     ColorEncoding* c_gray = c2.data() + 1;
     c_gray->SetColorSpace(ColorSpace::kGray);
     c_gray->storage_.white_point = WhitePoint::kD65;
     c_gray->storage_.primaries = pr;
     c_gray->storage_.tf.SetTransferFunction(tf);
-    JXL_CHECK(c_gray->CreateICC());
+    status = c_gray->CreateICC();
+    (void)status;
+    JXL_DASSERT(status);
 
     return c2;
   }

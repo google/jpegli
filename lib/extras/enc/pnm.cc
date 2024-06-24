@@ -6,8 +6,10 @@
 
 #include "lib/extras/enc/pnm.h"
 
-#include <string.h>
-
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -258,6 +260,7 @@ class PAMEncoder : public BasePNMEncoder {
           reinterpret_cast<const uint8_t*>(frame.extra_channels[i].pixels());
     }
     uint8_t* out = bytes->data() + pos;
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(color.format.data_type));
     size_t pwidth = PackedImage::BitsPerChannel(color.format.data_type) / 8;
     for (size_t y = 0; y < color.ysize; ++y) {
       for (size_t x = 0; x < color.xsize; ++x) {

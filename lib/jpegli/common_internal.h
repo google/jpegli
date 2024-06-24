@@ -7,9 +7,9 @@
 #ifndef LIB_JPEGLI_COMMON_INTERNAL_H_
 #define LIB_JPEGLI_COMMON_INTERNAL_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 // Suppress any -Wdeprecated-declarations warning that might be emitted by
 // GCC or Clang by std::stable_sort in C++17 or later mode
@@ -31,8 +31,6 @@
 
 #include <hwy/aligned_allocator.h>
 
-#include "lib/base/compiler_specific.h"  // for ssize_t
-#include "lib/base/status.h"             // for JXL_CHECK
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/simd.h"
 
@@ -112,8 +110,8 @@ class RowBuffer {
  public:
   template <typename CInfoType>
   void Allocate(CInfoType cinfo, size_t num_rows, size_t rowsize) {
+    static_assert(sizeof(T) == 4);
     size_t vec_size = std::max(VectorSize(), sizeof(T));
-    JXL_CHECK(vec_size % sizeof(T) == 0);
     size_t alignment = std::max<size_t>(HWY_ALIGNMENT, vec_size);
     size_t min_memstride = alignment + rowsize * sizeof(T) + vec_size;
     size_t memstride = RoundUpTo(min_memstride, alignment);

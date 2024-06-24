@@ -24,14 +24,14 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
                            Image3F* out) {
   ColorSpaceTransform c_transform(cms);
   // Changing IsGray is probably a bug.
-  JXL_CHECK(c_current.IsGray() == c_desired.IsGray());
+  JXL_ENSURE(c_current.IsGray() == c_desired.IsGray());
   bool is_gray = c_current.IsGray();
   JxlMemoryManager* memory_amanger = color.memory_manager();
   if (out->xsize() < rect.xsize() || out->ysize() < rect.ysize()) {
     JXL_ASSIGN_OR_RETURN(
         *out, Image3F::Create(memory_amanger, rect.xsize(), rect.ysize()));
   } else {
-    out->ShrinkTo(rect.xsize(), rect.ysize());
+    JXL_RETURN_IF_ERROR(out->ShrinkTo(rect.xsize(), rect.ysize()));
   }
   const auto init = [&](const size_t num_threads) -> Status {
     JXL_RETURN_IF_ERROR(c_transform.Init(c_current, c_desired, intensity_target,

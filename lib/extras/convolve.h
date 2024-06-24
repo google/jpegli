@@ -11,7 +11,6 @@
 
 #include <stddef.h>
 
-#include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
 #include "lib/base/rect.h"
 #include "lib/extras/image.h"
@@ -36,13 +35,13 @@ struct WeightsSeparable5 {
 
 const WeightsSeparable5& WeightsSeparable5Lowpass();
 
-void SlowSeparable5(const ImageF& in, const Rect& in_rect,
-                    const WeightsSeparable5& weights, ThreadPool* pool,
-                    ImageF* out, const Rect& out_rect);
+Status SlowSeparable5(const ImageF& in, const Rect& in_rect,
+                      const WeightsSeparable5& weights, ThreadPool* pool,
+                      ImageF* out, const Rect& out_rect);
 
-void Separable5(const ImageF& in, const Rect& rect,
-                const WeightsSeparable5& weights, ThreadPool* pool,
-                ImageF* out);
+Status Separable5(const ImageF& in, const Rect& rect,
+                  const WeightsSeparable5& weights, ThreadPool* pool,
+                  ImageF* out);
 
 }  // namespace jxl
 
