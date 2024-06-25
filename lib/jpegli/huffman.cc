@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/error.h"
 
