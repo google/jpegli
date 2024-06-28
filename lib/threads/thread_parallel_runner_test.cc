@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
 #include "lib/base/testing.h"
 #include "lib/threads/test_utils.h"
 
