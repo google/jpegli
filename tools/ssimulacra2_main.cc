@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 
 #include "lib/base/span.h"
@@ -79,5 +80,5 @@ int main(int argc, char** argv) {
   JXL_ASSIGN_OR_QUIT(Msssim msssim, ComputeSSIMULACRA2(ppf1, ppf2),
                      "ComputeSSIMULACRA2 failed.");
   printf("%.8f\n", msssim.Score());
-  return 0;
+  return EXIT_SUCCESS;
 }
