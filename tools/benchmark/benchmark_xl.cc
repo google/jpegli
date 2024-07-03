@@ -15,7 +15,6 @@
 #include <numeric>
 #include <string>
 #include <thread>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -53,6 +52,7 @@
 #include "tools/speed_stats.h"
 #include "tools/ssimulacra2.h"
 #include "tools/thread_pool_internal.h"
+#include "tools/tracking_memory_manager.h"
 
 namespace jpegxl {
 namespace tools {
@@ -70,73 +70,6 @@ using ::jxl::Status;
 using ::jxl::StatusOr;
 using ::jxl::ThreadPool;
 using ::jxl::extras::PackedPixelFile;
-
-class TrackingMemoryManager {
- public:
-  explicit TrackingMemoryManager(JxlMemoryManager* inner) : inner_(inner) {
-    outer_.opaque = reinterpret_cast<void*>(this);
-    outer_.alloc = &Alloc;
-    outer_.free = &Free;
-  }
-
-  JxlMemoryManager* get() { return &outer_; }
-
-  void PrintStats() const {
-    fprintf(stderr, "Allocations: %" PRIuS " (max bytes in use: %E)\n",
-            static_cast<size_t>(num_allocations_),
-            static_cast<double>(max_bytes_in_use_));
-  }
-
- private:
-  static void* Alloc(void* opaque, size_t size) {
-    if (opaque == nullptr) {
-      JXL_DEBUG_ABORT("Internal logic error");
-      return nullptr;
-    }
-    TrackingMemoryManager* self =
-        reinterpret_cast<TrackingMemoryManager*>(opaque);
-    void* result = self->inner_->alloc(self->inner_->opaque, size);
-    if (result != nullptr) {
-      std::lock_guard<std::mutex> guard(self->mutex_);
-      self->num_allocations_++;
-      self->bytes_in_use_ += size;
-      self->max_bytes_in_use_ =
-          std::max(self->max_bytes_in_use_, self->bytes_in_use_);
-      self->allocations_[result] = size;
-    }
-    return result;
-  }
-
-  static void Free(void* opaque, void* address) {
-    if (opaque == nullptr) {
-      JXL_DEBUG_ABORT("Internal logic error");
-      return;
-    }
-    if (address == nullptr) return;
-    TrackingMemoryManager* self =
-        reinterpret_cast<TrackingMemoryManager*>(opaque);
-    {
-      std::lock_guard<std::mutex> guard(self->mutex_);
-      auto entry = self->allocations_.find(address);
-      if (entry != self->allocations_.end()) {
-        self->num_allocations_--;
-        self->bytes_in_use_ -= entry->second;
-        self->allocations_.erase(entry);
-      } else {
-        JXL_DEBUG_ABORT("Internal logic error");
-      }
-    }
-    self->inner_->free(self->inner_->opaque, address);
-  }
-
-  std::unordered_map<void*, size_t> allocations_;
-  std::mutex mutex_;
-  uint64_t bytes_in_use_ = 0;
-  uint64_t max_bytes_in_use_ = 0;
-  uint64_t num_allocations_ = 0;
-  JxlMemoryManager outer_;
-  JxlMemoryManager* inner_;
-};
 
 Status WriteImage(const Image3F& image, ThreadPool* pool,
                   const std::string& base_filename) {
@@ -156,6 +89,12 @@ Status WriteImage(const Image3F& image, ThreadPool* pool,
         jxl::extras::GetPPMEncoder()->Encode(ppf, &encoded, pool));
   }
   return WriteFile(heatmap_fn, encoded.bitstreams[0]);
+}
+
+void PrintStats(const TrackingMemoryManager& memory_manager) {
+  fprintf(stderr, "Allocations: %" PRIuS " (max bytes in use: %E)\n",
+          static_cast<size_t>(memory_manager.num_allocations),
+          static_cast<double>(memory_manager.max_bytes_in_use));
 }
 
 Status CreateNonSRGBICCProfile(PackedPixelFile* ppf) {
@@ -900,7 +839,7 @@ class Benchmark {
       }
     }
 
-    memory_manager.PrintStats();
+    PrintStats(memory_manager);
     if (!ok) return JXL_FAILURE("RunTasks error");
     return true;
   }

@@ -15,6 +15,7 @@ add_library(jxl_tool STATIC EXCLUDE_FROM_ALL
   no_memory_manager.cc
   speed_stats.cc
   tool_version.cc
+  tracking_memory_manager.cc
 )
 target_compile_options(jxl_tool PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
 target_include_directories(jxl_tool PUBLIC "${PROJECT_SOURCE_DIR}")
