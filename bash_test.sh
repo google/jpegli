@@ -8,7 +8,8 @@
 # Tests implemented in bash. These typically will run checks about the source
 # code rather than the compiled one.
 
-MYDIR=$(dirname $(realpath "$0"))
+SELF=$(realpath "$0")
+MYDIR=$(dirname "${SELF}")
 
 set -u
 
