@@ -28,7 +28,6 @@ Design:
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
-#include <hwy/aligned_allocator.h>
 #include <utility>
 
 #include "lib/base/compiler_specific.h"
@@ -163,7 +162,7 @@ class Blur {
 
  private:
   Blur() : rg_(jxl::CreateRecursiveGaussian(1.5)) {}
-  hwy::AlignedUniquePtr<jxl::RecursiveGaussian> rg_;
+  jxl::RecursiveGaussian rg_;
   ImageF temp_;
 };
 
