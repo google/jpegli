@@ -15,6 +15,9 @@ fi
 
 set -eux
 
+self=$(realpath "$0")
+mydir=$(dirname "${self}")
+
 main() {
   # Build the fuzzers in release mode but force the inclusion of JXL_DASSERT
   # checks.
@@ -65,8 +68,7 @@ if [[ -n "${JPEGXL_UID:-}" && "${JPEGXL_UID}" != $(id -u) ]]; then
   userspec="${JPEGXL_UID}:${JPEGXL_GID}"
   unset JPEGXL_UID
   unset JPEGXL_GID
-  chroot --skip-chdir --userspec="${userspec}" \
-    / $(realpath "$0") "$@"
+  chroot --skip-chdir --userspec="${userspec}" / "${mydir}" "$@"
   exit $?
 fi
 
