@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/butteraugli/butteraugli.h"
+#include "lib/extras/butteraugli.h"
 
 #include <jxl/types.h>
 #include <stddef.h>

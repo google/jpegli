@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "lib/extras/butteraugli.h"
 #include "lib/extras/codec.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
@@ -35,7 +36,6 @@
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/cache_aligned.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"

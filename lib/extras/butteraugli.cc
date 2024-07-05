@@ -21,7 +21,7 @@
 //   * Diffmap - to cluster and build an image of error between the images
 //   * Blur - to hold the smoothing code
 
-#include "lib/jxl/butteraugli/butteraugli.h"
+#include "lib/extras/butteraugli.h"
 
 #include <algorithm>
 #include <cmath>
@@ -35,7 +35,7 @@
 #include "lib/jxl/image.h"
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/butteraugli/butteraugli.cc"
+#define HWY_TARGET_INCLUDE "lib/extras/butteraugli.cc"
 #include <hwy/foreach_target.h>
 
 #include "lib/jxl/base/fast_math-inl.h"

@@ -19,7 +19,6 @@
 #include "lib/extras/dec/color_hints.h"
 #include "lib/jxl/base/override.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "tools/args.h"
 #include "tools/cmdline.h"
