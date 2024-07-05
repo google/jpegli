@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_CONVOLVE_H_
-#define LIB_JXL_CONVOLVE_H_
+#ifndef LIB_EXTRAS_CONVOLVE_H_
+#define LIB_EXTRAS_CONVOLVE_H_
 
 // 2D convolution.
 
@@ -24,29 +24,6 @@ namespace jxl {
 // Requires xsize >= kConvolveLanes + kConvolveMaxRadius.
 static constexpr size_t kConvolveMaxRadius = 3;
 
-// Weights must already be normalized.
-
-struct WeightsSymmetric3 {
-  // d r d (each replicated 4x)
-  // r c r
-  // d r d
-  float c[4];
-  float r[4];
-  float d[4];
-};
-
-struct WeightsSymmetric5 {
-  // The lower-right quadrant is: c r R  (each replicated 4x)
-  //                              r d L
-  //                              R L D
-  float c[4];
-  float r[4];
-  float R[4];
-  float d[4];
-  float D[4];
-  float L[4];
-};
-
 // Weights for separable 5x5 filters (typically but not necessarily the same
 // values for horizontal and vertical directions). The kernel must already be
 // normalized, but note that values for negative offsets are omitted, so the
@@ -57,29 +34,11 @@ struct WeightsSeparable5 {
   float vert[3 * 4];
 };
 
-const WeightsSymmetric3& WeightsSymmetric3Lowpass();
 const WeightsSeparable5& WeightsSeparable5Lowpass();
-const WeightsSymmetric5& WeightsSymmetric5Lowpass();
-
-void SlowSymmetric3(const ImageF& in, const Rect& rect,
-                    const WeightsSymmetric3& weights, ThreadPool* pool,
-                    ImageF* JXL_RESTRICT out);
 
 void SlowSeparable5(const ImageF& in, const Rect& in_rect,
                     const WeightsSeparable5& weights, ThreadPool* pool,
                     ImageF* out, const Rect& out_rect);
-
-void Symmetric3(const ImageF& in, const Rect& rect,
-                const WeightsSymmetric3& weights, ThreadPool* pool,
-                ImageF* out);
-
-void Symmetric5(const ImageF& in, const Rect& in_rect,
-                const WeightsSymmetric5& weights, ThreadPool* pool,
-                ImageF* JXL_RESTRICT out, const Rect& out_rect);
-
-void Symmetric5(const ImageF& in, const Rect& rect,
-                const WeightsSymmetric5& weights, ThreadPool* pool,
-                ImageF* JXL_RESTRICT out);
 
 void Separable5(const ImageF& in, const Rect& rect,
                 const WeightsSeparable5& weights, ThreadPool* pool,
@@ -87,4 +46,4 @@ void Separable5(const ImageF& in, const Rect& rect,
 
 }  // namespace jxl
 
-#endif  // LIB_JXL_CONVOLVE_H_
+#endif  // LIB_EXTRAS_CONVOLVE_H_

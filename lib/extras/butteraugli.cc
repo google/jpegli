@@ -38,11 +38,11 @@
 #define HWY_TARGET_INCLUDE "lib/extras/butteraugli.cc"
 #include <hwy/foreach_target.h>
 
+#include "lib/extras/convolve.h"
 #include "lib/jxl/base/fast_math-inl.h"
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/convolve.h"
 #include "lib/jxl/image_ops.h"
 
 #ifndef JXL_BUTTERAUGLI_ONCE

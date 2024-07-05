@@ -101,12 +101,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
   jxl/common.h
-  jxl/convolve-inl.h
-  jxl/convolve.h
-  jxl/convolve_separable5.cc
-  jxl/convolve_slow.cc
-  jxl/convolve_symmetric3.cc
-  jxl/convolve_symmetric5.cc
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
@@ -129,6 +123,10 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/butteraugli.h
   extras/codec.cc
   extras/codec.h
+  extras/convolve-inl.h
+  extras/convolve.h
+  extras/convolve_separable5.cc
+  extras/convolve_slow.cc
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc
