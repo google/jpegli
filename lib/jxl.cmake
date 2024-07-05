@@ -107,33 +107,6 @@ target_compile_definitions(jxl_dec-obj PUBLIC
 )
 target_link_libraries(jxl_dec-obj PUBLIC jxl_base)
 
-# Object library. This is used to hold the set of objects and properties.
-add_library(jxl_enc-obj OBJECT ${JPEGXL_INTERNAL_ENC_SOURCES})
-target_compile_options(jxl_enc-obj PRIVATE ${JPEGXL_INTERNAL_FLAGS})
-target_compile_options(jxl_enc-obj PUBLIC ${JPEGXL_COVERAGE_FLAGS})
-set_property(TARGET jxl_enc-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(jxl_enc-obj BEFORE PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${JXL_HWY_INCLUDE_DIRS}
-  $<TARGET_PROPERTY:brotlicommon,INTERFACE_INCLUDE_DIRECTORIES>
-)
-target_compile_definitions(jxl_enc-obj PUBLIC
-  ${OBJ_COMPILE_DEFINITIONS}
-)
-target_link_libraries(jxl_enc-obj PUBLIC jxl_base)
-
-set_target_properties(jxl_dec-obj PROPERTIES
-  CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN 1
-  DEFINE_SYMBOL JXL_INTERNAL_LIBRARY_BUILD
-)
-
-set_target_properties(jxl_enc-obj PROPERTIES
-  CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN 1
-  DEFINE_SYMBOL JXL_INTERNAL_LIBRARY_BUILD
-)
-
 # Private static library. This exposes all the internal functions and is used
 # for tests.
 add_library(jxl_dec-internal STATIC
@@ -148,7 +121,6 @@ target_link_libraries(jxl_dec-internal PUBLIC
 
 # The list of objects in the static and shared libraries.
 set(JPEGXL_INTERNAL_OBJECTS
-  $<TARGET_OBJECTS:jxl_enc-obj>
   $<TARGET_OBJECTS:jxl_dec-obj>
 )
 

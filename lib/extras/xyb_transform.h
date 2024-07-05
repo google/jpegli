@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_ENC_XYB_H_
-#define LIB_JXL_ENC_XYB_H_
+#ifndef LIB_EXTRAS_XYB_TRANSFORM_H_
+#define LIB_EXTRAS_XYB_TRANSFORM_H_
 
 // Converts to XYB color space.
 
@@ -29,4 +29,4 @@ void ScaleXYBRow(float* row0, float* row1, float* row2, size_t xsize);
 
 }  // namespace jxl
 
-#endif  // LIB_JXL_ENC_XYB_H_
+#endif  // LIB_EXTRAS_XYB_TRANSFORM_H_

@@ -4,14 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/enc_xyb.h"
+#include "lib/extras/xyb_transform.h"
 
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/enc_xyb.cc"
+#define HWY_TARGET_INCLUDE "lib/extras/xyb_transform.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
