@@ -104,7 +104,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
-  jxl/simd_util-inl.h
   jxl/simd_util.cc
   jxl/simd_util.h
 )
