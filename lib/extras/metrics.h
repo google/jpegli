@@ -11,9 +11,9 @@
 
 #include <jxl/cms_interface.h>
 
+#include "lib/extras/butteraugli.h"
 #include "lib/extras/packed_image.h"
 #include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/butteraugli/butteraugli.h"
 #include "lib/jxl/image.h"
 
 namespace jxl {

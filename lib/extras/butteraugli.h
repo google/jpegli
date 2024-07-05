@@ -6,8 +6,8 @@
 //
 // Author: Jyrki Alakuijala (jyrki.alakuijala@gmail.com)
 
-#ifndef LIB_JXL_BUTTERAUGLI_BUTTERAUGLI_H_
-#define LIB_JXL_BUTTERAUGLI_BUTTERAUGLI_H_
+#ifndef LIB_EXTRAS_BUTTERAUGLI_H_
+#define LIB_EXTRAS_BUTTERAUGLI_H_
 
 #include <stdlib.h>
 #include <string.h>
@@ -220,4 +220,4 @@ StatusOr<Image3F> CreateHeatMapImage(const ImageF &distmap,
 
 }  // namespace jxl
 
-#endif  // LIB_JXL_BUTTERAUGLI_BUTTERAUGLI_H_
+#endif  // LIB_EXTRAS_BUTTERAUGLI_H_

@@ -120,8 +120,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 )
 
 set(JPEGXL_INTERNAL_ENC_SOURCES
-  jxl/butteraugli/butteraugli.cc
-  jxl/butteraugli/butteraugli.h
   jxl/enc_external_image.cc
   jxl/enc_external_image.h
   jxl/enc_image_bundle.cc
@@ -131,6 +129,8 @@ set(JPEGXL_INTERNAL_ENC_SOURCES
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
+  extras/butteraugli.cc
+  extras/butteraugli.h
   extras/codec.cc
   extras/codec.h
   extras/metrics.cc
@@ -273,6 +273,7 @@ set(JPEGXL_INTERNAL_TESTLIB_FILES
 )
 
 set(JPEGXL_INTERNAL_TESTS
+  extras/butteraugli_test.cc
   extras/codec_test.cc
   extras/dec/color_description_test.cc
   extras/jpegli_test.cc
