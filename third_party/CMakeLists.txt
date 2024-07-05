@@ -45,55 +45,6 @@ else()
   endif()  # JPEGXL_DEP_LICENSE_DIR
 endif()
 
-# brotli
-if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/brotli/c/include/brotli/decode.h" OR
-    JPEGXL_FORCE_SYSTEM_BROTLI)
-  find_package(Brotli)
-  if (NOT Brotli_FOUND)
-    message(FATAL_ERROR
-        "Brotli not found, install brotli-dev or download brotli source code to"
-        " third_party/brotli from https://github.com/google/brotli. You can use"
-        " ${PROJECT_SOURCE_DIR}/deps.sh to download this dependency.")
-  endif ()
-  if(JPEGXL_DEP_LICENSE_DIR)
-    configure_file("${JPEGXL_DEP_LICENSE_DIR}/libbrotli-dev/copyright"
-                   ${PROJECT_BINARY_DIR}/LICENSE.brotli COPYONLY)
-  endif()  # JPEGXL_DEP_LICENSE_DIR
-else()
-  # Compile brotli from sources.
-  set(BROTLI_DISABLE_TESTS ON CACHE STRING "Disable Brotli tests")
-  # Override default "no-install" policy.
-  if((NOT SANITIZER STREQUAL "asan") AND (NOT SANITIZER STREQUAL "msan"))
-    set(BROTLI_BUNDLED_MODE OFF CACHE INTERNAL "")
-  endif()
-  add_subdirectory(brotli)
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/brotli/LICENSE"
-                 ${PROJECT_BINARY_DIR}/LICENSE.brotli COPYONLY)
-  if(APPLE)
-    if(NOT DEFINED CMAKE_MACOSX_RPATH)
-      # Use @rpath in install_name when CMAKE_MACOSX_RPATH is not set.
-      set_property(TARGET brotlienc PROPERTY MACOSX_RPATH TRUE)
-      set_property(TARGET brotlidec PROPERTY MACOSX_RPATH TRUE)
-      set_property(TARGET brotlicommon PROPERTY MACOSX_RPATH TRUE)
-    endif()
-    if((NOT DEFINED CMAKE_MACOSX_RPATH) OR CMAKE_MACOSX_RPATH)
-      # Set library search path when @rpath is used.
-      if(NOT DEFINED CMAKE_INSTALL_RPATH)
-        set_property(TARGET brotlienc PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-        set_property(TARGET brotlidec PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-        set_property(TARGET brotlicommon PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-      endif()
-    else()
-      # Set conventional install_name when @rpath is not used.
-      if(NOT DEFINED CMAKE_INSTALL_NAME_DIR)
-        set_property(TARGET brotlienc PROPERTY INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-        set_property(TARGET brotlidec PROPERTY INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-        set_property(TARGET brotlicommon PROPERTY INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-      endif()
-    endif()
-  endif()  # APPLE
-endif()
-
 # *cms
 if (JPEGXL_ENABLE_SKCMS)
   if( NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/skcms/skcms.h" )
