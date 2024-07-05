@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_TESTING_H_
-#define LIB_JXL_TESTING_H_
+#ifndef LIB_JXL_BASE_TESTING_H_
+#define LIB_JXL_BASE_TESTING_H_
 
 // GTest specific macros / wrappers.
 
@@ -89,4 +89,4 @@
     ASSERT_TRUE(F) << _.str(); \
   }
 
-#endif  // LIB_JXL_TESTING_H_
+#endif  // LIB_JXL_BASE_TESTING_H_

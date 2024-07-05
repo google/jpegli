@@ -298,7 +298,7 @@ TESTS = [path.partition(".")[0] for path in libjxl_tests + libjxl_jpegli_tests]
         srcs = [
             test + ".cc",
             "jpegli/testing.h",
-            "jxl/testing.h",
+            "jxl/base/testing.h",
         ],
         data = ["//:testdata"],
         shard_count = libjxl_test_shards.get(test, 1),
