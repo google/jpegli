@@ -55,7 +55,7 @@ talking to GitHub.
 
 ### Fork your private copy
 
-The JPEG XL code is located in [this repo](https://github.com/libjxl/libjxl).
+The jpegli code is located in [this repo](https://github.com/google/jpegli).
 
 The normal developer workflow in GitHub involves creating your own fork of a
 repository and uploading your own changes there. From your own copy you can
@@ -69,15 +69,15 @@ propose to include changes in the main repository via a Pull Request.
 
 Once you are done you should have your repository at
 
- https://<!-- not a link -->github.com<!-- not a link -->/*{{USERNAME}}*/libjxl
+ https://<!-- not a link -->github.com<!-- not a link -->/*{{USERNAME}}*/jpegli
 
 where {{USERNAME}} denotes your GitHub username.
 
-### Checkout the JPEG XL code from GitHub
+### Checkout the jpegli code from GitHub
 
 To get the source code on your computer you need to "clone" it. There are two
-repositories at play here, the upstream repository (`libjxl/lbjxl`) and your
-fork (`{{USERNAME}}/libjxl`). You will be normally fetching new changes from
+repositories at play here, the upstream repository (`google/jpegli`) and your
+fork (`{{USERNAME}}/jpegli`). You will be normally fetching new changes from
 the upstream repository and push changes to your fork. Getting your changes from
 your fork to the upstream repository is done through the Web interface, via Pull
 Requests.
@@ -93,10 +93,10 @@ fork. You can use any other name for your fork if you want. Use the following
 commands to set things up, replacing `{{USERNAME}}` with your GitHub username:
 
 ```bash
-git clone https://github.com/libjxl/libjxl --recursive
-cd libjxl
-git remote set-url --push origin git@github.com:{{USERNAME}}/libjxl.git
-git remote add myfork git@github.com:{{USERNAME}}/libjxl.git
+git clone https://github.com/google/jpegli --recursive
+cd jpegli
+git remote set-url --push origin git@github.com:{{USERNAME}}/jpegli.git
+git remote add myfork git@github.com:{{USERNAME}}/jpegli.git
 git remote -vv
 ```
 
@@ -175,7 +175,7 @@ file is available to automatically format your code, you can invoke it with
 the `./ci.sh lint` helper tool.
 
 Read the [CONTRIBUTING.md](../CONTRIBUTING.md) file for more information about
-contributing to libjxl.
+contributing to jpegli.
 
 ### Upload your changes for review
 
@@ -242,9 +242,9 @@ Writing objects: 100% (389/389), 10.71 MiB | 8.34 MiB/s, done.
 Total 389 (delta 236), reused 0 (delta 0)
 emote:
 remote: Create a pull request for 'mybranch' on GitHub by visiting:
-remote:      https://github.com/{{USERNAME}}/libjxl/pull/new/mybranch
+remote:      https://github.com/{{USERNAME}}/jpegli/pull/new/mybranch
 remote:
-To github.com:{{USERNAME}}/libjxl.git
+To github.com:{{USERNAME}}/jpegli.git
  * [new branch]      mybranch -> mybranch
 ```
 
@@ -254,12 +254,12 @@ The repository uses submodules for external library dependencies in
 third_party. Each submodule points to a particular external commit of the
 external repository by the hash code of that external commit. Just like
 regular source code files, this hash code is part of the current branch and
-jpeg xl commit you have checked out.
+jpegli commit you have checked out.
 
 When changing branches or when doing `git rebase`, git will unfortunately
-*not* automatically set those hashes to the ones of the branch or jpeg xl
+*not* automatically set those hashes to the ones of the branch or jpegli 
 commit you changed to nor set the source files of the third_party submodules
-to the new state. That is, even though git will have updated the jpeg xl
+to the new state. That is, even though git will have updated the jpegli
 source code files on your disk to the new ones, it will leave the submodule
 hashes and the files in third_party in your workspace to the ones they were
 before you changed branches. This will show up in a git diff because this
@@ -269,7 +269,7 @@ not show changes in files inside the third_party directory.
 
 This mismatch can cause at least two problems:
 
-*) the jpeg xl codebase may not compile due to third_party library version
+*) the jpegli codebase may not compile due to third_party library version
 mismatch if e.g. API changed or a submodule was added/removed.
 
 *) when using `commit -a` your commit, which may be a technical change

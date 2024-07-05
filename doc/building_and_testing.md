@@ -5,7 +5,7 @@ script. It assumes you already have the build environment set up.
 
 ## Basic building
 
-To build the JPEG XL software and run its unit tests, run:
+To build jpegli and run its unit tests, run:
 
 ```bash
 ./ci.sh release
