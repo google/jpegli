@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/enc_image_bundle.h"
+#include "lib/extras/image_color_transform.h"
 
 #include <jxl/cms_interface.h>
 

@@ -19,13 +19,13 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/extras/image_color_transform.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/common.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/rect.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/enc_image_bundle.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {

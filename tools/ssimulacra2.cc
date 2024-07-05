@@ -33,6 +33,7 @@ Design:
 #include <hwy/aligned_allocator.h>
 #include <utility>
 
+#include "lib/extras/image_color_transform.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/printf_macros.h"
@@ -41,7 +42,6 @@ Design:
 #include "lib/jxl/enc_xyb.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
-#include "lib/jxl/enc_image_bundle.h"
 #include "lib/jxl/simd_util.h"
 #include "tools/gauss_blur.h"
 
