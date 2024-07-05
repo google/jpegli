@@ -109,13 +109,9 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/convolve_symmetric5.cc
   jxl/dec_external_image.cc
   jxl/dec_external_image.h
-  jxl/field_encodings.h
-  jxl/fields.cc
-  jxl/fields.h
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
-  jxl/pack_signed.h
   jxl/padded_bytes.h
   jxl/sanitizers.h
   jxl/simd_util-inl.h
