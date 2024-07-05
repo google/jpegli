@@ -24,6 +24,38 @@ namespace detail {
 
 namespace {
 
+size_t BytesPerRow(const size_t xsize, const size_t sizeof_t) {
+  // Special case: we don't allow any ops -> don't need extra padding/
+  if (xsize == 0) {
+    return 0;
+  }
+
+  const size_t vec_size = MaxVectorSize();
+  size_t valid_bytes = xsize * sizeof_t;
+
+  // Allow unaligned accesses starting at the last valid value.
+  // Skip for the scalar case because no extra lanes will be loaded.
+  if (vec_size != 0) {
+    valid_bytes += vec_size - sizeof_t;
+  }
+
+  // Round up to vector and cache line size.
+  const size_t align = std::max(vec_size, CacheAligned::kAlignment);
+  size_t bytes_per_row = RoundUpTo(valid_bytes, align);
+
+  // During the lengthy window before writes are committed to memory, CPUs
+  // guard against read after write hazards by checking the address, but
+  // only the lower 11 bits. We avoid a false dependency between writes to
+  // consecutive rows by ensuring their sizes are not multiples of 2 KiB.
+  // Avoid2K prevents the same problem for the planes of an Image3.
+  if (bytes_per_row % CacheAligned::kAlias == 0) {
+    bytes_per_row += align;
+  }
+
+  JXL_ASSERT(bytes_per_row % align == 0);
+  return bytes_per_row;
+}
+
 // Initializes the minimum bytes required to suppress MSAN warnings from
 // legitimate vector loads/stores on the right border, where some lanes are
 // uninitialized and assumed to be unused.
