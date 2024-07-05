@@ -5,7 +5,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-# This file downloads the dependencies needed to build JPEG XL into third_party.
+# This file downloads the dependencies needed to build jpegli into third_party.
 # These dependencies are normally pulled by git.
 
 set -eu
@@ -15,7 +15,6 @@ MYDIR=$(dirname $(realpath "$0"))
 # Git revisions we use for the given submodules. Update these whenever you
 # update a git submodule.
 TESTDATA="873045a9c42ed60721756e26e2a6b32e17415205"
-THIRD_PARTY_BROTLI="36533a866ed1ca4b75cf049f4521e4ec5fe24727"
 THIRD_PARTY_HIGHWAY="58b52a717469e62b2d9b8eaa2f5dddb44d4a4cbf"
 THIRD_PARTY_SKCMS="42030a771244ba67f86b1c1c76a6493f873c5f91"
 THIRD_PARTY_SJPEG="e5ab13008bb214deb66d5f3e17ca2f8dbff150bf"
@@ -82,7 +81,6 @@ EOF
 
   # Sources downloaded from a tarball.
   download_github testdata libjxl/testdata
-  download_github third_party/brotli google/brotli
   download_github third_party/highway google/highway
   download_github third_party/sjpeg webmproject/sjpeg
   download_github third_party/skcms \
