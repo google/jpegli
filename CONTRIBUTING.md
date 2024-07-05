@@ -1,18 +1,16 @@
-# Contributing to libjxl
+# Contributing to jpegli
 
 ## Contributing with bug reports
-
-For security-related issues please see [SECURITY.md](SECURITY.md).
 
 We welcome suggestions, feature requests and bug reports. Before opening a new
 issue please take a look if there is already an existing one in the following
 link:
 
- *  https://github.com/libjxl/libjxl/issues
+ *  https://github.com/google/jpegli/issues
 
 ## Contributing with patches and Pull Requests
 
-We'd love to accept your contributions to the JPEG XL Project. Please read
+We'd love to accept your contributions to the jpegli Project. Please read
 through this section before sending a Pull Request.
 
 ### Contributor License Agreements
@@ -22,7 +20,7 @@ and [PATENTS](PATENTS) files. Before we can accept your contributions, even for
 small changes, there are just a few small guidelines you need to follow:
 
 Please fill out either the individual or corporate Contributor License Agreement
-(CLA) with Google. JPEG XL Project is an an effort by multiple individuals and
+(CLA) with Google. Jpegli Project is an an effort by multiple individuals and
 companies, including the initial contributors Cloudinary and Google, but Google
 is the legal entity in charge of receiving these CLA and relicensing this
 software:
@@ -49,7 +47,7 @@ file must include the following header when possible, with comment style adapted
 to the language as needed:
 
 ```
-// Copyright (c) the JPEG XL Project Authors. All rights reserved.
+// Copyright (c) the Jpegli Project Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
