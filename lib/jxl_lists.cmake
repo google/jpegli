@@ -256,8 +256,8 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
-  jxl/test_image.cc
-  jxl/test_image.h
+  extras/test_image.cc
+  extras/test_image.h
   extras/test_utils.cc
   extras/test_utils.h
   threads/test_utils.h

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_TEST_IMAGE_H_
-#define LIB_JXL_TEST_IMAGE_H_
+#ifndef LIB_EXTRAS_TEST_IMAGE_H_
+#define LIB_EXTRAS_TEST_IMAGE_H_
 
 #include <jxl/codestream_header.h>
 #include <jxl/types.h>
@@ -93,4 +93,4 @@ class TestImage {
 }  // namespace test
 }  // namespace jxl
 
-#endif  // LIB_JXL_TEST_IMAGE_H_
+#endif  // LIB_EXTRAS_TEST_IMAGE_H_

@@ -16,11 +16,11 @@
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
+#include "lib/extras/test_image.h"
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
-#include "lib/jxl/test_image.h"
 #include "lib/jxl/testing.h"
 
 namespace jxl {
