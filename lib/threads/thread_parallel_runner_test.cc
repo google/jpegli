@@ -14,7 +14,7 @@
 #include "lib/base/testing.h"
 #include "lib/threads/test_utils.h"
 
-using jxl::test::ThreadPoolForTests;
+using ::jxl::test::ThreadPoolForTests;
 
 namespace jpegxl {
 namespace {
