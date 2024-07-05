@@ -111,8 +111,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/butteraugli.cc
   extras/butteraugli.h
-  extras/codec.cc
-  extras/codec.h
   extras/convolve-inl.h
   extras/convolve.h
   extras/convolve_separable5.cc

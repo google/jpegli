@@ -19,7 +19,6 @@
 #include <string>
 #include <vector>
 
-#include "lib/extras/codec.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/jxl/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
@@ -30,6 +29,7 @@
 #include "lib/extras/dec/jpg.h"
 #include "lib/extras/enc/jpegli.h"
 #include "lib/extras/enc/jpg.h"
+#include "lib/extras/enc/pnm.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/time.h"
 #include "lib/jxl/base/span.h"
@@ -179,9 +179,10 @@ class JPEGCodec : public ImageCodec {
       std::string encoded_filename;
       JXL_RETURN_IF_ERROR(in_file.GetFileName(&in_filename));
       JXL_RETURN_IF_ERROR(encoded_file.GetFileName(&encoded_filename));
-      std::vector<uint8_t> encoded;
-      JXL_RETURN_IF_ERROR(Encode(ppf, in_filename, &encoded, pool));
-      JXL_RETURN_IF_ERROR(WriteFile(in_filename, encoded));
+      jxl::extras::EncodedImage encoded;
+      JXL_RETURN_IF_ERROR(
+          jxl::extras::GetPNMEncoder()->Encode(ppf, &encoded, pool));
+      JXL_RETURN_IF_ERROR(WriteFile(in_filename, encoded.bitstreams[0]));
       std::string compress_command = jpeg_encoder_;
       std::vector<std::string> arguments;
       arguments.emplace_back("-outfile");

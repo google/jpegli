@@ -23,10 +23,10 @@
 #include <vector>
 
 #include "lib/extras/butteraugli.h"
-#include "lib/extras/codec.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/enc/apng.h"
+#include "lib/extras/enc/pnm.h"
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
@@ -65,12 +65,22 @@ using ::jxl::ThreadPool;
 using ::jxl::extras::PackedPixelFile;
 
 Status WriteImage(const Image3F& image, ThreadPool* pool,
-                  const std::string& filename) {
+                  const std::string& base_filename) {
   JxlPixelFormat format = {3, JXL_TYPE_UINT8, JXL_BIG_ENDIAN, 0};
   PackedPixelFile ppf = jxl::extras::ConvertImage3FToPackedPixelFile(
       image, ColorEncoding::SRGB(), format, pool);
-  std::vector<uint8_t> encoded;
-  return Encode(ppf, filename, &encoded, pool) && WriteFile(filename, encoded);
+  jxl::extras::EncodedImage encoded;
+  std::string heatmap_fn;
+  auto png_enc = jxl::extras::GetAPNGEncoder();
+  if (png_enc) {
+    heatmap_fn = base_filename + ".heatmap.png";
+    JXL_RETURN_IF_ERROR(png_enc->Encode(ppf, &encoded, pool));
+  } else {
+    heatmap_fn = base_filename + ".heatmap.ppm";
+    JXL_RETURN_IF_ERROR(
+        jxl::extras::GetPPMEncoder()->Encode(ppf, &encoded, pool));
+  }
+  return WriteFile(heatmap_fn, encoded.bitstreams[0]);
 }
 
 Status CreateNonSRGBICCProfile(PackedPixelFile* ppf) {
@@ -253,21 +263,17 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     std::string compressed_fn =
         outdir + "/" + name + CodecToExtension(codec_name, ':');
     std::string decompressed_fn = compressed_fn + Args()->output_extension;
-    std::string heatmap_fn;
-    if (jxl::extras::GetAPNGEncoder()) {
-      heatmap_fn = compressed_fn + ".heatmap.png";
-    } else {
-      heatmap_fn = compressed_fn + ".heatmap.ppm";
-    }
     JXL_CHECK(MakeDir(outdir));
     if (Args()->save_compressed) {
       JXL_CHECK(WriteFile(compressed_fn, *compressed));
     }
     if (Args()->save_decompressed && valid) {
       // TODO(szabadka): Handle Args()->mul_output
-      std::vector<uint8_t> encoded;
-      JXL_CHECK(jxl::Encode(ppf2, decompressed_fn, &encoded));
-      JXL_CHECK(WriteFile(decompressed_fn, encoded));
+      jxl::extras::EncodedImage encoded;
+      JXL_CHECK(
+          jxl::extras::Encoder::FromExtension(Args()->output_extension)->Encode(
+              ppf2, &encoded, inner_pool));
+      JXL_CHECK(WriteFile(decompressed_fn, encoded.bitstreams[0]));
       if (!skip_butteraugli) {
         float good = Args()->heatmap_good > 0.0f
                          ? Args()->heatmap_good
@@ -278,7 +284,7 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
         if (Args()->save_heatmap) {
           JXL_ASSIGN_OR_DIE(Image3F heatmap,
                             CreateHeatMapImage(distmap, good, bad));
-          JXL_CHECK(WriteImage(heatmap, inner_pool, heatmap_fn));
+          JXL_CHECK(WriteImage(heatmap, inner_pool, compressed_fn));
         }
       }
     }
@@ -294,11 +300,12 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     JXL_CHECK(tmp_out.GetFileName(&tmp_out_fn));
     JXL_CHECK(tmp_res.GetFileName(&tmp_res_fn));
 
-    std::vector<uint8_t> encoded;
-    JXL_CHECK(jxl::Encode(ppf, tmp_in_fn, &encoded));
-    JXL_CHECK(WriteFile(tmp_in_fn, encoded));
-    JXL_CHECK(jxl::Encode(ppf2, tmp_out_fn, &encoded));
-    JXL_CHECK(WriteFile(tmp_out_fn, encoded));
+    jxl::extras::EncodedImage encoded;
+    JXL_CHECK(jxl::extras::GetPFMEncoder()->Encode(ppf, &encoded, inner_pool));
+    JXL_CHECK(WriteFile(tmp_in_fn, encoded.bitstreams[0]));
+    encoded.bitstreams.clear();
+    JXL_CHECK(jxl::extras::GetPFMEncoder()->Encode(ppf2, &encoded, inner_pool));
+    JXL_CHECK(WriteFile(tmp_out_fn, encoded.bitstreams[0]));
     // TODO(szabadka) Handle custom intensity target.
     std::string intensity_target = "255";
     for (const auto& extra_metrics_command : extra_metrics_commands) {
