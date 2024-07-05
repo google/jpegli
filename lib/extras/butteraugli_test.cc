@@ -15,9 +15,9 @@
 
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
+#include "lib/extras/packed_image_convert.h"
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/enc_external_image.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "lib/jxl/test_image.h"
@@ -40,15 +40,8 @@ Image3F SinglePixelImage(float red, float green, float blue) {
 
 Image3F GetColorImage(const PackedPixelFile& ppf) {
   JXL_CHECK(!ppf.frames.empty());
-  const PackedImage& image = ppf.frames[0].color;
-  const JxlPixelFormat& format = image.format;
-  const uint8_t* pixels = reinterpret_cast<const uint8_t*>(image.pixels());
-  JXL_ASSIGN_OR_DIE(Image3F color, Image3F::Create(image.xsize, image.ysize));
-  for (size_t c = 0; c < format.num_channels; ++c) {
-    JXL_CHECK(ConvertFromExternal(pixels, image.pixels_size, image.xsize,
-                                  image.ysize, ppf.info.bits_per_sample, format,
-                                  c, nullptr, &color.Plane(c)));
-  }
+  JXL_ASSIGN_OR_DIE(Image3F color, Image3F::Create(ppf.xsize(), ppf.ysize()));
+  JXL_CHECK(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
   return color;
 }
 

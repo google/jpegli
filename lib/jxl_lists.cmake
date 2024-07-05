@@ -118,8 +118,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 )
 
 set(JPEGXL_INTERNAL_ENC_SOURCES
-  jxl/enc_external_image.cc
-  jxl/enc_external_image.h
   jxl/enc_image_bundle.cc
   jxl/enc_image_bundle.h
   jxl/enc_xyb.cc
