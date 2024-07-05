@@ -24,13 +24,14 @@
 #include "lib/extras/dec/pnm.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
+#include "lib/extras/test_utils.h"
 #include "lib/jxl/base/byte_order.h"
 #include "lib/jxl/base/data_parallel.h"
+#include "lib/jxl/base/float.h"
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/test_utils.h"
 #include "lib/jxl/testing.h"
 #include "lib/threads/test_utils.h"
 
@@ -40,6 +41,175 @@ using test::ThreadPoolForTests;
 
 namespace extras {
 namespace {
+
+float LoadLEFloat16(const uint8_t* p) {
+  uint16_t bits16 = LoadLE16(p);
+  return detail::LoadFloat16(bits16);
+}
+
+float LoadBEFloat16(const uint8_t* p) {
+  uint16_t bits16 = LoadBE16(p);
+  return detail::LoadFloat16(bits16);
+}
+
+size_t GetPrecision(JxlDataType data_type) {
+  switch (data_type) {
+    case JXL_TYPE_UINT8:
+      return 8;
+    case JXL_TYPE_UINT16:
+      return 16;
+    case JXL_TYPE_FLOAT:
+      // Floating point mantissa precision
+      return 24;
+    case JXL_TYPE_FLOAT16:
+      return 11;
+    default:
+      JXL_ABORT("Unhandled JxlDataType");
+  }
+}
+
+size_t GetDataBits(JxlDataType data_type) {
+  switch (data_type) {
+    case JXL_TYPE_UINT8:
+      return 8;
+    case JXL_TYPE_UINT16:
+      return 16;
+    case JXL_TYPE_FLOAT:
+      return 32;
+    case JXL_TYPE_FLOAT16:
+      return 16;
+    default:
+      JXL_ABORT("Unhandled JxlDataType");
+  }
+}
+
+std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
+                                    size_t ysize, const JxlPixelFormat& format,
+                                    double factor) {
+  std::vector<double> result(xsize * ysize * 4);
+  size_t num_channels = format.num_channels;
+  bool gray = num_channels == 1 || num_channels == 2;
+  bool alpha = num_channels == 2 || num_channels == 4;
+  JxlEndianness endianness = format.endianness;
+  // Compute actual type:
+  if (endianness == JXL_NATIVE_ENDIAN) {
+    endianness = IsLittleEndian() ? JXL_LITTLE_ENDIAN : JXL_BIG_ENDIAN;
+  }
+
+  size_t stride =
+      xsize * jxl::DivCeil(GetDataBits(format.data_type) * num_channels,
+                           jxl::kBitsPerByte);
+  if (format.align > 1) stride = jxl::RoundUpTo(stride, format.align);
+
+  if (format.data_type == JXL_TYPE_UINT8) {
+    // Multiplier to bring to 0-1.0 range
+    double mul = factor > 0.0 ? factor : 1.0 / 255.0;
+    for (size_t y = 0; y < ysize; ++y) {
+      for (size_t x = 0; x < xsize; ++x) {
+        size_t j = (y * xsize + x) * 4;
+        size_t i = y * stride + x * num_channels;
+        double r = pixels[i];
+        double g = gray ? r : pixels[i + 1];
+        double b = gray ? r : pixels[i + 2];
+        double a = alpha ? pixels[i + num_channels - 1] : 255;
+        result[j + 0] = r * mul;
+        result[j + 1] = g * mul;
+        result[j + 2] = b * mul;
+        result[j + 3] = a * mul;
+      }
+    }
+  } else if (format.data_type == JXL_TYPE_UINT16) {
+    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    // Multiplier to bring to 0-1.0 range
+    double mul = factor > 0.0 ? factor : 1.0 / 65535.0;
+    for (size_t y = 0; y < ysize; ++y) {
+      for (size_t x = 0; x < xsize; ++x) {
+        size_t j = (y * xsize + x) * 4;
+        size_t i = y * stride + x * num_channels * 2;
+        double r;
+        double g;
+        double b;
+        double a;
+        if (endianness == JXL_BIG_ENDIAN) {
+          r = (pixels[i + 0] << 8) + pixels[i + 1];
+          g = gray ? r : (pixels[i + 2] << 8) + pixels[i + 3];
+          b = gray ? r : (pixels[i + 4] << 8) + pixels[i + 5];
+          a = alpha ? (pixels[i + num_channels * 2 - 2] << 8) +
+                          pixels[i + num_channels * 2 - 1]
+                    : 65535;
+        } else {
+          r = (pixels[i + 1] << 8) + pixels[i + 0];
+          g = gray ? r : (pixels[i + 3] << 8) + pixels[i + 2];
+          b = gray ? r : (pixels[i + 5] << 8) + pixels[i + 4];
+          a = alpha ? (pixels[i + num_channels * 2 - 1] << 8) +
+                          pixels[i + num_channels * 2 - 2]
+                    : 65535;
+        }
+        result[j + 0] = r * mul;
+        result[j + 1] = g * mul;
+        result[j + 2] = b * mul;
+        result[j + 3] = a * mul;
+      }
+    }
+  } else if (format.data_type == JXL_TYPE_FLOAT) {
+    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    for (size_t y = 0; y < ysize; ++y) {
+      for (size_t x = 0; x < xsize; ++x) {
+        size_t j = (y * xsize + x) * 4;
+        size_t i = y * stride + x * num_channels * 4;
+        double r;
+        double g;
+        double b;
+        double a;
+        if (endianness == JXL_BIG_ENDIAN) {
+          r = LoadBEFloat(pixels + i);
+          g = gray ? r : LoadBEFloat(pixels + i + 4);
+          b = gray ? r : LoadBEFloat(pixels + i + 8);
+          a = alpha ? LoadBEFloat(pixels + i + num_channels * 4 - 4) : 1.0;
+        } else {
+          r = LoadLEFloat(pixels + i);
+          g = gray ? r : LoadLEFloat(pixels + i + 4);
+          b = gray ? r : LoadLEFloat(pixels + i + 8);
+          a = alpha ? LoadLEFloat(pixels + i + num_channels * 4 - 4) : 1.0;
+        }
+        result[j + 0] = r;
+        result[j + 1] = g;
+        result[j + 2] = b;
+        result[j + 3] = a;
+      }
+    }
+  } else if (format.data_type == JXL_TYPE_FLOAT16) {
+    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    for (size_t y = 0; y < ysize; ++y) {
+      for (size_t x = 0; x < xsize; ++x) {
+        size_t j = (y * xsize + x) * 4;
+        size_t i = y * stride + x * num_channels * 2;
+        double r;
+        double g;
+        double b;
+        double a;
+        if (endianness == JXL_BIG_ENDIAN) {
+          r = LoadBEFloat16(pixels + i);
+          g = gray ? r : LoadBEFloat16(pixels + i + 2);
+          b = gray ? r : LoadBEFloat16(pixels + i + 4);
+          a = alpha ? LoadBEFloat16(pixels + i + num_channels * 2 - 2) : 1.0;
+        } else {
+          r = LoadLEFloat16(pixels + i);
+          g = gray ? r : LoadLEFloat16(pixels + i + 2);
+          b = gray ? r : LoadLEFloat16(pixels + i + 4);
+          a = alpha ? LoadLEFloat16(pixels + i + num_channels * 2 - 2) : 1.0;
+        }
+        result[j + 0] = r;
+        result[j + 1] = g;
+        result[j + 2] = b;
+        result[j + 3] = a;
+      }
+    }
+  } else {
+    JXL_ASSERT(false);  // Unsupported type
+  }
+  return result;
+}
 
 std::string ExtensionFromCodec(Codec codec, const bool is_gray,
                                const bool has_alpha,
@@ -69,16 +239,16 @@ void VerifySameImage(const PackedImage& im0, size_t bits_per_sample0,
   ASSERT_EQ(im0.ysize, im1.ysize);
   ASSERT_EQ(im0.format.num_channels, im1.format.num_channels);
   auto get_factor = [](JxlPixelFormat f, size_t bits) -> double {
-    return 1.0 / ((1u << std::min(test::GetPrecision(f.data_type), bits)) - 1);
+    return 1.0 / ((1u << std::min(GetPrecision(f.data_type), bits)) - 1);
   };
   double factor0 = get_factor(im0.format, bits_per_sample0);
   double factor1 = get_factor(im1.format, bits_per_sample1);
   const auto* pixels0 = static_cast<const uint8_t*>(im0.pixels());
   const auto* pixels1 = static_cast<const uint8_t*>(im1.pixels());
   auto rgba0 =
-      test::ConvertToRGBA32(pixels0, im0.xsize, im0.ysize, im0.format, factor0);
+      ConvertToRGBA32(pixels0, im0.xsize, im0.ysize, im0.format, factor0);
   auto rgba1 =
-      test::ConvertToRGBA32(pixels1, im1.xsize, im1.ysize, im1.format, factor1);
+      ConvertToRGBA32(pixels1, im1.xsize, im1.ysize, im1.format, factor1);
   double tolerance =
       lossless ? 0.5 * std::min(factor0, factor1) : 3.0f / 255.0f;
   if (bits_per_sample0 == 32 || bits_per_sample1 == 32) {
