@@ -47,14 +47,6 @@ namespace test {
 std::string GetTestDataPath(const std::string& filename);
 std::vector<uint8_t> ReadTestData(const std::string& filename);
 
-template <typename Params>
-void SetThreadParallelRunner(Params params, ThreadPool* pool) {
-  if (pool && !params.runner_opaque) {
-    params.runner = pool->runner();
-    params.runner_opaque = pool->runner_opaque();
-  }
-}
-
 // A POD descriptor of a ColorEncoding. Only used in tests as the return value
 // of AllEncodings().
 struct ColorEncodingDescriptor {
@@ -107,23 +99,6 @@ size_t ComparePixels(const uint8_t* a, const uint8_t* b, size_t xsize,
 
 double DistanceRMS(const uint8_t* a, const uint8_t* b, size_t xsize,
                    size_t ysize, const JxlPixelFormat& format);
-
-class ThreadPoolForTests {
- public:
-  explicit ThreadPoolForTests(int num_threads) {
-    runner_ =
-        JxlThreadParallelRunnerMake(/* memory_manager */ nullptr, num_threads);
-    pool_ =
-        jxl::make_unique<ThreadPool>(JxlThreadParallelRunner, runner_.get());
-  }
-  ThreadPoolForTests(const ThreadPoolForTests&) = delete;
-  ThreadPoolForTests& operator&(const ThreadPoolForTests&) = delete;
-  ThreadPool* get() { return pool_.get(); }
-
- private:
-  JxlThreadParallelRunnerPtr runner_;
-  std::unique_ptr<ThreadPool> pool_;
-};
 
 constexpr const char* BoolToCStr(bool b) { return b ? "true" : "false"; }
 

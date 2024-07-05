@@ -32,6 +32,7 @@
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/test_utils.h"
 #include "lib/jxl/testing.h"
+#include "lib/threads/test_utils.h"
 
 namespace jxl {
 

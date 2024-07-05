@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/test_utils.h"
 #include "lib/jxl/testing.h"
+#include "lib/threads/test_utils.h"
 
 using jxl::test::ThreadPoolForTests;
 

@@ -269,6 +269,7 @@ set(JPEGXL_INTERNAL_TESTLIB_FILES
   jxl/test_image.h
   jxl/test_utils.cc
   jxl/test_utils.h
+  threads/test_utils.h
 )
 
 set(JPEGXL_INTERNAL_TESTS
