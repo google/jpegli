@@ -42,6 +42,7 @@ Design:
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "lib/jxl/enc_image_bundle.h"
+#include "lib/jxl/simd_util.h"
 #include "tools/gauss_blur.h"
 
 namespace {
@@ -56,6 +57,31 @@ using jxl::extras::PackedPixelFile;
 
 const float kC2 = 0.0009f;
 const int kNumScales = 6;
+
+void ToXYB(const ColorEncoding& c_current, float intensity_target,
+           const ImageF* black, jxl::ThreadPool* pool,
+           Image3F* JXL_RESTRICT image,  const JxlCmsInterface& cms) {
+  if (black) JXL_ASSERT(SameSize(*image, *black));
+  hwy::AlignedFreeUniquePtr<float[]> premul_absorb =
+      hwy::AllocateAligned<float>(jxl::MaxVectorSize() * 12);
+  jxl::ComputePremulAbsorb(intensity_target, premul_absorb.get());
+  const ColorEncoding& c_linear_srgb =
+      ColorEncoding::LinearSRGB(c_current.IsGray());
+  JXL_CHECK(jxl::ApplyColorTransform(
+      c_current, intensity_target, *image, black,
+      Rect(*image), c_linear_srgb, cms, pool, image));
+  JXL_CHECK(RunOnPool(
+      pool, 0, static_cast<uint32_t>(image->ysize()), jxl::ThreadPool::NoInit,
+      [&](const uint32_t task, size_t /*thread*/) {
+        const size_t y = static_cast<size_t>(task);
+        float* JXL_RESTRICT row0 = image->PlaneRow(0, y);
+        float* JXL_RESTRICT row1 = image->PlaneRow(1, y);
+        float* JXL_RESTRICT row2 = image->PlaneRow(2, y);
+        jxl::LinearRGBRowToXYB(row0, row1, row2, premul_absorb.get(),
+                               image->xsize());
+      },
+      "LinearToXYB"));
+}
 
 Status Downsample(Image3F& in, size_t fx, size_t fy) {
   const size_t out_xsize = (in.xsize() + fx - 1) / fx;
@@ -474,10 +500,10 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
   JXL_ASSIGN_OR_RETURN(Image3F img2, Image3F::Create(xsize, ysize));
   jxl::CopyImageTo(orig2, &img1);
   jxl::CopyImageTo(dist2, &img2);
-  jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-             *JxlGetDefaultCms(), nullptr);
-  jxl::ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
-             *JxlGetDefaultCms(), nullptr);
+  ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
+             *JxlGetDefaultCms());
+  ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
+        *JxlGetDefaultCms());
   MakePositiveXYB(img1);
   MakePositiveXYB(img2);
 
@@ -493,13 +519,13 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
       JXL_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
       img1.ShrinkTo(orig2.xsize(), orig2.ysize());
       jxl::CopyImageTo(orig2, &img1);
-      jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-                 *JxlGetDefaultCms(), nullptr);
+      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
+            *JxlGetDefaultCms());
       JXL_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
       img2.ShrinkTo(dist2.xsize(), dist2.ysize());
       jxl::CopyImageTo(dist2, &img2);
-      jxl::ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img2,
-                 *JxlGetDefaultCms(), nullptr);
+      ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img2,
+            *JxlGetDefaultCms());
       MakePositiveXYB(img1);
       MakePositiveXYB(img2);
     }
