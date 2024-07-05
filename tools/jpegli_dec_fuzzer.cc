@@ -212,6 +212,17 @@ int DoTestOneInput(const uint8_t* data, size_t size) {
   return 0;
 }
 
+#if !defined(FUZZ_TEST)
+struct FuzzTestSink {
+  template <typename F>
+  FuzzTestSink WithSeeds(F) {
+    return *this;
+  }
+};
+#define FUZZ_TEST(A, B) \
+  const JXL_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
+#endif
+
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {

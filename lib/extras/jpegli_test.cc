@@ -29,11 +29,11 @@
 #include "lib/extras/enc/jpg.h"
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
+#include "lib/extras/test_utils.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/test_image.h"
-#include "lib/jxl/test_utils.h"
 #include "lib/jxl/testing.h"
 
 namespace jxl {
@@ -41,6 +41,14 @@ namespace extras {
 namespace {
 
 using test::TestImage;
+
+#define TEST_LIBJPEG_SUPPORT()                                              \
+  do {                                                                      \
+    if (!jxl::extras::CanDecode(jxl::extras::Codec::kJPG)) {                \
+      fprintf(stderr, "Skipping test because of missing libjpeg codec.\n"); \
+      return;                                                               \
+    }                                                                       \
+  } while (0)
 
 Status ReadTestImage(const std::string& pathname, PackedPixelFile* ppf) {
   const std::vector<uint8_t> encoded = jxl::test::ReadTestData(pathname);

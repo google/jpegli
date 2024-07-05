@@ -267,8 +267,8 @@ set(JPEGXL_INTERNAL_TESTLIB_FILES
   jxl/image_test_utils.h
   jxl/test_image.cc
   jxl/test_image.h
-  jxl/test_utils.cc
-  jxl/test_utils.h
+  extras/test_utils.cc
+  extras/test_utils.h
   threads/test_utils.h
 )
 
