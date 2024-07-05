@@ -39,7 +39,9 @@ namespace jxl {
 namespace extras {
 namespace {
 
-using test::TestImage;
+using ::jxl::Butteraugli3Norm;
+using ::jxl::ButteraugliDistance;
+using ::jxl::test::TestImage;
 
 #define TEST_LIBJPEG_SUPPORT()                                              \
   do {                                                                      \

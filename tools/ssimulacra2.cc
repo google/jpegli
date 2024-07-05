@@ -48,13 +48,13 @@ Design:
 
 namespace {
 
-using jxl::ColorEncoding;
-using jxl::Image3F;
-using jxl::ImageF;
-using jxl::Rect;
-using jxl::Status;
-using jxl::StatusOr;
-using jxl::extras::PackedPixelFile;
+using ::jxl::ColorEncoding;
+using ::jxl::Image3F;
+using ::jxl::ImageF;
+using ::jxl::Rect;
+using ::jxl::Status;
+using ::jxl::StatusOr;
+using ::jxl::extras::PackedPixelFile;
 
 const float kC2 = 0.0009f;
 const int kNumScales = 6;
