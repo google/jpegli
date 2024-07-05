@@ -109,11 +109,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/simd_util.h
 )
 
-set(JPEGXL_INTERNAL_ENC_SOURCES
-  jxl/enc_xyb.cc
-  jxl/enc_xyb.h
-)
-
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/butteraugli.cc
   extras/butteraugli.h
@@ -129,6 +124,8 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/metrics.h
   extras/packed_image_convert.cc
   extras/packed_image_convert.h
+  extras/xyb_transform.cc
+  extras/xyb_transform.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_SOURCES

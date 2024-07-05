@@ -35,11 +35,11 @@ Design:
 
 #include "lib/extras/image_color_transform.h"
 #include "lib/extras/packed_image_convert.h"
+#include "lib/extras/xyb_transform.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/enc_xyb.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "lib/jxl/simd_util.h"
