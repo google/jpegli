@@ -4,15 +4,15 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/convolve.h"
+#include "lib/extras/convolve.h"
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/convolve_separable5.cc"
+#define HWY_TARGET_INCLUDE "lib/extras/convolve_separable5.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
 #include "lib/jxl/base/rect.h"
-#include "lib/jxl/convolve-inl.h"
+#include "lib/extras/convolve-inl.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

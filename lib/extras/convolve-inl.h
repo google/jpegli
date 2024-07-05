@@ -4,11 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#if defined(LIB_JXL_CONVOLVE_INL_H_) == defined(HWY_TARGET_TOGGLE)
-#ifdef LIB_JXL_CONVOLVE_INL_H_
-#undef LIB_JXL_CONVOLVE_INL_H_
+#if defined(LIB_EXTRAS_CONVOLVE_INL_H_) == defined(HWY_TARGET_TOGGLE)
+#ifdef LIB_EXTRAS_CONVOLVE_INL_H_
+#undef LIB_EXTRAS_CONVOLVE_INL_H_
 #else
-#define LIB_JXL_CONVOLVE_INL_H_
+#define LIB_EXTRAS_CONVOLVE_INL_H_
 #endif
 
 #include <hwy/highway.h>
@@ -297,4 +297,4 @@ class ConvolveT {
 }  // namespace jxl
 HWY_AFTER_NAMESPACE();
 
-#endif  // LIB_JXL_CONVOLVE_INL_H_
+#endif  // LIB_EXTRAS_CONVOLVE_INL_H_
