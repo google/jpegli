@@ -107,8 +107,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/convolve_slow.cc
   jxl/convolve_symmetric3.cc
   jxl/convolve_symmetric5.cc
-  jxl/dec_external_image.cc
-  jxl/dec_external_image.h
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
