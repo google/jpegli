@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "lib/jpegli/types.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/include_jpeglib.h"  // NOLINT
+#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 

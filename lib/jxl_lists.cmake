@@ -27,6 +27,7 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   jxl/base/rational_polynomial-inl.h
   jxl/base/rect.h
   jxl/base/sanitizer_definitions.h
+  jxl/base/sanitizers.h
   jxl/base/scope_guard.h
   jxl/base/span.h
   jxl/base/status.h
@@ -103,7 +104,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
-  jxl/sanitizers.h
   jxl/simd_util-inl.h
   jxl/simd_util.cc
   jxl/simd_util.h

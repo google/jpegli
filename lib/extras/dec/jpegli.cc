@@ -15,8 +15,8 @@
 #include <vector>
 
 #include "lib/jpegli/decode.h"
+#include "lib/jxl/base/sanitizers.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/sanitizers.h"
 
 namespace jxl {
 namespace extras {
