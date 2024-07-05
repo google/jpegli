@@ -44,7 +44,6 @@
 #include "tools/benchmark/benchmark_file_io.h"
 #include "tools/benchmark/benchmark_stats.h"
 #include "tools/benchmark/benchmark_utils.h"
-#include "tools/codec_config.h"
 #include "tools/file_io.h"
 #include "tools/speed_stats.h"
 #include "tools/ssimulacra2.h"

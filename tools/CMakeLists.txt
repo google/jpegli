@@ -12,7 +12,6 @@ set(FUZZER_CORPUS_BINARIES)
 
 add_library(jxl_tool STATIC EXCLUDE_FROM_ALL
   cmdline.cc
-  codec_config.cc
   speed_stats.cc
   tool_version.cc
   ${JXL_CMS_OBJECTS}
