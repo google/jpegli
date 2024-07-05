@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 
-#include "lib/extras/codec.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/jxl/base/data_parallel.h"
 #include "lib/jxl/base/span.h"
