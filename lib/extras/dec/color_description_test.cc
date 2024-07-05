@@ -6,8 +6,8 @@
 
 #include "lib/extras/dec/color_description.h"
 
+#include "lib/jxl/base/testing.h"
 #include "lib/jxl/color_encoding_internal.h"
-#include "lib/jxl/testing.h"
 
 namespace jxl {
 

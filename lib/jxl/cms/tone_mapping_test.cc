@@ -12,8 +12,8 @@
 #include <hwy/foreach_target.h>
 
 #include "lib/jxl/base/random.h"
+#include "lib/jxl/base/testing.h"
 #include "lib/jxl/cms/tone_mapping-inl.h"
-#include "lib/jxl/testing.h"
 
 // Test utils
 #include <hwy/highway.h>

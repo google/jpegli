@@ -19,9 +19,9 @@
 #include "lib/extras/test_image.h"
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/status.h"
+#include "lib/jxl/base/testing.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
-#include "lib/jxl/testing.h"
 
 namespace jxl {
 namespace {
