@@ -92,8 +92,10 @@ Status WriteImage(const Image3F& image, ThreadPool* pool,
 }
 
 void PrintStats(const TrackingMemoryManager& memory_manager) {
-  fprintf(stderr, "Allocations: %" PRIuS " (max bytes in use: %E)\n",
-          static_cast<size_t>(memory_manager.num_allocations),
+  fprintf(stderr,
+          "Allocation count: %" PRIuS ", total: %E (max bytes in use: %E)\n",
+          static_cast<size_t>(memory_manager.total_allocations),
+          static_cast<double>(memory_manager.total_bytes_allocated),
           static_cast<double>(memory_manager.max_bytes_in_use));
 }
 
@@ -804,10 +806,7 @@ class Benchmark {
  public:
   // Return the exit code of the program.
   static Status Run() {
-    JxlMemoryManager default_memory_manager;
-    JXL_RETURN_IF_ERROR(
-        jxl::MemoryManagerInit(&default_memory_manager, nullptr));
-    TrackingMemoryManager memory_manager(&default_memory_manager);
+    TrackingMemoryManager memory_manager{};
     bool ok = true;
     {
       const StringVec methods = GetMethods();
