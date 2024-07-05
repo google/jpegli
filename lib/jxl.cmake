@@ -14,26 +14,9 @@ set(JPEGXL_DEC_INTERNAL_LIBS
   ${ATOMICS_LIBRARIES}
 )
 
-if (JPEGXL_ENABLE_TRANSCODE_JPEG OR JPEGXL_ENABLE_BOXES)
-list(APPEND JPEGXL_DEC_INTERNAL_LIBS brotlidec brotlicommon)
-endif()
-
 set(JPEGXL_INTERNAL_LIBS
   ${JPEGXL_DEC_INTERNAL_LIBS}
-  brotlienc
 )
-
-if (JPEGXL_ENABLE_TRANSCODE_JPEG)
-  list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_TRANSCODE_JPEG=1)
-else()
-  list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_TRANSCODE_JPEG=0)
-endif ()
-
-if (JPEGXL_ENABLE_BOXES)
-  list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_BOXES=1)
-else()
-  list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_BOXES=0)
-endif ()
 
 set(OBJ_COMPILE_DEFINITIONS
   # Used to determine if we are building the library when defined or just
@@ -100,7 +83,6 @@ set_property(TARGET jxl_dec-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(jxl_dec-obj BEFORE PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
   "${JXL_HWY_INCLUDE_DIRS}"
-  "$<BUILD_INTERFACE:$<TARGET_PROPERTY:brotlicommon,INTERFACE_INCLUDE_DIRECTORIES>>"
 )
 target_compile_definitions(jxl_dec-obj PUBLIC
   ${OBJ_COMPILE_DEFINITIONS}
@@ -229,8 +211,7 @@ install(TARGETS jxl
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Add a pkg-config file for libjxl.
-set(JPEGXL_LIBRARY_REQUIRES
-    "libhwy libbrotlienc libbrotlidec libjxl_cms")
+set(JPEGXL_LIBRARY_REQUIRES "libhwy libjxl_cms")
 
 if (BUILD_SHARED_LIBS)
   set(JPEGXL_REQUIRES_TYPE "Requires.private")
