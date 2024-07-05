@@ -21,11 +21,13 @@
 #include <string>
 #include <utility>
 
+#include <hwy/base.h>
+
+#include "lib/jxl/base/bits.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/cms/color_encoding_cms.h"
 #include "lib/jxl/cms/jxl_cms_internal.h"
-#include "lib/jxl/field_encodings.h"
 
 namespace jxl {
 
@@ -37,6 +39,31 @@ using TransferFunction = ::jxl::cms::TransferFunction;
 using RenderingIntent = ::jxl::cms::RenderingIntent;
 using CIExy = ::jxl::cms::CIExy;
 using PrimariesCIExy = ::jxl::cms::PrimariesCIExy;
+
+// Returns bit with the given `index` (0 = least significant).
+template <typename T>
+static inline constexpr uint64_t MakeBit(T index) {
+  return 1ULL << static_cast<uint32_t>(index);
+}
+
+// Returns vector of all possible values of an Enum type. Relies on each Enum
+// providing an overload of EnumBits() that returns a bit array of its values,
+// which implies values must be in [0, 64).
+template <typename Enum>
+std::vector<Enum> Values() {
+  uint64_t bits = EnumBits(Enum());
+
+  std::vector<Enum> values;
+  values.reserve(hwy::PopCount(bits));
+
+  // For each 1-bit in bits: add its index as value
+  while (bits != 0) {
+    const int index = Num0BitsBelowLS1Bit_Nonzero(bits);
+    values.push_back(static_cast<Enum>(index));
+    bits &= bits - 1;  // clear least-significant bit
+  }
+  return values;
+}
 
 namespace cms {
 
@@ -88,27 +115,17 @@ static inline constexpr uint64_t EnumBits(RenderingIntent /*unused*/) {
 
 struct ColorEncoding;
 
-// Serializable form of CIExy.
-struct Customxy : public Fields {
+// CIExy.
+struct Customxy {
   Customxy();
-  JXL_FIELDS_NAME(Customxy)
-
-  Status VisitFields(Visitor* JXL_RESTRICT visitor) override;
 
  private:
   friend struct ColorEncoding;
   ::jxl::cms::Customxy storage_;
 };
 
-struct CustomTransferFunction : public Fields {
+struct CustomTransferFunction {
   CustomTransferFunction();
-  JXL_FIELDS_NAME(CustomTransferFunction)
-
-  // Sets fields and returns true if nonserialized_color_space has an implicit
-  // transfer function, otherwise leaves fields unchanged and returns false.
-  bool SetImplicit();
-
-  Status VisitFields(Visitor* JXL_RESTRICT visitor) override;
 
   // Must be set before calling VisitFields!
   ColorSpace nonserialized_color_space = ColorSpace::kRGB;
@@ -120,9 +137,8 @@ struct CustomTransferFunction : public Fields {
 
 // Compact encoding of data required to interpret and translate pixels to a
 // known color space. Stored in Metadata. Thread-compatible.
-struct ColorEncoding : public Fields {
-  ColorEncoding();
-  JXL_FIELDS_NAME(ColorEncoding)
+struct ColorEncoding {
+  ColorEncoding() {}
 
   // Returns ready-to-use color encodings (initialized on-demand).
   static const ColorEncoding& SRGB(bool is_gray = false);
@@ -230,8 +246,6 @@ struct ColorEncoding : public Fields {
     storage_.rendering_intent = ri;
     return CreateICC();
   }
-
-  Status VisitFields(Visitor* JXL_RESTRICT visitor) override;
 
   // Accessors ensure tf.nonserialized_color_space is updated at the same time.
   ColorSpace GetColorSpace() const { return storage_.color_space; }
