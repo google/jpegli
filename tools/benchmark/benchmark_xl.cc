@@ -36,7 +36,6 @@
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/cache_aligned.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
@@ -781,7 +780,6 @@ class Benchmark {
       }
     }
 
-    jxl::CacheAligned::PrintStats();
     return ret;
   }
 

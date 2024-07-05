@@ -48,13 +48,6 @@ constexpr size_t CacheAligned::kCacheLineSize;
 constexpr size_t CacheAligned::kAlignment;
 constexpr size_t CacheAligned::kAlias;
 
-void CacheAligned::PrintStats() {
-  fprintf(
-      stderr, "Allocations: %" PRIuS " (max bytes in use: %E)\n",
-      static_cast<size_t>(num_allocations.load(std::memory_order_relaxed)),
-      static_cast<double>(max_bytes_in_use.load(std::memory_order_relaxed)));
-}
-
 size_t CacheAligned::NextOffset() {
   static std::atomic<uint32_t> next{0};
   constexpr uint32_t kGroups = CacheAligned::kAlias / CacheAligned::kAlignment;

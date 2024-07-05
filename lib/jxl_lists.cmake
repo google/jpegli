@@ -100,11 +100,9 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/cache_aligned.h
   jxl/color_encoding_internal.cc
   jxl/color_encoding_internal.h
-  jxl/common.h
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h
-  jxl/padded_bytes.h
   jxl/sanitizers.h
   jxl/simd_util-inl.h
   jxl/simd_util.cc
@@ -258,7 +256,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
-  jxl/image_test_utils.h
   jxl/test_image.cc
   jxl/test_image.h
   extras/test_utils.cc
