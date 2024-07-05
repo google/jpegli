@@ -110,8 +110,6 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
 )
 
 set(JPEGXL_INTERNAL_ENC_SOURCES
-  jxl/enc_image_bundle.cc
-  jxl/enc_image_bundle.h
   jxl/enc_xyb.cc
   jxl/enc_xyb.h
 )
@@ -125,6 +123,8 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/convolve.h
   extras/convolve_separable5.cc
   extras/convolve_slow.cc
+  extras/image_color_transform.cc
+  extras/image_color_transform.h
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc

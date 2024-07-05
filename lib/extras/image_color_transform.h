@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_ENC_IMAGE_BUNDLE_H_
-#define LIB_JXL_ENC_IMAGE_BUNDLE_H_
+#ifndef LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
+#define LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
 
 #include <jxl/cms_interface.h>
 
@@ -26,4 +26,4 @@ Status ApplyColorTransform(const ColorEncoding& c_current,
 
 }  // namespace jxl
 
-#endif  // LIB_JXL_ENC_IMAGE_BUNDLE_H_
+#endif  // LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
