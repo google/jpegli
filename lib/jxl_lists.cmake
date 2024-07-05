@@ -268,7 +268,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
-  jxl/fake_parallel_runner_testonly.h
   jxl/image_test_utils.h
   jxl/test_image.cc
   jxl/test_image.h
