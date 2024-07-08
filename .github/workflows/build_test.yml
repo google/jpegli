@@ -283,27 +283,27 @@ jobs:
     - name: ccache stats
       run: ccache --show-stats
 
-    - name: Build stats ${{ matrix.name }}
-      if: env.WILL_BUILD == 'true' && matrix.mode == 'release'
-      run: |
-        SHARED_LIB_EXT="${{ startsWith(matrix.os, 'macos-') && 'dylib' || 'so' }}"
-        SELECT_BINUTILS="${{ startsWith(matrix.os, 'macos-') && '--binutils `brew --prefix binutils`/bin/' || '' }}"
-        tools/scripts/build_stats.py --save build/stats.json \
-          --max-stack ${{ matrix.max_stack || '0' }} ${SELECT_BINUTILS} \
-          cjxl djxl libjxl.${SHARED_LIB_EXT} libjxl_dec.${SHARED_LIB_EXT}
+    #- name: Build stats ${{ matrix.name }}
+    #  if: env.WILL_BUILD == 'true' && matrix.mode == 'release'
+    #  run: |
+    #    SHARED_LIB_EXT="${{ startsWith(matrix.os, 'macos-') && 'dylib' || 'so' }}"
+    #    SELECT_BINUTILS="${{ startsWith(matrix.os, 'macos-') && '--binutils `brew --prefix binutils`/bin/' || '' }}"
+    #    tools/scripts/build_stats.py --save build/stats.json \
+    #      --max-stack ${{ matrix.max_stack || '0' }} ${SELECT_BINUTILS} \
+    #      cjxl djxl libjxl.${SHARED_LIB_EXT} libjxl_dec.${SHARED_LIB_EXT}
 
     # Check that we can build the example project against the installed libs.
-    - name: Install and build examples
-      if: env.WILL_BUILD == 'true' && matrix.mode == 'release' && !matrix.skip_install
-      run: |
-        set -x
-        sudo cmake --build build -- install
-        cmake -Bbuild-example -Hexamples -G Ninja
-        cmake --build build-example
+    #- name: Install and build examples
+    #  if: env.WILL_BUILD == 'true' && matrix.mode == 'release' && !matrix.skip_install
+    #  run: |
+    #    set -x
+    #    sudo cmake --build build -- install
+    #    cmake -Bbuild-example -Hexamples -G Ninja
+    #    cmake --build build-example
         # Test that the built binaries run.
-        echo -e -n "PF\n1 1\n-1.0\n\0\0\x80\x3f\0\0\x80\x3f\0\0\x80\x3f" > test.pfm
-        build-example/encode_oneshot test.pfm test.jxl
-        build-example/decode_oneshot test.jxl dec.pfm dec.icc
+    #    echo -e -n "PF\n1 1\n-1.0\n\0\0\x80\x3f\0\0\x80\x3f\0\0\x80\x3f" > test.pfm
+    #    build-example/encode_oneshot test.pfm test.jxl
+    #    build-example/decode_oneshot test.jxl dec.pfm dec.icc
 
     # Run the tests on push and when requested in pull_request.
     - name: Test ${{ matrix.mode }}

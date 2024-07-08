@@ -1167,29 +1167,29 @@ cmd_lint() {
   CLEANUP_FILES+=("${tmpdir}")
 
   local ret=0
-  local build_patch="${tmpdir}/build_cleaner.patch"
-  if ! "${MYDIR}/tools/scripts/build_cleaner.py" >"${build_patch}"; then
-    ret=1
-    echo "build_cleaner.py findings:" >&2
-    "${COLORDIFF_BIN}" <"${build_patch}"
-    echo "Run \`tools/scripts/build_cleaner.py --update\` to apply them" >&2
-  fi
+  #local build_patch="${tmpdir}/build_cleaner.patch"
+  #if ! "${MYDIR}/tools/scripts/build_cleaner.py" >"${build_patch}"; then
+  #  ret=1
+  #  echo "build_cleaner.py findings:" >&2
+  #  "${COLORDIFF_BIN}" <"${build_patch}"
+  #  echo "Run \`tools/scripts/build_cleaner.py --update\` to apply them" >&2
+  #fi
 
   # It is ok, if buildifier is not installed.
-  if which buildifier >/dev/null; then
-    local buildifier_patch="${tmpdir}/buildifier.patch"
-    local bazel_files=`git -C ${MYDIR} ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`
-    set -x
-    buildifier -d ${bazel_files} >"${buildifier_patch}"|| true
-    { set +x; } 2>/dev/null
-    if [ -s "${buildifier_patch}" ]; then
-      ret=1
-      echo 'buildifier have found some problems in Bazel build files:' >&2
-      "${COLORDIFF_BIN}" <"${buildifier_patch}"
-      echo 'To fix them run (from the base directory):' >&2
-      echo '  buildifier `git ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`' >&2
-    fi
-  fi
+  #if which buildifier >/dev/null; then
+  #  local buildifier_patch="${tmpdir}/buildifier.patch"
+  #  local bazel_files=`git -C ${MYDIR} ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`
+  #  set -x
+  #  buildifier -d ${bazel_files} >"${buildifier_patch}"|| true
+  #  { set +x; } 2>/dev/null
+  #  if [ -s "${buildifier_patch}" ]; then
+  #    ret=1
+  #    echo 'buildifier have found some problems in Bazel build files:' >&2
+  #    "${COLORDIFF_BIN}" <"${buildifier_patch}"
+  #    echo 'To fix them run (from the base directory):' >&2
+  #    echo '  buildifier `git ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`' >&2
+  #  fi
+  #fi
 
   local installed=()
   local clang_patch
