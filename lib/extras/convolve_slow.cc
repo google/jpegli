@@ -4,9 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/base/rect.h"
 #include "lib/extras/convolve-inl.h"
 #include "lib/extras/convolve.h"
+#include "lib/jxl/base/rect.h"
 
 namespace jxl {
 

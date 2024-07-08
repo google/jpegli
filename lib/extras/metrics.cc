@@ -6,13 +6,12 @@
 
 #include "lib/extras/metrics.h"
 
+#include <jxl/cms.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include <atomic>
 #include <limits>
-
-#include <jxl/cms.h>
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/metrics.cc"
@@ -153,14 +152,14 @@ void ComputeSumOfSquares(const extras::PackedPixelFile& a,
   float intensity_b = GetIntensityTarget(b, c_enc_b);
 
   if (!c_enc_a.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_a, intensity_a, srgb0, nullptr, Rect(srgb0), c_desired, cms,
-        nullptr, &srgb0));
+    JXL_CHECK(ApplyColorTransform(c_enc_a, intensity_a, srgb0, nullptr,
+                                  Rect(srgb0), c_desired, cms, nullptr,
+                                  &srgb0));
   }
   if (!c_enc_b.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_b, intensity_b, srgb1, nullptr, Rect(srgb1), c_desired, cms,
-        nullptr, &srgb1));
+    JXL_CHECK(ApplyColorTransform(c_enc_b, intensity_b, srgb1, nullptr,
+                                  Rect(srgb1), c_desired, cms, nullptr,
+                                  &srgb1));
   }
 
   // TODO(veluca): SIMD.
@@ -204,8 +203,7 @@ namespace jxl {
 namespace {
 float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
                          const ButteraugliParams& params,
-                         const JxlCmsInterface& cms,
-                         ImageF* distmap) {
+                         const JxlCmsInterface& cms, ImageF* distmap) {
   std::unique_ptr<ButteraugliComparator> comparator;
   JXL_ASSIGN_OR_DIE(comparator, ButteraugliComparator::Make(ref, params));
   JXL_ASSIGN_OR_DIE(ImageF temp_distmap,
@@ -222,9 +220,8 @@ float ComputeButteraugli(const Image3F& ref, const Image3F& actual,
 
 float ButteraugliDistance(const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
-                          ButteraugliParams params,
-                          ImageF* distmap, ThreadPool* pool,
-                          bool ignore_alpha) {
+                          ButteraugliParams params, ImageF* distmap,
+                          ThreadPool* pool, bool ignore_alpha) {
   if (a.xsize() != b.xsize() || a.ysize() != b.ysize()) {
     fprintf(stderr, "Images must have the same size for butteraugli.");
     return std::numeric_limits<float>::max();
@@ -252,14 +249,12 @@ float ButteraugliDistance(const extras::PackedPixelFile& a,
   float intensity_b = GetIntensityTarget(b, c_enc_b);
 
   if (!c_enc_a.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_a, intensity_a, rgb0, nullptr, Rect(rgb0), c_desired, cms, pool,
-        &rgb0));
+    JXL_CHECK(ApplyColorTransform(c_enc_a, intensity_a, rgb0, nullptr,
+                                  Rect(rgb0), c_desired, cms, pool, &rgb0));
   }
   if (!c_enc_b.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_b, intensity_b, rgb1, nullptr, Rect(rgb1), c_desired, cms, pool,
-        &rgb1));
+    JXL_CHECK(ApplyColorTransform(c_enc_b, intensity_b, rgb1, nullptr,
+                                  Rect(rgb1), c_desired, cms, pool, &rgb1));
   }
 
   return ComputeButteraugli(rgb0, rgb1, params, cms, distmap);

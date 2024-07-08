@@ -229,8 +229,8 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       // TODO(szabadka) Support different intensity targets as well.
       params.intensity_target = 80.0;
 
-      distance = ButteraugliDistance(ppf, ppf2, params, &distmap,
-                                     inner_pool, codec->IgnoreAlpha());
+      distance = ButteraugliDistance(ppf, ppf2, params, &distmap, inner_pool,
+                                     codec->IgnoreAlpha());
     } else {
       // TODO(veluca): re-upsample and compute proper distance.
       distance = 1e+4f;
@@ -269,9 +269,8 @@ void DoCompress(const std::string& filename, const PackedPixelFile& ppf,
     if (Args()->save_decompressed && valid) {
       // TODO(szabadka): Handle Args()->mul_output
       jxl::extras::EncodedImage encoded;
-      JXL_CHECK(
-          jxl::extras::Encoder::FromExtension(Args()->output_extension)->Encode(
-              ppf2, &encoded, inner_pool));
+      JXL_CHECK(jxl::extras::Encoder::FromExtension(Args()->output_extension)
+                    ->Encode(ppf2, &encoded, inner_pool));
       JXL_CHECK(WriteFile(decompressed_fn, encoded.bitstreams[0]));
       if (!skip_butteraugli) {
         float good = Args()->heatmap_good > 0.0f
