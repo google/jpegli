@@ -6,11 +6,11 @@
 
 #include "lib/extras/packed_image_convert.h"
 
-#include <cstdint>
-
 #include <jxl/cms.h>
 #include <jxl/color_encoding.h>
 #include <jxl/types.h>
+
+#include <cstdint>
 
 #include "lib/extras/image_color_transform.h"
 #include "lib/jxl/base/byte_order.h"
@@ -28,7 +28,6 @@
 #define HWY_TARGET_INCLUDE "lib/extras/packed_image_convert.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
-
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
@@ -458,8 +457,8 @@ Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
   const extras::PackedImage& img = ppf.frames[0].color;
   size_t bits_per_sample =
       ppf.input_bitdepth.type == JXL_BIT_DEPTH_FROM_PIXEL_FORMAT
-      ? extras::PackedImage::BitsPerChannel(img.format.data_type)
-      : ppf.info.bits_per_sample;
+          ? extras::PackedImage::BitsPerChannel(img.format.data_type)
+          : ppf.info.bits_per_sample;
   for (size_t c = 0; c < ppf.info.num_color_channels; ++c) {
     JXL_RETURN_IF_ERROR(ConvertFromExternal(
         reinterpret_cast<const uint8_t*>(img.pixels()), img.pixels_size,

@@ -288,9 +288,7 @@ class PackedPixelFile {
   PackedMetadata metadata;
   PackedPixelFile() { JxlEncoderInitBasicInfo(&info); };
 
-  size_t num_frames() const {
-    return frames.size();
-  }
+  size_t num_frames() const { return frames.size(); }
   size_t xsize() const { return info.xsize; }
   size_t ysize() const { return info.ysize; }
 };

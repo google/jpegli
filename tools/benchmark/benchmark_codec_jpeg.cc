@@ -19,22 +19,21 @@
 #include <string>
 #include <vector>
 
-#include "lib/extras/enc/encode.h"
-#include "lib/jxl/base/status.h"
-#include "tools/benchmark/benchmark_args.h"
-#include "tools/benchmark/benchmark_codec.h"
-#include "tools/speed_stats.h"
-
 #include "lib/extras/dec/jpegli.h"
 #include "lib/extras/dec/jpg.h"
+#include "lib/extras/enc/encode.h"
 #include "lib/extras/enc/jpegli.h"
 #include "lib/extras/enc/jpg.h"
 #include "lib/extras/enc/pnm.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/time.h"
 #include "lib/jxl/base/span.h"
+#include "lib/jxl/base/status.h"
+#include "tools/benchmark/benchmark_args.h"
+#include "tools/benchmark/benchmark_codec.h"
 #include "tools/benchmark/benchmark_utils.h"
 #include "tools/file_io.h"
+#include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
 
 namespace jpegxl {

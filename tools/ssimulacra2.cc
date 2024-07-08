@@ -60,16 +60,16 @@ const int kNumScales = 6;
 
 void ToXYB(const ColorEncoding& c_current, float intensity_target,
            const ImageF* black, jxl::ThreadPool* pool,
-           Image3F* JXL_RESTRICT image,  const JxlCmsInterface& cms) {
+           Image3F* JXL_RESTRICT image, const JxlCmsInterface& cms) {
   if (black) JXL_ASSERT(SameSize(*image, *black));
   hwy::AlignedFreeUniquePtr<float[]> premul_absorb =
       hwy::AllocateAligned<float>(jxl::MaxVectorSize() * 12);
   jxl::ComputePremulAbsorb(intensity_target, premul_absorb.get());
   const ColorEncoding& c_linear_srgb =
       ColorEncoding::LinearSRGB(c_current.IsGray());
-  JXL_CHECK(jxl::ApplyColorTransform(
-      c_current, intensity_target, *image, black,
-      Rect(*image), c_linear_srgb, cms, pool, image));
+  JXL_CHECK(jxl::ApplyColorTransform(c_current, intensity_target, *image, black,
+                                     Rect(*image), c_linear_srgb, cms, pool,
+                                     image));
   JXL_CHECK(RunOnPool(
       pool, 0, static_cast<uint32_t>(image->ysize()), jxl::ThreadPool::NoInit,
       [&](const uint32_t task, size_t /*thread*/) {
@@ -460,7 +460,6 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
 
   if (orig.xsize() != distorted.xsize() || orig.ysize() != distorted.ysize()) {
     return JXL_FAILURE("Images must have the same size for SSIMULACRA2.");
-
   }
   if (orig.info.num_color_channels != distorted.info.num_color_channels) {
     return JXL_FAILURE("Grayscale vs RGB comparison not supported.");
@@ -486,14 +485,14 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
   float intensity_dist = GetIntensityTarget(distorted, c_enc_dist);
 
   if (!c_enc_orig.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_orig, intensity_orig, orig2, nullptr, Rect(orig2), c_desired, cms,
-        nullptr, &orig2));
+    JXL_CHECK(ApplyColorTransform(c_enc_orig, intensity_orig, orig2, nullptr,
+                                  Rect(orig2), c_desired, cms, nullptr,
+                                  &orig2));
   }
   if (!c_enc_dist.SameColorEncoding(c_desired)) {
-    JXL_CHECK(ApplyColorTransform(
-        c_enc_dist, intensity_dist, dist2, nullptr, Rect(dist2), c_desired, cms,
-        nullptr, &dist2));
+    JXL_CHECK(ApplyColorTransform(c_enc_dist, intensity_dist, dist2, nullptr,
+                                  Rect(dist2), c_desired, cms, nullptr,
+                                  &dist2));
   }
 
   JXL_ASSIGN_OR_RETURN(Image3F img1, Image3F::Create(xsize, ysize));
@@ -501,7 +500,7 @@ StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
   jxl::CopyImageTo(orig2, &img1);
   jxl::CopyImageTo(dist2, &img2);
   ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-             *JxlGetDefaultCms());
+        *JxlGetDefaultCms());
   ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
         *JxlGetDefaultCms());
   MakePositiveXYB(img1);

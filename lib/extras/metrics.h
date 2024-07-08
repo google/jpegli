@@ -7,9 +7,8 @@
 #ifndef LIB_EXTRAS_METRICS_H_
 #define LIB_EXTRAS_METRICS_H_
 
-#include <stdint.h>
-
 #include <jxl/cms_interface.h>
+#include <stdint.h>
 
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/packed_image.h"
@@ -23,8 +22,7 @@ namespace jxl {
 float ButteraugliDistance(const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
                           ButteraugliParams params = ButteraugliParams(),
-                          ImageF* distmap = nullptr,
-                          ThreadPool* pool = nullptr,
+                          ImageF* distmap = nullptr, ThreadPool* pool = nullptr,
                           bool ignore_alpha = false);
 
 // Computes p-norm given the butteraugli distmap.

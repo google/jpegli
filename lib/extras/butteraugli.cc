@@ -1632,15 +1632,15 @@ HWY_AFTER_NAMESPACE();
 #if HWY_ONCE
 namespace jxl {
 
-HWY_EXPORT(SeparateFrequencies);       // Local function.
-HWY_EXPORT(MaskPsychoImage);           // Local function.
-HWY_EXPORT(L2DiffAsymmetric);          // Local function.
-HWY_EXPORT(L2Diff);                    // Local function.
-HWY_EXPORT(SetL2Diff);                 // Local function.
-HWY_EXPORT(CombineChannelsToDiffmap);  // Local function.
-HWY_EXPORT(MaltaDiffMap);              // Local function.
-HWY_EXPORT(MaltaDiffMapLF);            // Local function.
-HWY_EXPORT(OpsinDynamicsImage);        // Local function.
+HWY_EXPORT(SeparateFrequencies);        // Local function.
+HWY_EXPORT(MaskPsychoImage);            // Local function.
+HWY_EXPORT(L2DiffAsymmetric);           // Local function.
+HWY_EXPORT(L2Diff);                     // Local function.
+HWY_EXPORT(SetL2Diff);                  // Local function.
+HWY_EXPORT(CombineChannelsToDiffmap);   // Local function.
+HWY_EXPORT(MaltaDiffMap);               // Local function.
+HWY_EXPORT(MaltaDiffMapLF);             // Local function.
+HWY_EXPORT(OpsinDynamicsImage);         // Local function.
 HWY_EXPORT(ButteraugliDiffmapInPlace);  // Local function.
 
 #if BUTTERAUGLI_ENABLE_CHECKS
