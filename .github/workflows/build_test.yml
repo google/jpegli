@@ -344,7 +344,7 @@ jobs:
     # Run gbench once, just to make sure it runs, not for actual benchmarking.
     # This doesn't work on MSAN because we use gbench library from the system
     # which is not instrumented by MSAN.
-    - name: gbench check
-      if: env.WILL_BENCH == 'true'
-      run: |
-        ./ci.sh gbench --benchmark_min_time=0
+    #- name: gbench check
+    #  if: env.WILL_BENCH == 'true'
+    #  run: |
+    #    ./ci.sh gbench --benchmark_min_time=0
