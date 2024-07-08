@@ -56,9 +56,8 @@ int main(int argc, char** argv) {
       fprintf(stderr, "Could not load %s image: %s\n", purpose[i], argv[1 + i]);
       return 1;
     }
-    if (!jxl::extras::DecodeBytes(
-            jxl::Bytes(encoded), jxl::extras::ColorHints(),
-            &ppf[i])) {
+    if (!jxl::extras::DecodeBytes(jxl::Bytes(encoded),
+                                  jxl::extras::ColorHints(), &ppf[i])) {
       fprintf(stderr, "Could not decode %s image: %s\n", purpose[i],
               argv[1 + i]);
       return 1;
