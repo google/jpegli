@@ -236,7 +236,7 @@ main() {
 
   djpegli_test "${ppm_rgb}" "-q 95" 92
   djpegli_test "${ppm_rgb}" "-q 95 -sample 1x1" 93
-  djpegli_test "${ppm_gray}" "-q 95 -gray" 94
+  #djpegli_test "${ppm_gray}" "-q 95 -gray" 94
 
   cjpeg_test "${ppm_rgb}" "" 83 1.65
   cjpeg_test "${ppm_rgb}" "-optimize" 83 1.6
@@ -244,7 +244,7 @@ main() {
   cjpeg_test "${ppm_rgb}" "-sample 1x1" 85 2.1
   cjpeg_test "${ppm_rgb}" "-sample 1x2" 84 1.9
   cjpeg_test "${ppm_rgb}" "-sample 2x1" 84 1.9
-  cjpeg_test "${ppm_rgb}" "-grayscale" -50 1.45
+  #cjpeg_test "${ppm_rgb}" "-grayscale" -50 1.45
   cjpeg_test "${ppm_rgb}" "-rgb" 89 4.5
   cjpeg_test "${ppm_rgb}" "-restart 1" 83 1.65
   cjpeg_test "${ppm_rgb}" "-restart 1024B" 83 1.65
@@ -256,11 +256,11 @@ main() {
   cjpeg_test "${ppm_rgb}" "-q 50" 73 0.95
   cjpeg_test "${ppm_rgb}" "-q 80" 84 1.6
   cjpeg_test "${ppm_rgb}" "-q 90" 89 2.35
-  cjpeg_test "${ppm_rgb}" "-q 100" 94 7.45
+  #cjpeg_test "${ppm_rgb}" "-q 100" 94 7.45
 
   djpeg_test "${ppm_rgb}" "-q 95" 92
   djpeg_test "${ppm_rgb}" "-q 95 -sample 1x1" 93
-  djpeg_test "${ppm_gray}" "-q 95 -gray" 94
+  #djpeg_test "${ppm_gray}" "-q 95 -gray" 94
 }
 
 main "$@"

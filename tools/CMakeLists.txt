@@ -99,6 +99,7 @@ endif()  # JPEGXL_ENABLE_DEVTOOLS
 if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
   list(APPEND INTERNAL_TOOL_BINARIES
     benchmark_xl
+    ssimulacra2
   )
 
   add_executable(benchmark_xl
@@ -116,7 +117,11 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
   )
   target_link_libraries(benchmark_xl Threads::Threads)
   target_link_libraries(benchmark_xl jxl_gauss_blur) # for ssimulacra
-  if(MINGW)
+
+  add_executable(ssimulacra2 ssimulacra2_main.cc ssimulacra2.cc)
+  target_link_libraries(ssimulacra2 jxl_gauss_blur)
+
+if(MINGW)
   # MINGW doesn't support glob.h.
   target_compile_definitions(benchmark_xl PRIVATE "-DHAS_GLOB=0")
   endif() # MINGW
