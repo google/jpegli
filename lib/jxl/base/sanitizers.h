@@ -19,6 +19,10 @@
 namespace jxl {
 namespace msan {
 
+// Chosen so that kSanitizerSentinel is four copies of kSanitizerSentinelByte.
+constexpr uint8_t kSanitizerSentinelByte = 0x48;
+constexpr float kSanitizerSentinel = 205089.125f;
+
 #if JXL_MEMORY_SANITIZER
 
 static JXL_INLINE JXL_MAYBE_UNUSED void PoisonMemory(const volatile void* m,
