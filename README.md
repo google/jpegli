@@ -53,6 +53,11 @@ replacement for the system library with the same name.
 *   [More information on testing/build options](doc/building_and_testing.md)
 *   [Git guide for jpegli](doc/developing_in_github.md) - for developers
 
+## Blog post
+For more information check out the 
+[blog post](https://opensource.googleblog.com/2024/04/introducing-jpegli-new-jpeg-coding-library.html) 
+on the Google Open Source blog.
+
 ## Contact
 
 If you encounter a bug or other issue with the software, please open an Issue here.
