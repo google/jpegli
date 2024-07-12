@@ -18,8 +18,8 @@
 
 #include "lib/base/override.h"
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_hints.h"
-#include "lib/jxl/color_encoding_internal.h"
 #include "tools/args.h"
 #include "tools/cmdline.h"
 

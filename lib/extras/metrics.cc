@@ -22,9 +22,9 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image_color_transform.h"
 #include "lib/extras/packed_image_convert.h"
-#include "lib/jxl/color_encoding_internal.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {

@@ -30,9 +30,9 @@
 #include "lib/base/printf_macros.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/cms/jxl_cms_internal.h"
 #include "lib/cms/transfer_functions-inl.h"
-#include "lib/jxl/color_encoding_internal.h"
 #if JPEGXL_ENABLE_SKCMS
 #include "skcms.h"
 #else  // JPEGXL_ENABLE_SKCMS
