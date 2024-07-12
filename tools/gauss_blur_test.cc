@@ -10,9 +10,9 @@
 #include <hwy/targets.h>
 #include <vector>
 
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/random.h"
-#include "lib/jxl/base/testing.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/random.h"
+#include "lib/base/testing.h"
 #include "lib/jxl/image_ops.h"
 
 namespace jxl {

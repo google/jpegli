@@ -11,8 +11,8 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/base/rect.h"
 #include "lib/extras/convolve-inl.h"
-#include "lib/jxl/base/rect.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

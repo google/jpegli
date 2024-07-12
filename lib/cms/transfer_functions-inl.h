@@ -17,10 +17,10 @@
 #include <cmath>
 #include <hwy/highway.h>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/fast_math-inl.h"
-#include "lib/jxl/base/rational_polynomial-inl.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/fast_math-inl.h"
+#include "lib/base/rational_polynomial-inl.h"
+#include "lib/base/status.h"
 #include "lib/cms/transfer_functions.h"
 
 HWY_BEFORE_NAMESPACE();

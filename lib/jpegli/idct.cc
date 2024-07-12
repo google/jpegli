@@ -8,8 +8,8 @@
 
 #include <cmath>
 
+#include "lib/base/status.h"
 #include "lib/jpegli/decode_internal.h"
-#include "lib/jxl/base/status.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/idct.cc"

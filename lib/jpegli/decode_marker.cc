@@ -9,12 +9,12 @@
 #include <jxl/types.h>
 #include <string.h>
 
+#include "lib/base/printf_macros.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/huffman.h"
 #include "lib/jpegli/memory_manager.h"
-#include "lib/jxl/base/printf_macros.h"
 
 namespace jpegli {
 namespace {

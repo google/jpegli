@@ -13,11 +13,11 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/include_jpeglib.h"  // NOLINT
+#include "lib/base/status.h"
 #include "lib/jpegli/test_params.h"
 #include "lib/jpegli/types.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/include_jpeglib.h"  // NOLINT
-#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 

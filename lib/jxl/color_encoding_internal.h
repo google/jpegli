@@ -24,9 +24,9 @@
 
 #include "lib/cms/color_encoding_cms.h"
 #include "lib/cms/jxl_cms_internal.h"
-#include "lib/jxl/base/bits.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/bits.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 

@@ -17,9 +17,9 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-#include "lib/jxl/base/common.h"             // RoundUpTo
-#include "lib/jxl/base/compiler_specific.h"  // JXL_RESTRICT
-#include "lib/jxl/base/matrix_ops.h"         // Inv3x3Matrix
+#include "lib/base/common.h"             // RoundUpTo
+#include "lib/base/compiler_specific.h"  // JXL_RESTRICT
+#include "lib/base/matrix_ops.h"         // Inv3x3Matrix
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {

@@ -10,9 +10,9 @@
 
 #include <hwy/base.h>
 
+#include "lib/base/status.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 namespace {

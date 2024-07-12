@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "lib/jxl/base/common.h"
+#include "lib/base/common.h"
 
 #if defined(__unix__) || defined(__unix) || \
     defined(__APPLE__) && defined(__MACH__)

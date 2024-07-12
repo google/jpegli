@@ -12,15 +12,15 @@
 
 #include <cstdint>
 
+#include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/float.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/rect.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 #include "lib/extras/image_color_transform.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/float.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/rect.h"
-#include "lib/jxl/base/sanitizers.h"
-#include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image_ops.h"
 

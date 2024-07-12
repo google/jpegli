@@ -16,8 +16,8 @@
 #include <cstdint>
 #include <vector>
 
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/byte_order.h"
+#include "lib/base/compiler_specific.h"
 
 namespace jxl {
 

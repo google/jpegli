@@ -13,8 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/common.h"
 
 namespace jxl {
 namespace extras {

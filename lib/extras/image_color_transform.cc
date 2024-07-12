@@ -11,8 +11,8 @@
 #include <atomic>
 #include <utility>
 
-#include "lib/jxl/base/rect.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/rect.h"
+#include "lib/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 
 namespace jxl {

@@ -7,7 +7,7 @@
 #ifndef LIB_JXL_BASE_IACA_H_
 #define LIB_JXL_BASE_IACA_H_
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 // IACA (Intel's Code Analyzer) analyzes instruction latencies, but only for
 // code between special markers. These functions embed such markers in an

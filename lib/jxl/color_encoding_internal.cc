@@ -8,7 +8,7 @@
 
 #include <array>
 
-#include "lib/jxl/base/common.h"
+#include "lib/base/common.h"
 #include "lib/cms/color_encoding_cms.h"
 #include "lib/cms/jxl_cms_internal.h"
 

@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-#include "lib/jxl/base/common.h"
+#include "lib/base/common.h"
 
 namespace jxl {
 

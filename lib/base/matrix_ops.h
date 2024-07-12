@@ -13,7 +13,7 @@
 #include <cmath>  // abs
 #include <cstddef>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 

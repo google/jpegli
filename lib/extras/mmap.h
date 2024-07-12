@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 struct MemoryMappedFileImpl;

@@ -13,7 +13,7 @@
 
 #include <cstddef>
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 namespace jxl {
 

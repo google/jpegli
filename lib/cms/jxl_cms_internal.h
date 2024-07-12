@@ -19,11 +19,11 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/matrix_ops.h"
-#include "lib/jxl/base/span.h"  // Bytes
-#include "lib/jxl/base/status.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/matrix_ops.h"
+#include "lib/base/span.h"  // Bytes
+#include "lib/base/status.h"
 #include "lib/cms/opsin_params.h"
 #include "lib/cms/tone_mapping.h"
 #include "lib/cms/transfer_functions.h"

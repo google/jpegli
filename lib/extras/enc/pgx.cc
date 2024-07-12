@@ -9,8 +9,8 @@
 #include <jxl/codestream_header.h>
 #include <string.h>
 
+#include "lib/base/byte_order.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/byte_order.h"
 
 namespace jxl {
 namespace extras {

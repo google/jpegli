@@ -23,9 +23,9 @@
 #include <random>
 #include <vector>
 
+#include "lib/base/data_parallel.h"
+#include "lib/base/random.h"
 #include "lib/jpegli/encode.h"
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/random.h"
 #include "tools/file_io.h"
 #include "tools/thread_pool_internal.h"
 

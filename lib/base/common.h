@@ -17,7 +17,7 @@
 #include <string>
 #include <type_traits>
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 namespace jxl {
 // Some enums and typedefs used by more than one header file.

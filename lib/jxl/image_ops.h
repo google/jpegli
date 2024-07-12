@@ -14,9 +14,9 @@
 #include <cstdint>
 #include <limits>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/rect.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/rect.h"
+#include "lib/base/status.h"
 #include "lib/jxl/image.h"
 
 namespace jxl {

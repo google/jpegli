@@ -21,9 +21,9 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/encode_internal.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/status.h"
 HWY_BEFORE_NAMESPACE();
 namespace jpegli {
 namespace HWY_NAMESPACE {

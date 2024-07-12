@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include "lib/base/byte_order.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/color_quantize.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/decode_marker.h"
@@ -17,8 +19,6 @@
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/render.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 

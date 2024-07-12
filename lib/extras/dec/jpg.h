@@ -11,10 +11,10 @@
 
 #include <stdint.h>
 
+#include "lib/base/data_parallel.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
 
 namespace jxl {
 

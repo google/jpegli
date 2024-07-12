@@ -11,8 +11,8 @@
 #define LIB_JPEGLI_DCT_INL_H_
 #endif
 
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/transpose-inl.h"
-#include "lib/jxl/base/compiler_specific.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jpegli {

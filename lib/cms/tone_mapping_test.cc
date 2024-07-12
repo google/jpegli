@@ -11,8 +11,8 @@
 #include <cstdio>
 #include <hwy/foreach_target.h>
 
-#include "lib/jxl/base/random.h"
-#include "lib/jxl/base/testing.h"
+#include "lib/base/random.h"
+#include "lib/base/testing.h"
 #include "lib/cms/tone_mapping-inl.h"
 
 // Test utils

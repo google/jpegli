@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 // Not supported on Windows due to Linux-specific functions.
 // Not supported in Android NDK before API 28.

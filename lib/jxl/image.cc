@@ -10,13 +10,13 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 #include "lib/jxl/cache_aligned.h"
 #include "lib/jxl/simd_util.h"
 
 #if defined(MEMORY_SANITIZER)
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/sanitizers.h"
+#include "lib/base/common.h"
+#include "lib/base/sanitizers.h"
 #endif
 
 namespace jxl {

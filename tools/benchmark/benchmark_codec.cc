@@ -15,9 +15,9 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/status.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/base/status.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 #include "tools/benchmark/benchmark_args.h"

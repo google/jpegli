@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 

@@ -8,9 +8,9 @@
 
 #include <cstring>
 
-#include "lib/jxl/base/include_jpeglib.h"  // NOLINT
-#include "lib/jxl/base/sanitizers.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/include_jpeglib.h"  // NOLINT
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 
 namespace jpegli {
 

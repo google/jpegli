@@ -12,9 +12,9 @@
 #include <cstddef>
 #include <utility>
 
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/matrix_ops.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/matrix_ops.h"
 #include "lib/cms/transfer_functions.h"
 
 namespace jxl {

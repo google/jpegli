@@ -7,30 +7,30 @@
 # This file is generated, do not modify by manually.
 # Run `tools/scripts/build_cleaner.py --update` to regenerate it.
 set(JPEGXL_INTERNAL_BASE_SOURCES
-  jxl/base/arch_macros.h
-  jxl/base/bits.h
-  jxl/base/byte_order.h
-  jxl/base/c_callback_support.h
-  jxl/base/common.h
-  jxl/base/compiler_specific.h
-  jxl/base/data_parallel.h
-  jxl/base/exif.h
-  jxl/base/fast_math-inl.h
-  jxl/base/float.h
-  jxl/base/iaca.h
-  jxl/base/include_jpeglib.h
-  jxl/base/matrix_ops.h
-  jxl/base/os_macros.h
-  jxl/base/override.h
-  jxl/base/printf_macros.h
-  jxl/base/random.h
-  jxl/base/rational_polynomial-inl.h
-  jxl/base/rect.h
-  jxl/base/sanitizer_definitions.h
-  jxl/base/sanitizers.h
-  jxl/base/scope_guard.h
-  jxl/base/span.h
-  jxl/base/status.h
+  base/arch_macros.h
+  base/bits.h
+  base/byte_order.h
+  base/c_callback_support.h
+  base/common.h
+  base/compiler_specific.h
+  base/data_parallel.h
+  base/exif.h
+  base/fast_math-inl.h
+  base/float.h
+  base/iaca.h
+  base/include_jpeglib.h
+  base/matrix_ops.h
+  base/os_macros.h
+  base/override.h
+  base/printf_macros.h
+  base/random.h
+  base/rational_polynomial-inl.h
+  base/rect.h
+  base/sanitizer_definitions.h
+  base/sanitizers.h
+  base/scope_guard.h
+  base/span.h
+  base/status.h
 )
 
 set(JPEGXL_INTERNAL_CMS_SOURCES
