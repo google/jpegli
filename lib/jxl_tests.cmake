@@ -20,7 +20,7 @@ target_include_directories(jxl_testlib-internal PUBLIC
 )
 target_link_libraries(jxl_testlib-internal
   hwy
-  jxl-internal
+  jxl_cms
   jxl_threads
 )
 endif()

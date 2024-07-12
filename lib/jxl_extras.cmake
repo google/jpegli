@@ -131,7 +131,6 @@ add_library(jxl_extras_nocodec-internal STATIC EXCLUDE_FROM_ALL
   $<TARGET_OBJECTS:jxl_extras_internal-obj>
 )
 target_link_libraries(jxl_extras_nocodec-internal PRIVATE jxl_threads)
-target_link_libraries(jxl_extras_nocodec-internal PUBLIC jxl-internal)
 
 # We only define a static library jxl_extras since it uses internal parts of
 # jxl library which are not accessible from outside the library in the
@@ -141,7 +140,6 @@ target_link_libraries(jxl_extras-internal PRIVATE
   ${JXL_EXTRAS_CODEC_INTERNAL_LIBRARIES}
   jxl_threads
 )
-target_link_libraries(jxl_extras-internal PUBLIC jxl-internal)
 target_link_libraries(jxl_extras-internal PRIVATE jpegli-static)
 
 ### Library that does not depend on internal parts of jxl library.

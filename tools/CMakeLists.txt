@@ -14,7 +14,6 @@ add_library(jxl_tool STATIC EXCLUDE_FROM_ALL
   cmdline.cc
   speed_stats.cc
   tool_version.cc
-  ${JXL_CMS_OBJECTS}
 )
 target_compile_options(jxl_tool PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
 target_include_directories(jxl_tool PUBLIC "${PROJECT_SOURCE_DIR}")
@@ -73,7 +72,6 @@ add_library(jxl_gauss_blur STATIC #EXCLUDE_FROM_ALL
 )
 target_compile_options(jxl_gauss_blur PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
 target_include_directories(jxl_gauss_blur PUBLIC "${PROJECT_SOURCE_DIR}")
-target_link_libraries(jxl_gauss_blur PUBLIC jxl)
 target_link_libraries(jxl_gauss_blur PUBLIC hwy)
 
 if(JPEGXL_ENABLE_TOOLS)
@@ -130,6 +128,7 @@ endif()  # JPEGXL_ENABLE_BENCHMARK
 # All tool binaries depend on "jxl" library and the tool helpers.
 foreach(BINARY IN LISTS INTERNAL_TOOL_BINARIES)
   target_link_libraries("${BINARY}"
+    jxl_cms
     jxl_extras-internal
     jxl_threads
     jxl_tool

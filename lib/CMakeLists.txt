@@ -160,10 +160,26 @@ elseif(LIBCXX)
   set(PKGCONFIG_CXX_LIB "-lc++")
 endif()
 
+add_library(jxl_base INTERFACE)
+target_include_directories(jxl_base SYSTEM BEFORE INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
+)
+target_include_directories(jxl_base BEFORE INTERFACE
+  ${PROJECT_SOURCE_DIR}
+  ${JXL_HWY_INCLUDE_DIRS}
+)
+
+# On android, link with log to use android-related log functions.
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+  find_library(log-lib log)
+  if(log-lib)
+    target_link_libraries(jxl_base INTERFACE ${log-lib})
+    target_compile_definitions(jxl_base INTERFACE USE_ANDROID_LOGGER)
+  endif()
+endif()
+
 # The jxl_cms library definition.
 include(jxl_cms.cmake)
-# The jxl library definition.
-include(jxl.cmake)
 
 # Other libraries outside the core jxl library.
 if(JPEGXL_ENABLE_TOOLS OR BUILD_TESTING)

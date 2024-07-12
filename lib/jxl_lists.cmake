@@ -99,29 +99,26 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
   extras/enc/pnm.h
 )
 
-set(JPEGXL_INTERNAL_DEC_SOURCES
+set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/cache_aligned.cc
   extras/cache_aligned.h
-  extras/image.cc
-  extras/image.h
-  extras/image_ops.h
-  extras/simd_util.cc
-  extras/simd_util.h
-)
-
-set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
   extras/butteraugli.cc
   extras/butteraugli.h
   extras/convolve-inl.h
   extras/convolve.h
   extras/convolve_separable5.cc
   extras/convolve_slow.cc
+  extras/image.cc
+  extras/image.h
   extras/image_color_transform.cc
   extras/image_color_transform.h
+  extras/image_ops.h
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc
   extras/packed_image_convert.h
+  extras/simd_util.cc
+  extras/simd_util.h
   extras/xyb_transform.cc
   extras/xyb_transform.h
 )
@@ -238,9 +235,6 @@ set(JPEGXL_INTERNAL_JPEGLI_TESTS
 
 set(JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES
   jpegli/libjpeg_wrapper.cc
-)
-
-set(JPEGXL_INTERNAL_PUBLIC_HEADERS
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES
