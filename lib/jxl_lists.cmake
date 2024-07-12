@@ -99,8 +99,8 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
 set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/cache_aligned.cc
   jxl/cache_aligned.h
-  jxl/color_encoding_internal.cc
-  jxl/color_encoding_internal.h
+  cms/color_encoding_internal.cc
+  cms/color_encoding_internal.h
   jxl/image.cc
   jxl/image.h
   jxl/image_ops.h

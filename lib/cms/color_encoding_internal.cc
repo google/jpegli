@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/color_encoding_internal.h"
+#include "lib/cms/color_encoding_internal.h"
 
 #include <array>
 

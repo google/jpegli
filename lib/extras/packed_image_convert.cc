@@ -20,8 +20,8 @@
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image_color_transform.h"
-#include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image_ops.h"
 
 #undef HWY_TARGET_INCLUDE

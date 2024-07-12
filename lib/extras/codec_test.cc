@@ -26,13 +26,13 @@
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/dec/pnm.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/test_utils.h"
-#include "lib/jxl/color_encoding_internal.h"
 #include "lib/threads/test_utils.h"
 
 namespace jxl {

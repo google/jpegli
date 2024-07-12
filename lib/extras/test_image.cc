@@ -17,10 +17,10 @@
 #include "lib/base/random.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_description.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
-#include "lib/jxl/color_encoding_internal.h"
 
 namespace jxl {
 namespace test {
