@@ -7,8 +7,6 @@
 
 #include <stddef.h>
 #include <stdio.h>
-// After stddef/stdio
-#include <jxl/types.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -21,6 +19,7 @@
 
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/extras/dec/jpegli.h"
 #include "lib/extras/dec/jpg.h"
 #include "lib/extras/enc/encode.h"

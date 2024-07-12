@@ -5,20 +5,13 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-/** @addtogroup libjxl_metadata
- * @{
- * @file codestream_header.h
- * @brief Definitions of structs and enums for the metadata from the JPEG XL
- * codestream headers (signature, metadata, preview dimensions, ...), excluding
- * color encoding which is in color_encoding.h.
- */
-
 #ifndef JXL_CODESTREAM_HEADER_H_
 #define JXL_CODESTREAM_HEADER_H_
 
-#include <jxl/types.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "lib/base/types.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -414,5 +407,3 @@ typedef struct {
 #endif
 
 #endif /* JXL_CODESTREAM_HEADER_H_ */
-
-/** @}*/

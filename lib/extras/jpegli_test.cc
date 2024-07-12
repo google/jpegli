@@ -7,7 +7,6 @@
 #include "lib/extras/dec/jpegli.h"
 
 #include <jxl/color_encoding.h>
-#include <jxl/types.h>
 #include <stdint.h>
 
 #include <cstddef>
@@ -24,6 +23,7 @@
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
+#include "lib/base/types.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"

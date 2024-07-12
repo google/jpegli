@@ -4,13 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/cms.h>
-
 #ifndef JPEGXL_ENABLE_SKCMS
 #define JPEGXL_ENABLE_SKCMS 0
 #endif
-
-#include <jxl/cms_interface.h>
 
 #include <algorithm>
 #include <array>
@@ -30,6 +26,8 @@
 #include "lib/base/printf_macros.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/cms/cms.h"
+#include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/cms/jxl_cms_internal.h"
 #include "lib/cms/transfer_functions-inl.h"

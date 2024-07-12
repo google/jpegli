@@ -9,9 +9,6 @@
 
 // Facade for image encoders.
 
-#include <jxl/codestream_header.h>
-#include <jxl/types.h>
-
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -21,6 +18,8 @@
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

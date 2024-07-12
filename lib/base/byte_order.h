@@ -7,11 +7,11 @@
 #ifndef LIB_JXL_BASE_BYTE_ORDER_H_
 #define LIB_JXL_BASE_BYTE_ORDER_H_
 
-#include <jxl/types.h>
 #include <stdint.h>
 #include <string.h>  // memcpy
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/types.h"
 
 #if JXL_COMPILER_MSVC
 #include <intrin.h>  // _byteswap_*

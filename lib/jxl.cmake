@@ -34,18 +34,6 @@ list(APPEND JPEGXL_INTERNAL_PUBLIC_HEADERS
 # Headers for exporting/importing public headers
 include(GenerateExportHeader)
 
-# CMake does not allow generate_export_header for INTERFACE library, so we
-# add this stub library just for file generation.
-add_library(jxl_export OBJECT ${JPEGXL_INTERNAL_PUBLIC_HEADERS} nothing.cc)
-set_target_properties(jxl_export PROPERTIES
-  CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN 1
-  DEFINE_SYMBOL JXL_INTERNAL_LIBRARY_BUILD
-  LINKER_LANGUAGE CXX
-)
-generate_export_header(jxl_export
-  BASE_NAME JXL
-  EXPORT_FILE_NAME include/jxl/jxl_export.h)
 # Place all public headers in a single directory.
 foreach(path ${JPEGXL_INTERNAL_PUBLIC_HEADERS})
   configure_file(
@@ -72,8 +60,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     target_compile_definitions(jxl_base INTERFACE USE_ANDROID_LOGGER)
   endif()
 endif()
-
-add_dependencies(jxl_base jxl_export)
 
 # Decoder-only object library
 add_library(jxl_dec-obj OBJECT ${JPEGXL_INTERNAL_DEC_SOURCES})
@@ -188,7 +174,7 @@ foreach(target IN ITEMS jxl jxl_dec)
   set_property(TARGET ${target} APPEND_STRING PROPERTY
       LINK_FLAGS "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/jxl/jxl_osx.syms")
   elseif(WIN32)
-    # Nothing needed here, we use __declspec(dllexport) (jxl_export.h)
+    # Nothing needed here
   else()
   set_property(TARGET ${target} APPEND_STRING PROPERTY
       LINK_FLAGS " -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/jxl/jxl.version")

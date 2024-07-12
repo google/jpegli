@@ -6,7 +6,6 @@
 
 #include "lib/extras/metrics.h"
 
-#include <jxl/cms.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -22,6 +21,7 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
+#include "lib/cms/cms.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image_color_transform.h"
 #include "lib/extras/packed_image_convert.h"

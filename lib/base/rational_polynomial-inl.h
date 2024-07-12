@@ -14,8 +14,9 @@
 #define LIB_JXL_BASE_RATIONAL_POLYNOMIAL_INL_H_
 #endif
 
-#include <jxl/types.h>
 #include <stddef.h>
+
+#include "lib/base/types.h"
 
 #include <hwy/highway.h>
 HWY_BEFORE_NAMESPACE();

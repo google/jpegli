@@ -6,7 +6,6 @@
 
 #include "lib/extras/cache_aligned.h"
 
-#include <jxl/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,6 +23,7 @@
 
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 
 namespace jxl {
 namespace {

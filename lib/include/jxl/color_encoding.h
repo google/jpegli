@@ -5,13 +5,6 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-/** @addtogroup libjxl_color
- * @{
- * @file color_encoding.h
- * @brief Color Encoding definitions used by JPEG XL.
- * All CIE units are for the standard 1931 2 degree observer.
- */
-
 #ifndef JXL_COLOR_ENCODING_H_
 #define JXL_COLOR_ENCODING_H_
 
@@ -24,7 +17,7 @@ typedef enum {
   /** Tristimulus RGB */
   JXL_COLOR_SPACE_RGB,
   /** Luminance based, the primaries in @ref JxlColorEncoding must be ignored.
-   * This value implies that num_color_channels in @ref JxlBasicInfo is 1, any
+   * This value implies that num_color_channels in JxlBasicInfo is 1, any
    * other value implies num_color_channels is 3. */
   JXL_COLOR_SPACE_GRAY,
   /** XYB (opsin) color space */
@@ -36,7 +29,7 @@ typedef enum {
 /** Built-in whitepoints for color encoding. When decoding, the numerical xy
  * whitepoint value can be read from the @ref JxlColorEncoding white_point field
  * regardless of the enum value. When encoding, enum values except
- * ::JXL_WHITE_POINT_CUSTOM override the numerical fields. Some enum values
+ * JXL_WHITE_POINT_CUSTOM override the numerical fields. Some enum values
  * match a subset of CICP (Rec. ITU-T H.273 | ISO/IEC 23091-2:2019(E)), however
  * the white point and RGB primaries are separate enums here.
  */
@@ -56,7 +49,7 @@ typedef enum {
 /** Built-in primaries for color encoding. When decoding, the primaries can be
  * read from the @ref JxlColorEncoding primaries_red_xy, primaries_green_xy and
  * primaries_blue_xy fields regardless of the enum value. When encoding, the
- * enum values except ::JXL_PRIMARIES_CUSTOM override the numerical fields.
+ * enum values except JXL_PRIMARIES_CUSTOM override the numerical fields.
  * Some enum values match a subset of CICP (Rec. ITU-T H.273 | ISO/IEC
  * 23091-2:2019(E)), however the white point and RGB primaries are separate
  * enums here.
@@ -117,7 +110,7 @@ typedef struct {
    */
   JxlColorSpace color_space;
 
-  /** Built-in white point. If this value is ::JXL_WHITE_POINT_CUSTOM, must
+  /** Built-in white point. If this value is JXL_WHITE_POINT_CUSTOM, must
    * use the numerical whitepoint values from white_point_xy.
    */
   JxlWhitePoint white_point;
@@ -125,10 +118,10 @@ typedef struct {
   /** Numerical whitepoint values in CIE xy space. */
   double white_point_xy[2];
 
-  /** Built-in RGB primaries. If this value is ::JXL_PRIMARIES_CUSTOM, must
+  /** Built-in RGB primaries. If this value is JXL_PRIMARIES_CUSTOM, must
    * use the numerical primaries values below. This field and the custom values
    * below are unused and must be ignored if the color space is
-   * ::JXL_COLOR_SPACE_GRAY or ::JXL_COLOR_SPACE_XYB.
+   * JXL_COLOR_SPACE_GRAY or JXL_COLOR_SPACE_XYB.
    */
   JxlPrimaries primaries;
 
@@ -144,8 +137,7 @@ typedef struct {
   /** Transfer function if have_gamma is 0 */
   JxlTransferFunction transfer_function;
 
-  /** Gamma value used when transfer_function is @ref
-   * JXL_TRANSFER_FUNCTION_GAMMA
+  /** Gamma value used when transfer_function is JXL_TRANSFER_FUNCTION_GAMMA
    */
   double gamma;
 
@@ -158,5 +150,3 @@ typedef struct {
 #endif
 
 #endif /* JXL_COLOR_ENCODING_H_ */
-
-/** @}*/

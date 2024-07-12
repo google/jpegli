@@ -7,10 +7,9 @@
 #ifndef LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
 #define LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
 
-#include <jxl/types.h>
-
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"

@@ -27,9 +27,12 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   base/sanitizers.h
   base/span.h
   base/status.h
+  base/types.h
 )
 
 set(JPEGXL_INTERNAL_CMS_SOURCES
+  cms/cms.h
+  cms/cms_interface.h
   cms/color_encoding_cms.h
   cms/color_encoding_internal.h
   cms/jxl_cms.cc
@@ -123,6 +126,7 @@ set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
 set(JPEGXL_INTERNAL_EXTRAS_SOURCES
   extras/alpha_blend.cc
   extras/alpha_blend.h
+  extras/codestream_header.h
   extras/dec/color_description.cc
   extras/dec/color_description.h
   extras/dec/color_hints.cc
@@ -234,13 +238,9 @@ set(JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES
 )
 
 set(JPEGXL_INTERNAL_PUBLIC_HEADERS
-  include/jxl/cms.h
-  include/jxl/cms_interface.h
-  include/jxl/codestream_header.h
   include/jxl/color_encoding.h
   include/jxl/memory_manager.h
   include/jxl/parallel_runner.h
-  include/jxl/types.h
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES

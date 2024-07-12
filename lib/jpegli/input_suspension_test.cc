@@ -4,8 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/types.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -17,6 +15,7 @@
 #include <vector>
 
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/decode.h"
 #include "lib/jpegli/libjpeg_test_util.h"
 #include "lib/jpegli/test_params.h"

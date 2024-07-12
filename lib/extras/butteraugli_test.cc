@@ -6,7 +6,6 @@
 
 #include "lib/extras/butteraugli.h"
 
-#include <jxl/types.h>
 #include <stddef.h>
 
 #include <algorithm>
@@ -16,6 +15,7 @@
 #include "lib/base/random.h"
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
+#include "lib/base/types.h"
 #include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/metrics.h"

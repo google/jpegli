@@ -6,9 +6,7 @@
 
 #include "lib/extras/packed_image_convert.h"
 
-#include <jxl/cms.h>
 #include <jxl/color_encoding.h>
-#include <jxl/types.h>
 
 #include <cstdint>
 
@@ -20,6 +18,8 @@
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/cms.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image_color_transform.h"
 #include "lib/extras/image_ops.h"

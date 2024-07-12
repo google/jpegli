@@ -6,13 +6,12 @@
 
 #include "lib/extras/image_color_transform.h"
 
-#include <jxl/cms_interface.h>
-
 #include <atomic>
 #include <utility>
 
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
+#include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding_internal.h"
 
 namespace jxl {

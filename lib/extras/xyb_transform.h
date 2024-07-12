@@ -9,8 +9,6 @@
 
 // Converts to XYB color space.
 
-#include <jxl/cms_interface.h>
-
 #include <cstddef>
 
 #include "lib/base/compiler_specific.h"
