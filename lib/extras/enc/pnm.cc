@@ -15,8 +15,8 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
+#include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/image.h"
 
 namespace jxl {
 namespace extras {

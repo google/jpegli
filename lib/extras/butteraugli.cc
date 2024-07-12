@@ -32,7 +32,7 @@
 #include <memory>
 #include <vector>
 
-#include "lib/jxl/image.h"
+#include "lib/extras/image.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/butteraugli.cc"
@@ -43,7 +43,7 @@
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/extras/convolve.h"
-#include "lib/jxl/image_ops.h"
+#include "lib/extras/image_ops.h"
 
 #ifndef JXL_BUTTERAUGLI_ONCE
 #define JXL_BUTTERAUGLI_ONCE

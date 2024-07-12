@@ -16,10 +16,10 @@
 #include <vector>
 
 #include "lib/base/status.h"
+#include "lib/extras/image.h"
+#include "lib/extras/image_ops.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/image.h"
-#include "lib/jxl/image_ops.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
 #include "tools/benchmark/benchmark_stats.h"

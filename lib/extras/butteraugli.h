@@ -18,7 +18,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
-#include "lib/jxl/image.h"
+#include "lib/extras/image.h"
 
 #if !defined(BUTTERAUGLI_ENABLE_CHECKS)
 #define BUTTERAUGLI_ENABLE_CHECKS 0

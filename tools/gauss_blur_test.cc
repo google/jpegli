@@ -13,7 +13,7 @@
 #include "lib/base/printf_macros.h"
 #include "lib/base/random.h"
 #include "lib/base/testing.h"
-#include "lib/jxl/image_ops.h"
+#include "lib/extras/image_ops.h"
 
 namespace jxl {
 

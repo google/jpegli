@@ -16,7 +16,7 @@
 #include "lib/base/data_parallel.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
-#include "lib/jxl/image_ops.h"
+#include "lib/extras/image_ops.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

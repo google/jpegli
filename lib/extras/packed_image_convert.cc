@@ -22,7 +22,7 @@
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image_color_transform.h"
-#include "lib/jxl/image_ops.h"
+#include "lib/extras/image_ops.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/packed_image_convert.cc"
