@@ -15,9 +15,9 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/cms/opsin_params.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/fast_math-inl.h"
-#include "lib/jxl/cms/opsin_params.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

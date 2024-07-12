@@ -24,9 +24,9 @@
 #include "lib/jxl/base/matrix_ops.h"
 #include "lib/jxl/base/span.h"  // Bytes
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/cms/opsin_params.h"
-#include "lib/jxl/cms/tone_mapping.h"
-#include "lib/jxl/cms/transfer_functions.h"
+#include "lib/cms/opsin_params.h"
+#include "lib/cms/tone_mapping.h"
+#include "lib/cms/transfer_functions.h"
 
 #ifndef JXL_ENABLE_3D_ICC_TONEMAPPING
 #define JXL_ENABLE_3D_ICC_TONEMAPPING 1

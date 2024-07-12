@@ -34,14 +34,14 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
 )
 
 set(JPEGXL_INTERNAL_CMS_SOURCES
-  jxl/cms/color_encoding_cms.h
-  jxl/cms/jxl_cms.cc
-  jxl/cms/jxl_cms_internal.h
-  jxl/cms/opsin_params.h
-  jxl/cms/tone_mapping-inl.h
-  jxl/cms/tone_mapping.h
-  jxl/cms/transfer_functions-inl.h
-  jxl/cms/transfer_functions.h
+  cms/color_encoding_cms.h
+  cms/jxl_cms.cc
+  cms/jxl_cms_internal.h
+  cms/opsin_params.h
+  cms/tone_mapping-inl.h
+  cms/tone_mapping.h
+  cms/transfer_functions-inl.h
+  cms/transfer_functions.h
 )
 
 set(JPEGXL_INTERNAL_CODEC_APNG_SOURCES

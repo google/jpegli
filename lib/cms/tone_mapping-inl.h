@@ -13,8 +13,8 @@
 
 #include <hwy/highway.h>
 
-#include "lib/jxl/cms/tone_mapping.h"
-#include "lib/jxl/cms/transfer_functions-inl.h"
+#include "lib/cms/tone_mapping.h"
+#include "lib/cms/transfer_functions-inl.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

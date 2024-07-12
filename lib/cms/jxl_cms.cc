@@ -21,7 +21,7 @@
 #include <memory>
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/cms/jxl_cms.cc"
+#define HWY_TARGET_INCLUDE "lib/cms/jxl_cms.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
@@ -30,8 +30,8 @@
 #include "lib/jxl/base/printf_macros.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/cms/jxl_cms_internal.h"
-#include "lib/jxl/cms/transfer_functions-inl.h"
+#include "lib/cms/jxl_cms_internal.h"
+#include "lib/cms/transfer_functions-inl.h"
 #include "lib/jxl/color_encoding_internal.h"
 #if JPEGXL_ENABLE_SKCMS
 #include "skcms.h"
