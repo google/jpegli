@@ -69,7 +69,7 @@ else()
   set(JPEGXL_CMS_PRIVATE_LIBS "-lm ${PKGCONFIG_CXX_LIB}")
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/jxl/libjxl_cms.pc.in"
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cms/libjxl_cms.pc.in"
                "libjxl_cms.pc" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libjxl_cms.pc"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
