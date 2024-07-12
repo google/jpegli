@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/thread_parallel_runner.h>
-#include <jxl/thread_parallel_runner_cxx.h>
+#include "lib/threads/thread_parallel_runner.h"
+#include "lib/threads/thread_parallel_runner_cxx.h"
 
 #include <fstream>
 #include <iostream>

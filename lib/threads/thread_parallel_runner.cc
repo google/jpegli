@@ -6,13 +6,13 @@
 
 #include <jxl/memory_manager.h>
 #include <jxl/parallel_runner.h>
-#include <jxl/thread_parallel_runner.h>
 #include <string.h>
 
 #include <cstdint>
 #include <cstdlib>
 #include <thread>
 
+#include "lib/threads/thread_parallel_runner.h"
 #include "lib/threads/thread_parallel_runner_internal.h"
 
 namespace {
