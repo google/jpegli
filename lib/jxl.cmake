@@ -25,18 +25,6 @@ set(OBJ_COMPILE_DEFINITIONS
   JXL_INTERNAL_LIBRARY_BUILD
 )
 
-# Headers for exporting/importing public headers
-include(GenerateExportHeader)
-
-# Place all public headers in a single directory.
-foreach(path ${JPEGXL_INTERNAL_PUBLIC_HEADERS})
-  configure_file(
-    ${path}
-    ${path}
-    COPYONLY
-  )
-endforeach()
-
 add_library(jxl_base INTERFACE)
 target_include_directories(jxl_base SYSTEM BEFORE INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"

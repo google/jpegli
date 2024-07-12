@@ -16,11 +16,10 @@
 #ifndef JXL_THREAD_PARALLEL_RUNNER_CXX_H_
 #define JXL_THREAD_PARALLEL_RUNNER_CXX_H_
 
-#include <jxl/memory_manager.h>
-
 #include <cstddef>
 #include <memory>
 
+#include "lib/base/memory_manager.h"
 #include "lib/threads/thread_parallel_runner.h"
 
 #if !(defined(__cplusplus) || defined(c_plusplus))

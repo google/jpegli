@@ -17,8 +17,10 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   base/float.h
   base/include_jpeglib.h
   base/matrix_ops.h
+  base/memory_manager.h
   base/os_macros.h
   base/override.h
+  base/parallel_runner.h
   base/printf_macros.h
   base/random.h
   base/rational_polynomial-inl.h
@@ -239,8 +241,6 @@ set(JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES
 )
 
 set(JPEGXL_INTERNAL_PUBLIC_HEADERS
-  include/jxl/memory_manager.h
-  include/jxl/parallel_runner.h
 )
 
 set(JPEGXL_INTERNAL_TESTLIB_FILES

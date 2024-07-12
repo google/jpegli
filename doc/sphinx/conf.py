@@ -43,12 +43,11 @@ FILE_PATTERNS          = *.c *.h
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO
 GENERATE_XML           = YES
-INPUT                  = lib/include doc/api.txt
+INPUT                  = doc/api.txt
 OUTPUT_DIRECTORY       = {build_dir}
 PROJECT_NAME           = LIBJXL
 QUIET                  = YES
 RECURSIVE              = YES
-STRIP_FROM_PATH        = lib/include
 WARN_AS_ERROR          = YES
 """)
     subprocess.check_call(['doxygen', doxyfile], cwd=root_dir)

@@ -33,8 +33,6 @@
 #ifndef LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
 #define LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
 
-#include <jxl/memory_manager.h>
-#include <jxl/parallel_runner.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -44,6 +42,9 @@
 #include <mutex>               //NOLINT
 #include <thread>              //NOLINT
 #include <vector>
+
+#include "lib/base/memory_manager.h"
+#include "lib/base/parallel_runner.h"
 
 namespace jpegxl {
 
