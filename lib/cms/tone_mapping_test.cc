@@ -5,15 +5,15 @@
 // https://developers.google.com/open-source/licenses/bsd
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/cms/tone_mapping_test.cc"
-#include "lib/jxl/cms/tone_mapping.h"
+#define HWY_TARGET_INCLUDE "lib/cms/tone_mapping_test.cc"
+#include "lib/cms/tone_mapping.h"
 
 #include <cstdio>
 #include <hwy/foreach_target.h>
 
 #include "lib/jxl/base/random.h"
 #include "lib/jxl/base/testing.h"
-#include "lib/jxl/cms/tone_mapping-inl.h"
+#include "lib/cms/tone_mapping-inl.h"
 
 // Test utils
 #include <hwy/highway.h>

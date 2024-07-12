@@ -9,8 +9,8 @@
 #include <array>
 
 #include "lib/jxl/base/common.h"
-#include "lib/jxl/cms/color_encoding_cms.h"
-#include "lib/jxl/cms/jxl_cms_internal.h"
+#include "lib/cms/color_encoding_cms.h"
+#include "lib/cms/jxl_cms_internal.h"
 
 namespace jxl {
 

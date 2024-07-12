@@ -22,11 +22,11 @@
 #include <string>
 #include <utility>
 
+#include "lib/cms/color_encoding_cms.h"
+#include "lib/cms/jxl_cms_internal.h"
 #include "lib/jxl/base/bits.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/cms/color_encoding_cms.h"
-#include "lib/jxl/cms/jxl_cms_internal.h"
 
 namespace jxl {
 

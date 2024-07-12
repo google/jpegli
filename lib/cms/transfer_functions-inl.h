@@ -21,7 +21,7 @@
 #include "lib/jxl/base/fast_math-inl.h"
 #include "lib/jxl/base/rational_polynomial-inl.h"
 #include "lib/jxl/base/status.h"
-#include "lib/jxl/cms/transfer_functions.h"
+#include "lib/cms/transfer_functions.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
