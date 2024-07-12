@@ -97,15 +97,15 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
 )
 
 set(JPEGXL_INTERNAL_DEC_SOURCES
-  jxl/cache_aligned.cc
-  jxl/cache_aligned.h
+  extras/cache_aligned.cc
+  extras/cache_aligned.h
   cms/color_encoding_internal.cc
   cms/color_encoding_internal.h
   extras/image.cc
   extras/image.h
   extras/image_ops.h
-  jxl/simd_util.cc
-  jxl/simd_util.h
+  extras/simd_util.cc
+  extras/simd_util.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES

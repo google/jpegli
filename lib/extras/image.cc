@@ -11,8 +11,8 @@
 #include <cstdint>
 
 #include "lib/base/status.h"
-#include "lib/jxl/cache_aligned.h"
-#include "lib/jxl/simd_util.h"
+#include "lib/extras/cache_aligned.h"
+#include "lib/extras/simd_util.h"
 
 #if defined(MEMORY_SANITIZER)
 #include "lib/base/common.h"
