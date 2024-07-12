@@ -6,14 +6,13 @@
 
 #include "lib/extras/enc/npy.h"
 
-#include <jxl/types.h>
-
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "lib/base/common.h"
+#include "lib/base/types.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

@@ -6,7 +6,6 @@
 
 #include "lib/jpegli/adaptive_quantization.h"
 
-#include <jxl/types.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -23,6 +22,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/encode_internal.h"
 HWY_BEFORE_NAMESPACE();
 namespace jpegli {

@@ -25,7 +25,6 @@ Design:
 
 #include "tools/ssimulacra2.h"
 
-#include <jxl/cms.h>
 #include <stdio.h>
 
 #include <algorithm>
@@ -36,6 +35,7 @@ Design:
 #include "lib/base/compiler_specific.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
+#include "lib/cms/cms.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image.h"
 #include "lib/extras/image_color_transform.h"

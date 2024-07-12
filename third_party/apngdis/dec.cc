@@ -37,8 +37,6 @@
  *
  */
 
-#include <jxl/codestream_header.h>
-
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -55,6 +53,7 @@
 #include "lib/base/rect.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 #if JPEGXL_ENABLE_APNG

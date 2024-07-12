@@ -6,10 +6,10 @@
 
 #include "lib/jpegli/decode_marker.h"
 
-#include <jxl/types.h>
 #include <string.h>
 
 #include "lib/base/printf_macros.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"

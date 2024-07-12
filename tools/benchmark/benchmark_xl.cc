@@ -4,10 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/cms.h>
-#include <jxl/cms_interface.h>
-#include <jxl/types.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -28,7 +24,10 @@
 #include "lib/base/random.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/cms.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/cms/cms_interface.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"

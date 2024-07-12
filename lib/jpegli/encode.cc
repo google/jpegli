@@ -6,12 +6,11 @@
 
 #include "lib/jpegli/encode.h"
 
-#include <jxl/types.h>
-
 #include <cmath>
 #include <initializer_list>
 #include <vector>
 
+#include "lib/base/types.h"
 #include "lib/jpegli/adaptive_quantization.h"
 #include "lib/jpegli/bit_writer.h"
 #include "lib/jpegli/bitstream.h"

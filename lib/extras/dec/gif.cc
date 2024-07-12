@@ -9,7 +9,6 @@
 #if JPEGXL_ENABLE_GIF
 #include <gif_lib.h>
 #endif
-#include <jxl/codestream_header.h>
 #include <string.h>
 
 #include <memory>
@@ -19,6 +18,7 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/size_constraints.h"
 
 namespace jxl {

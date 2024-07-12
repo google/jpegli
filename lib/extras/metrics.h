@@ -7,10 +7,10 @@
 #ifndef LIB_EXTRAS_METRICS_H_
 #define LIB_EXTRAS_METRICS_H_
 
-#include <jxl/cms_interface.h>
 #include <stdint.h>
 
 #include "lib/base/data_parallel.h"
+#include "lib/cms/cms_interface.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/image.h"

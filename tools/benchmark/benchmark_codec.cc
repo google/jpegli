@@ -6,7 +6,6 @@
 
 #include "tools/benchmark/benchmark_codec.h"
 
-#include <jxl/types.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +15,7 @@
 #include <vector>
 
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/packed_image_convert.h"

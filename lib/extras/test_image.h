@@ -7,14 +7,13 @@
 #ifndef LIB_EXTRAS_TEST_IMAGE_H_
 #define LIB_EXTRAS_TEST_IMAGE_H_
 
-#include <jxl/codestream_header.h>
-#include <jxl/types.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

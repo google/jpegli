@@ -6,8 +6,6 @@
 
 #include "lib/extras/test_utils.h"
 
-#include <jxl/types.h>
-
 #include <cstddef>
 #include <fstream>
 #include <memory>
@@ -17,6 +15,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 
 #if !defined(TEST_DATA_PATH)
 #include "tools/cpp/runfiles/runfiles.h"

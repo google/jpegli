@@ -12,11 +12,11 @@
 #include <ImfRgbaFile.h>
 #include <ImfStandardAttributes.h>
 #endif
-#include <jxl/codestream_header.h>
 
 #include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

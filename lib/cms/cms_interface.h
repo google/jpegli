@@ -5,24 +5,14 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-/** @addtogroup libjxl_color
- * @{
- * @file cms_interface.h
- * @brief Interface to allow the injection of different color management systems
- * (CMSes, also called color management modules, or CMMs) in JPEG XL.
- *
- * A CMS is needed by the JPEG XL encoder and decoder to perform colorspace
- * conversions. This defines an interface that can be implemented for different
- * CMSes and then passed to the library.
- */
-
 #ifndef JXL_CMS_INTERFACE_H_
 #define JXL_CMS_INTERFACE_H_
 
 #include <jxl/color_encoding.h>
-#include <jxl/types.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "lib/base/types.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -252,5 +242,3 @@ typedef struct {
 #endif
 
 #endif /* JXL_CMS_INTERFACE_H_ */
-
-/** @} */

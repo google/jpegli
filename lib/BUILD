@@ -89,24 +89,6 @@ EXPORT_TEMPLATE = """
 #endif
 """
 
-JXL_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_export.h"
-
-genrule(
-    name = "create_jxl_export",
-    outs = [JXL_EXPORT_H],
-    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL") + "' > $@",
-    compatible_with = DEFAULT_COMPATIBILITY,
-)
-
-JXL_CMS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_cms_export.h"
-
-genrule(
-    name = "create_jxl_cms_export",
-    outs = [JXL_CMS_EXPORT_H],
-    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL_CMS") + "' > $@",
-    compatible_with = DEFAULT_COMPATIBILITY,
-)
-
 JXL_THREADS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_threads_export.h"
 
 genrule(
@@ -166,10 +148,7 @@ copy_file(
 
 cc_library(
     name = "includes",
-    hdrs = libjxl_public_headers + [
-        JXL_EXPORT_H,
-        JXL_CMS_EXPORT_H,
-    ],
+    hdrs = libjxl_public_headers
     compatible_with = DEFAULT_COMPATIBILITY,
     strip_include_prefix = INCLUDES_DIR,
     deps = [":jxl_version"],
