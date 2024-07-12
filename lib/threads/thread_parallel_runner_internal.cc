@@ -6,8 +6,6 @@
 
 #include "lib/threads/thread_parallel_runner_internal.h"
 
-#include <jxl/parallel_runner.h>
-
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
@@ -15,6 +13,7 @@
 #include <mutex>
 #include <thread>
 
+#include "lib/base/parallel_runner.h"
 #include "lib/base/types.h"
 
 #if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \

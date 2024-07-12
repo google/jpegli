@@ -368,13 +368,11 @@ if(JPEGXL_ENABLE_DOXYGEN)
   if(DOXYGEN_FOUND)
     set(DOXYGEN_GENERATE_HTML "YES")
     set(DOXYGEN_GENERATE_XML "YES")
-    set(DOXYGEN_STRIP_FROM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lib/include")
     if(JPEGXL_WARNINGS_AS_ERRORS)
       set(DOXYGEN_WARN_AS_ERROR "YES")
     endif()
     set(DOXYGEN_QUIET "YES")
     doxygen_add_docs(doc
-      "${CMAKE_CURRENT_SOURCE_DIR}/lib/include"
       "${CMAKE_CURRENT_SOURCE_DIR}/doc/api.txt"
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
       COMMENT "Generating C API documentation")

@@ -4,14 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/memory_manager.h>
-#include <jxl/parallel_runner.h>
 #include <string.h>
 
 #include <cstdint>
 #include <cstdlib>
 #include <thread>
 
+#include "lib/base/memory_manager.h"
+#include "lib/base/parallel_runner.h"
 #include "lib/threads/thread_parallel_runner.h"
 #include "lib/threads/thread_parallel_runner_internal.h"
 

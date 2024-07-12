@@ -10,11 +10,11 @@
 // Portable, low-overhead C++11 ThreadPool alternative to OpenMP for
 // data-parallel computations.
 
-#include <jxl/parallel_runner.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/parallel_runner.h"
 #include "lib/base/status.h"
 #if JXL_COMPILER_MSVC
 // suppress warnings about the const & applied to function types
