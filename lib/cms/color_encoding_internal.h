@@ -116,7 +116,10 @@ struct ColorEncoding;
 
 // CIExy.
 struct Customxy {
-  Customxy();
+  Customxy() {
+    storage_.x = 0;
+    storage_.y = 0;
+  }
 
  private:
   friend struct ColorEncoding;
@@ -124,7 +127,10 @@ struct Customxy {
 };
 
 struct CustomTransferFunction {
-  CustomTransferFunction();
+  CustomTransferFunction() {
+    storage_.have_gamma = false;
+    storage_.transfer_function = TransferFunction::kSRGB;
+  }
 
   // Must be set before calling VisitFields!
   ColorSpace nonserialized_color_space = ColorSpace::kRGB;
@@ -140,8 +146,16 @@ struct ColorEncoding {
   ColorEncoding() {}
 
   // Returns ready-to-use color encodings (initialized on-demand).
-  static const ColorEncoding& SRGB(bool is_gray = false);
-  static const ColorEncoding& LinearSRGB(bool is_gray = false);
+  static const ColorEncoding& SRGB(bool is_gray = false) {
+    static std::array<ColorEncoding, 2> c2 =
+        CreateC2(Primaries::kSRGB, TransferFunction::kSRGB);
+    return c2[is_gray ? 1 : 0];
+  }
+  static const ColorEncoding& LinearSRGB(bool is_gray = false) {
+    static std::array<ColorEncoding, 2> c2 =
+        CreateC2(Primaries::kSRGB, TransferFunction::kLinear);
+    return c2[is_gray ? 1 : 0];
+  }
 
   // Returns true if an ICC profile was successfully created from fields.
   // Must be called after modifying fields. Defined in color_management.cc.
@@ -160,14 +174,11 @@ struct ColorEncoding {
   // - after a failed call to SetSRGB(), SetICC(), or CreateICC().
   const IccBytes& ICC() const { return storage_.icc; }
 
-  // Returns true if `icc` is assigned and decoded successfully. If so,
-  // subsequent WantICC() will return true until DecideIfWantICC() changes it.
-  // Returning false indicates data has been lost.
+  // Returns true if `icc` is assigned and decoded successfully.
   Status SetICC(IccBytes&& icc, const JxlCmsInterface* cms) {
     JXL_ASSERT(cms != nullptr);
     JXL_ASSERT(!icc.empty());
-    want_icc_ = storage_.SetFieldsFromICC(std::move(icc), *cms);
-    return want_icc_;
+    return storage_.SetFieldsFromICC(std::move(icc), *cms);
   }
 
   // Sets the raw ICC profile bytes, without parsing the ICC, and without
@@ -179,18 +190,11 @@ struct ColorEncoding {
     JXL_ASSERT(!icc.empty());
     storage_.icc = std::move(icc);
     storage_.have_fields = false;
-    want_icc_ = true;
   }
-
-  // Returns whether to send the ICC profile in the codestream.
-  bool WantICC() const { return want_icc_; }
 
   // Return whether the direct fields are set, if false but ICC is set, only
   // raw ICC bytes are known.
   bool HaveFields() const { return storage_.have_fields; }
-
-  // Causes WantICC() to return false if ICC() can be reconstructed from fields.
-  void DecideIfWantICC(const JxlCmsInterface& cms);
 
   bool IsGray() const { return storage_.color_space == ColorSpace::kGray; }
   bool IsCMYK() const { return storage_.cmyk; }
@@ -252,11 +256,20 @@ struct ColorEncoding {
   CIExy GetWhitePoint() const { return storage_.GetWhitePoint(); }
 
   WhitePoint GetWhitePointType() const { return storage_.white_point; }
-  Status SetWhitePointType(const WhitePoint& wp);
+  Status SetWhitePointType(const WhitePoint& wp) {
+    JXL_DASSERT(storage_.have_fields);
+    storage_.white_point = wp;
+    return true;
+  }
   PrimariesCIExy GetPrimaries() const { return storage_.GetPrimaries(); }
 
   Primaries GetPrimariesType() const { return storage_.primaries; }
-  Status SetPrimariesType(const Primaries& p);
+  Status SetPrimariesType(const Primaries& p) {
+    JXL_DASSERT(storage_.have_fields);
+    JXL_ASSERT(HasPrimaries());
+    storage_.primaries = p;
+    return true;
+  }
 
   jxl::cms::CustomTransferFunction& Tf() { return storage_.tf; }
   const jxl::cms::CustomTransferFunction& Tf() const { return storage_.tf; }
@@ -285,11 +298,25 @@ struct ColorEncoding {
 
  private:
   static std::array<ColorEncoding, 2> CreateC2(Primaries pr,
-                                               TransferFunction tf);
+                                               TransferFunction tf) {
+    std::array<ColorEncoding, 2> c2;
 
-  // If true, the codestream contains an ICC profile and we do not serialize
-  // fields. Otherwise, fields are serialized and we create an ICC profile.
-  bool want_icc_;
+    ColorEncoding* c_rgb = c2.data() + 0;
+    c_rgb->SetColorSpace(ColorSpace::kRGB);
+    c_rgb->storage_.white_point = WhitePoint::kD65;
+    c_rgb->storage_.primaries = pr;
+    c_rgb->storage_.tf.SetTransferFunction(tf);
+    JXL_CHECK(c_rgb->CreateICC());
+
+    ColorEncoding* c_gray = c2.data() + 1;
+    c_gray->SetColorSpace(ColorSpace::kGray);
+    c_gray->storage_.white_point = WhitePoint::kD65;
+    c_gray->storage_.primaries = pr;
+    c_gray->storage_.tf.SetTransferFunction(tf);
+    JXL_CHECK(c_gray->CreateICC());
+
+    return c2;
+  }
 
   ::jxl::cms::ColorEncoding storage_;
   // Only used if white_point == kCustom.

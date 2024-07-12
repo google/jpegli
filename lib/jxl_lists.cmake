@@ -35,6 +35,7 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
 
 set(JPEGXL_INTERNAL_CMS_SOURCES
   cms/color_encoding_cms.h
+  cms/color_encoding_internal.h
   cms/jxl_cms.cc
   cms/jxl_cms_internal.h
   cms/opsin_params.h
@@ -99,8 +100,6 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
 set(JPEGXL_INTERNAL_DEC_SOURCES
   extras/cache_aligned.cc
   extras/cache_aligned.h
-  cms/color_encoding_internal.cc
-  cms/color_encoding_internal.h
   extras/image.cc
   extras/image.h
   extras/image_ops.h
