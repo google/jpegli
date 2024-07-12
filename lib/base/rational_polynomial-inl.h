@@ -16,9 +16,9 @@
 
 #include <stddef.h>
 
-#include "lib/base/types.h"
-
 #include <hwy/highway.h>
+
+#include "lib/base/types.h"
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {

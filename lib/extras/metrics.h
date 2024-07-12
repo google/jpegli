@@ -12,8 +12,8 @@
 #include "lib/base/data_parallel.h"
 #include "lib/cms/cms_interface.h"
 #include "lib/extras/butteraugli.h"
-#include "lib/extras/packed_image.h"
 #include "lib/extras/image.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 

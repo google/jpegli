@@ -4,13 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/threads/thread_parallel_runner.h"
-#include "lib/threads/thread_parallel_runner_cxx.h"
-
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <vector>
+
+#include "lib/threads/thread_parallel_runner.h"
+#include "lib/threads/thread_parallel_runner_cxx.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 
