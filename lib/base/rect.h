@@ -188,8 +188,8 @@ class RectT {
 template <typename T>
 std::string Description(RectT<T> r) {
   std::ostringstream os;
-  os << "[" << r.x0() << ".." << r.x1() << ")x"
-     << "[" << r.y0() << ".." << r.y1() << ")";
+  os << "[" << r.x0() << ".." << r.x1() << ")x" << "[" << r.y0() << ".."
+     << r.y1() << ")";
   return os.str();
 }
 

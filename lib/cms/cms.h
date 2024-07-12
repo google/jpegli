@@ -10,6 +10,7 @@
 // ICC profiles and color space conversions.
 
 #include <jxl/jxl_cms_export.h>
+
 #include "lib/cms/cms_interface.h"
 
 #ifdef __cplusplus

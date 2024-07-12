@@ -19,14 +19,14 @@
 #include <string>
 #include <utility>
 
-#include "lib/cms/cms_interface.h"
-#include "lib/cms/color_encoding.h"
-#include "lib/cms/color_encoding_cms.h"
-#include "lib/cms/jxl_cms_internal.h"
 #include "lib/base/bits.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
+#include "lib/cms/cms_interface.h"
+#include "lib/cms/color_encoding.h"
+#include "lib/cms/color_encoding_cms.h"
+#include "lib/cms/jxl_cms_internal.h"
 
 namespace jxl {
 

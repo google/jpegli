@@ -128,10 +128,10 @@ endif()  # JPEGXL_ENABLE_BENCHMARK
 # All tool binaries depend on "jxl" library and the tool helpers.
 foreach(BINARY IN LISTS INTERNAL_TOOL_BINARIES)
   target_link_libraries("${BINARY}"
-    jxl_cms
     jxl_extras-internal
     jxl_threads
     jxl_tool
+    jxl_cms
   )
 endforeach()
 

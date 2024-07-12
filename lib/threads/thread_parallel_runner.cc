@@ -4,6 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include "lib/threads/thread_parallel_runner.h"
+
 #include <string.h>
 
 #include <cstdint>
@@ -12,7 +14,6 @@
 
 #include "lib/base/memory_manager.h"
 #include "lib/base/parallel_runner.h"
-#include "lib/threads/thread_parallel_runner.h"
 #include "lib/threads/thread_parallel_runner_internal.h"
 
 namespace {

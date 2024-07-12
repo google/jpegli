@@ -6,8 +6,8 @@
 #include "tools/benchmark/benchmark_codec_jpeg.h"
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <cmath>
