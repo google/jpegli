@@ -9,8 +9,6 @@
 
 // ICC profiles and color space conversions.
 
-#include <jxl/color_encoding.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -24,6 +22,7 @@
 #include "lib/base/matrix_ops.h"
 #include "lib/base/span.h"  // Bytes
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/cms/opsin_params.h"
 #include "lib/cms/tone_mapping.h"
 #include "lib/cms/transfer_functions.h"

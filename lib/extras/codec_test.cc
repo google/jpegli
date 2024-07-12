@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <jxl/color_encoding.h>
 #include <stddef.h>
 
 #include <algorithm>
@@ -25,6 +24,7 @@
 #include "lib/base/status.h"
 #include "lib/base/testing.h"
 #include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/dec/color_hints.h"

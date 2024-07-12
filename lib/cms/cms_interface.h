@@ -8,11 +8,11 @@
 #ifndef JXL_CMS_INTERFACE_H_
 #define JXL_CMS_INTERFACE_H_
 
-#include <jxl/color_encoding.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
