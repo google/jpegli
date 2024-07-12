@@ -4,13 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/simd_util.h"
+#include "lib/extras/simd_util.h"
 
 #include <algorithm>
 #include <cstddef>
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/jxl/simd_util.cc"
+#define HWY_TARGET_INCLUDE "lib/extras/simd_util.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 

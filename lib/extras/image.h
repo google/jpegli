@@ -22,7 +22,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
-#include "lib/jxl/cache_aligned.h"
+#include "lib/extras/cache_aligned.h"
 
 namespace jxl {
 

@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/jxl/cache_aligned.h"
+#include "lib/extras/cache_aligned.h"
 
 #include <jxl/types.h>
 #include <stdio.h>

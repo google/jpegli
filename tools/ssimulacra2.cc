@@ -41,8 +41,8 @@ Design:
 #include "lib/extras/image_color_transform.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/packed_image_convert.h"
+#include "lib/extras/simd_util.h"
 #include "lib/extras/xyb_transform.h"
-#include "lib/jxl/simd_util.h"
 #include "tools/gauss_blur.h"
 
 namespace {
