@@ -7,8 +7,6 @@
 #ifndef LIB_THREADS_TEST_UTILS_H_
 #define LIB_THREADS_TEST_UTILS_H_
 
-#include <jxl/thread_parallel_runner_cxx.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <ostream>
@@ -16,6 +14,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
+#include "lib/threads/thread_parallel_runner_cxx.h"
 
 namespace jxl {
 namespace test {

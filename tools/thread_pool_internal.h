@@ -7,14 +7,13 @@
 #ifndef TOOLS_THREAD_POOL_INTERNAL_H_
 #define TOOLS_THREAD_POOL_INTERNAL_H_
 
-#include <jxl/thread_parallel_runner.h>
-#include <jxl/thread_parallel_runner_cxx.h>
-
 #include <cstddef>
 #include <memory>
 #include <thread>  // NOLINT
 
 #include "lib/base/data_parallel.h"
+#include "lib/threads/thread_parallel_runner.h"
+#include "lib/threads/thread_parallel_runner_cxx.h"
 
 namespace jpegxl {
 namespace tools {

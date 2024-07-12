@@ -259,13 +259,10 @@ set(JPEGXL_INTERNAL_TESTS
   threads/thread_parallel_runner_test.cc
 )
 
-set(JPEGXL_INTERNAL_THREADS_PUBLIC_HEADERS
-  include/jxl/thread_parallel_runner.h
-  include/jxl/thread_parallel_runner_cxx.h
-)
-
 set(JPEGXL_INTERNAL_THREADS_SOURCES
   threads/thread_parallel_runner.cc
   threads/thread_parallel_runner_internal.cc
   threads/thread_parallel_runner_internal.h
+  threads/thread_parallel_runner.h
+  threads/thread_parallel_runner_cxx.h
 )
