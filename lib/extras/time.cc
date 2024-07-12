@@ -11,7 +11,7 @@
 
 #include <ctime>
 
-#include "lib/jxl/base/os_macros.h"  // for JXL_OS_*
+#include "lib/base/os_macros.h"  // for JXL_OS_*
 
 #if JXL_OS_WIN
 #ifndef NOMINMAX

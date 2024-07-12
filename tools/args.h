@@ -16,9 +16,9 @@
 #include <string>
 #include <utility>
 
+#include "lib/base/override.h"
+#include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"
-#include "lib/jxl/base/override.h"
-#include "lib/jxl/base/status.h"
 #include "tools/file_io.h"
 
 namespace jpegxl {

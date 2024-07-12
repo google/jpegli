@@ -15,8 +15,8 @@
 #include <utility>
 #include <vector>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 
 #if !defined(TEST_DATA_PATH)
 #include "tools/cpp/runfiles/runfiles.h"

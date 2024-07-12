@@ -10,11 +10,11 @@
 
 #include <vector>
 
+#include "lib/base/printf_macros.h"
+#include "lib/base/span.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/enc/jpegli.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/span.h"
 #include "tools/args.h"
 #include "tools/cmdline.h"
 #include "tools/file_io.h"

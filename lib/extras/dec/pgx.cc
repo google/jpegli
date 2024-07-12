@@ -8,9 +8,9 @@
 
 #include <string.h>
 
+#include "lib/base/bits.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/extras/size_constraints.h"
-#include "lib/jxl/base/bits.h"
-#include "lib/jxl/base/compiler_specific.h"
 
 namespace jxl {
 namespace extras {

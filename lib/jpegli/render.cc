@@ -15,15 +15,15 @@
 #include <hwy/aligned_allocator.h>
 #include <vector>
 
+#include "lib/base/byte_order.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/color_quantize.h"
 #include "lib/jpegli/color_transform.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/idct.h"
 #include "lib/jpegli/upsample.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/status.h"
 
 #ifdef MEMORY_SANITIZER
 #define JXL_MEMORY_SANITIZER 1

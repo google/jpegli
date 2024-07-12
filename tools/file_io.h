@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 namespace jpegxl {
 namespace tools {

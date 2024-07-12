@@ -22,6 +22,12 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/random.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
@@ -30,12 +36,6 @@
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/random.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"

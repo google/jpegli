@@ -11,11 +11,11 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/printf_macros.h"
 #include "lib/extras/dec/jpegli.h"
 #include "lib/extras/enc/apng.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/base/printf_macros.h"
 #include "tools/cmdline.h"
 #include "tools/file_io.h"
 #include "tools/speed_stats.h"

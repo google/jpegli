@@ -7,7 +7,7 @@
 #include "lib/extras/dec/jpg.h"
 
 #if JPEGXL_ENABLE_JPEG
-#include "lib/jxl/base/include_jpeglib.h"  // NOLINT
+#include "lib/base/include_jpeglib.h"  // NOLINT
 #endif
 #include <stdint.h>
 
@@ -16,9 +16,9 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 #include "lib/extras/size_constraints.h"
-#include "lib/jxl/base/sanitizers.h"
-#include "lib/jxl/base/status.h"
 
 namespace jxl {
 namespace extras {

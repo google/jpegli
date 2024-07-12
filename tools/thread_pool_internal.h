@@ -14,7 +14,7 @@
 #include <memory>
 #include <thread>  // NOLINT
 
-#include "lib/jxl/base/data_parallel.h"
+#include "lib/base/data_parallel.h"
 
 namespace jpegxl {
 namespace tools {

@@ -16,10 +16,10 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/rect.h"
+#include "lib/base/sanitizers.h"
 #include "lib/extras/size_constraints.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/rect.h"
-#include "lib/jxl/base/sanitizers.h"
 
 namespace jxl {
 namespace extras {

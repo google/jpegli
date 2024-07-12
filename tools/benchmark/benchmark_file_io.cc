@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include "third_party/dirent.h"

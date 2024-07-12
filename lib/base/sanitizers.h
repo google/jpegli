@@ -9,8 +9,8 @@
 
 #include <cstddef>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/sanitizer_definitions.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/sanitizer_definitions.h"
 
 #if JXL_MEMORY_SANITIZER
 #include "sanitizer/msan_interface.h"

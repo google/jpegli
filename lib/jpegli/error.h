@@ -10,8 +10,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "lib/base/status.h"
 #include "lib/jpegli/common.h"
-#include "lib/jxl/base/status.h"
 
 namespace jpegli {
 

@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <string.h>  // memcpy
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 #if JXL_COMPILER_MSVC
 #include <intrin.h>  // _byteswap_*

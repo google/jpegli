@@ -8,12 +8,12 @@
 
 #include <cmath>
 
+#include "lib/base/bits.h"
 #include "lib/jpegli/bit_writer.h"
 #include "lib/jpegli/bitstream.h"
 #include "lib/jpegli/entropy_coding.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/memory_manager.h"
-#include "lib/jxl/base/bits.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/encode_streaming.cc"

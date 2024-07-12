@@ -8,10 +8,10 @@
 
 #include <vector>
 
+#include "lib/base/bits.h"
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/huffman.h"
-#include "lib/jxl/base/bits.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/entropy_coding.cc"

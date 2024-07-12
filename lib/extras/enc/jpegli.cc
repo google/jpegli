@@ -23,16 +23,16 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/xyb_transform.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/types.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/status.h"
 #include "lib/jxl/color_encoding_internal.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/simd_util.h"

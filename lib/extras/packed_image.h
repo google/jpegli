@@ -26,10 +26,10 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/c_callback_support.h"
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/byte_order.h"
+#include "lib/base/c_callback_support.h"
+#include "lib/base/common.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 namespace extras {

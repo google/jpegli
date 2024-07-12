@@ -10,10 +10,10 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
 #include "tools/file_io.h"
 #include "tools/ssimulacra2.h"
 

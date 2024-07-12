@@ -12,10 +12,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "lib/base/bits.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/extras/size_constraints.h"
-#include "lib/jxl/base/bits.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
 
 namespace jxl {
 namespace extras {

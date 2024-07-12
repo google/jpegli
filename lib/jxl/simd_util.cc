@@ -14,8 +14,8 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/common.h"
+#include "lib/base/status.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jxl {

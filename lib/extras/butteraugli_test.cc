@@ -13,13 +13,13 @@
 #include <cstdint>
 #include <utility>
 
+#include "lib/base/random.h"
+#include "lib/base/status.h"
+#include "lib/base/testing.h"
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/test_image.h"
-#include "lib/jxl/base/random.h"
-#include "lib/jxl/base/status.h"
-#include "lib/jxl/base/testing.h"
 #include "lib/jxl/image.h"
 #include "lib/jxl/image_ops.h"
 

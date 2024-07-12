@@ -16,8 +16,8 @@
 #include <cstddef>
 #include <memory>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 #include "lib/jxl/image.h"
 
 #if !defined(BUTTERAUGLI_ENABLE_CHECKS)

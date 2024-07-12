@@ -11,7 +11,7 @@
 
 #include <sys/types.h>
 
-#include "lib/jxl/base/sanitizer_definitions.h"
+#include "lib/base/sanitizer_definitions.h"
 
 // #if is shorter and safer than #ifdef. *_VERSION are zero if not detected,
 // otherwise 100 * major + minor version. Note that other packages check for

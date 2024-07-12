@@ -11,7 +11,7 @@
 #define LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #endif
 
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/compiler_specific.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jpegli {

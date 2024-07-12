@@ -42,9 +42,9 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/byte_order.h"
+#include "lib/base/printf_macros.h"
 #include "lib/extras/exif.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/printf_macros.h"
 #if JPEGXL_ENABLE_APNG
 #include "png.h" /* original (unpatched) libpng is ok */
 #endif

@@ -11,7 +11,7 @@
 #include <functional>
 #include <hwy/aligned_allocator.h>
 
-#include "lib/jxl/base/data_parallel.h"
+#include "lib/base/data_parallel.h"
 
 namespace jxl {
 

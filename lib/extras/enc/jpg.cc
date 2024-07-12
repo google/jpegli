@@ -7,7 +7,7 @@
 #include "lib/extras/enc/jpg.h"
 
 #if JPEGXL_ENABLE_JPEG
-#include "lib/jxl/base/include_jpeglib.h"  // NOLINT
+#include "lib/base/include_jpeglib.h"  // NOLINT
 #endif
 
 #include <algorithm>
@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
+#include "lib/base/common.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 #include "lib/extras/exif.h"
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/sanitizers.h"
-#include "lib/jxl/base/status.h"
 #if JPEGXL_ENABLE_SJPEG
 #include "sjpeg.h"
 #include "sjpegi.h"

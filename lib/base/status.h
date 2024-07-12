@@ -17,9 +17,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/sanitizer_definitions.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/sanitizer_definitions.h"
 
 #if JXL_ADDRESS_SANITIZER || JXL_MEMORY_SANITIZER || JXL_THREAD_SANITIZER
 #include "sanitizer/common_interface_defs.h"  // __sanitizer_print_stack_trace

@@ -25,11 +25,11 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/matrix_ops.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/matrix_ops.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/cms/jxl_cms_internal.h"
 #include "lib/cms/transfer_functions-inl.h"
 #include "lib/jxl/color_encoding_internal.h"

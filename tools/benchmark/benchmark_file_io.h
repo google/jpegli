@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jpegxl {
 namespace tools {

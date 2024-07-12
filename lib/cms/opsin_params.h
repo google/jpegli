@@ -10,7 +10,7 @@
 #include <array>
 #include <cstddef>
 
-#include "lib/jxl/base/matrix_ops.h"
+#include "lib/base/matrix_ops.h"
 
 // Constants that define the XYB color space.
 

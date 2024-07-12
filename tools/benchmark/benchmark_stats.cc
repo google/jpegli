@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
 
 namespace jpegxl {

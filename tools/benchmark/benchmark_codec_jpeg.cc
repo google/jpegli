@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/span.h"
+#include "lib/base/status.h"
 #include "lib/extras/dec/jpegli.h"
 #include "lib/extras/dec/jpg.h"
 #include "lib/extras/enc/encode.h"
@@ -27,8 +29,6 @@
 #include "lib/extras/enc/pnm.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/time.h"
-#include "lib/jxl/base/span.h"
-#include "lib/jxl/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec.h"
 #include "tools/benchmark/benchmark_utils.h"

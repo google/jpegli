@@ -11,10 +11,10 @@
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jxl/base/compiler_specific.h"
 
 HWY_BEFORE_NAMESPACE();
 namespace jpegli {

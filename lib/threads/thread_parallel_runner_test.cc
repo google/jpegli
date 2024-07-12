@@ -9,8 +9,8 @@
 #include <cstdint>
 #include <vector>
 
-#include "lib/jxl/base/data_parallel.h"
-#include "lib/jxl/base/testing.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/testing.h"
 #include "lib/threads/test_utils.h"
 
 using jxl::test::ThreadPoolForTests;

@@ -14,8 +14,8 @@
 #include <ostream>
 #include <vector>
 
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/data_parallel.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
 
 namespace jxl {
 namespace test {
