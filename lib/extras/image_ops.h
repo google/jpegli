@@ -17,7 +17,7 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
-#include "lib/jxl/image.h"
+#include "lib/extras/image.h"
 
 namespace jxl {
 

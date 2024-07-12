@@ -37,11 +37,11 @@ Design:
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/extras/image.h"
 #include "lib/extras/image_color_transform.h"
+#include "lib/extras/image_ops.h"
 #include "lib/extras/packed_image_convert.h"
 #include "lib/extras/xyb_transform.h"
-#include "lib/jxl/image.h"
-#include "lib/jxl/image_ops.h"
 #include "lib/jxl/simd_util.h"
 #include "tools/gauss_blur.h"
 

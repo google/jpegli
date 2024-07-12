@@ -13,7 +13,7 @@
 #include "lib/base/data_parallel.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/image.h"
+#include "lib/extras/image.h"
 
 namespace jxl {
 

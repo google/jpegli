@@ -13,7 +13,7 @@
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
-#include "lib/jxl/image.h"
+#include "lib/extras/image.h"
 
 namespace jxl {
 

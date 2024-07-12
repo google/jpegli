@@ -12,8 +12,8 @@
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/image.h"
 
 namespace jxl {
 namespace extras {

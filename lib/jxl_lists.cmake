@@ -101,9 +101,9 @@ set(JPEGXL_INTERNAL_DEC_SOURCES
   jxl/cache_aligned.h
   cms/color_encoding_internal.cc
   cms/color_encoding_internal.h
-  jxl/image.cc
-  jxl/image.h
-  jxl/image_ops.h
+  extras/image.cc
+  extras/image.h
+  extras/image_ops.h
   jxl/simd_util.cc
   jxl/simd_util.h
 )

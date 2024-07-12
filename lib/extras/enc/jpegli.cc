@@ -29,12 +29,12 @@
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/enc/encode.h"
+#include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/xyb_transform.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/types.h"
-#include "lib/jxl/image.h"
 #include "lib/jxl/simd_util.h"
 
 namespace jxl {
