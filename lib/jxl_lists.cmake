@@ -7,17 +7,14 @@
 # This file is generated, do not modify by manually.
 # Run `tools/scripts/build_cleaner.py --update` to regenerate it.
 set(JPEGXL_INTERNAL_BASE_SOURCES
-  base/arch_macros.h
   base/bits.h
   base/byte_order.h
   base/c_callback_support.h
   base/common.h
   base/compiler_specific.h
   base/data_parallel.h
-  base/exif.h
   base/fast_math-inl.h
   base/float.h
-  base/iaca.h
   base/include_jpeglib.h
   base/matrix_ops.h
   base/os_macros.h
@@ -28,7 +25,6 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   base/rect.h
   base/sanitizer_definitions.h
   base/sanitizers.h
-  base/scope_guard.h
   base/span.h
   base/status.h
 )
@@ -242,7 +238,6 @@ set(JPEGXL_INTERNAL_PUBLIC_HEADERS
   include/jxl/cms_interface.h
   include/jxl/codestream_header.h
   include/jxl/color_encoding.h
-  include/jxl/decode.h
   include/jxl/memory_manager.h
   include/jxl/parallel_runner.h
   include/jxl/types.h
