@@ -152,6 +152,33 @@ constexpr jpeg_scan_info kScript10[] = {
     {1, {2}, 29, 63, 1, 0},
 };
 
+constexpr jpeg_scan_info kScript11[] = {
+    // Interleaved full DC.
+    {3, {0, 1, 2}, 0, 0, 0, 0},
+    // AC scans for spectral range 1..16
+    {1, {0}, 1, 16, 0, 3},
+    {1, {1}, 1, 16, 0, 2},
+    {1, {2}, 1, 16, 0, 1},
+    // refinement scans
+    {1, {0}, 1, 16, 3, 2},
+    {1, {0}, 1, 16, 2, 1},
+    {1, {0}, 1, 16, 1, 0},
+    {1, {1}, 1, 16, 2, 1},
+    {1, {1}, 1, 16, 1, 0},
+    {1, {2}, 1, 16, 1, 0},
+    // AC scans for spectral range 17..63
+    {1, {0}, 17, 63, 0, 1},
+    {1, {1}, 17, 63, 0, 1},
+    {1, {2}, 17, 63, 0, 1},
+    // refinement scans, two sub-ranges
+    {1, {0}, 17, 28, 1, 0},
+    {1, {0}, 29, 63, 1, 0},
+    {1, {1}, 17, 28, 1, 0},
+    {1, {1}, 29, 63, 1, 0},
+    {1, {2}, 17, 28, 1, 0},
+    {1, {2}, 29, 63, 1, 0},
+};
+
 struct ScanScript {
   int num_scans;
   const jpeg_scan_info* scans;
@@ -163,6 +190,7 @@ constexpr ScanScript kTestScript[] = {
     {ARRAY_SIZE(kScript5), kScript5}, {ARRAY_SIZE(kScript6), kScript6},
     {ARRAY_SIZE(kScript7), kScript7}, {ARRAY_SIZE(kScript8), kScript8},
     {ARRAY_SIZE(kScript9), kScript9}, {ARRAY_SIZE(kScript10), kScript10},
+    {ARRAY_SIZE(kScript11), kScript11},
 };
 constexpr int kNumTestScripts = ARRAY_SIZE(kTestScript);
 
