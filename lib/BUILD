@@ -16,14 +16,9 @@ load(
     "libjxl_codec_gif_sources",
     "libjxl_codec_jpegli_sources",
     "libjxl_codec_jpg_sources",
-    "libjxl_codec_jxl_sources",
     "libjxl_codec_npy_sources",
     "libjxl_codec_pgx_sources",
     "libjxl_codec_pnm_sources",
-    "libjxl_dec_box_sources",
-    "libjxl_dec_jpeg_sources",
-    "libjxl_dec_sources",
-    "libjxl_enc_sources",
     "libjxl_extras_for_tools_sources",
     "libjxl_extras_sources",
     # "libjxl_gbench_sources",
@@ -35,10 +30,8 @@ load(
     "libjxl_major_version",
     "libjxl_minor_version",
     "libjxl_patch_version",
-    "libjxl_public_headers",
     "libjxl_testlib_files",
     "libjxl_tests",
-    "libjxl_threads_public_headers",
     "libjxl_threads_sources",
 )
 load(
@@ -89,6 +82,22 @@ EXPORT_TEMPLATE = """
 #endif
 """
 
+JXL_CMS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_cms_export.h"
+
+genrule(
+    name = "create_jxl_cms_export",
+    outs = [JXL_CMS_EXPORT_H],
+    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL_CMS") + "' > $@",
+    compatible_with = DEFAULT_COMPATIBILITY,
+)
+
+cc_library(
+    name = "cms_includes",
+    hdrs = [JXL_CMS_EXPORT_H],
+    compatible_with = DEFAULT_COMPATIBILITY,
+    strip_include_prefix = INCLUDES_DIR,
+)
+
 JXL_THREADS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_threads_export.h"
 
 genrule(
@@ -96,27 +105,6 @@ genrule(
     outs = [JXL_THREADS_EXPORT_H],
     cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL_THREADS") + "' > $@",
     compatible_with = DEFAULT_COMPATIBILITY,
-)
-
-JXL_VERSION_H = INCLUDES_DIR + "/jxl/version.h"
-
-expand_template(
-    name = "expand_jxl_version",
-    out = JXL_VERSION_H,
-    compatible_with = DEFAULT_COMPATIBILITY,
-    substitutions = {
-        "@JPEGXL_MAJOR_VERSION@": str(libjxl_major_version),
-        "@JPEGXL_MINOR_VERSION@": str(libjxl_minor_version),
-        "@JPEGXL_PATCH_VERSION@": str(libjxl_patch_version),
-    },
-    template = "jxl/version.h.in",
-)
-
-cc_library(
-    name = "jxl_version",
-    hdrs = [JXL_VERSION_H],
-    compatible_with = DEFAULT_COMPATIBILITY,
-    strip_include_prefix = INCLUDES_DIR,
 )
 
 JPEGLI_JCONFIG_H = INCLUDES_DIR + "/jpegli/jconfig.h"
@@ -147,14 +135,6 @@ copy_file(
 )
 
 cc_library(
-    name = "includes",
-    hdrs = libjxl_public_headers
-    compatible_with = DEFAULT_COMPATIBILITY,
-    strip_include_prefix = INCLUDES_DIR,
-    deps = [":jxl_version"],
-)
-
-cc_library(
     name = "libjpeg_includes",
     hdrs = [
         JPEGLI_JCONFIG_H,
@@ -170,48 +150,21 @@ cc_library(
     srcs = [path for path in libjxl_base_sources if path.endswith(".cc")],
     hdrs = [path for path in libjxl_base_sources if path.endswith(".h")],
     compatible_with = DEFAULT_COMPATIBILITY,
-    deps = [
-        ":includes",
-    ] + libjxl_deps_hwy,
-)
-
-cc_library(
-    name = "jpegxl",
-    srcs = libjxl_dec_sources + libjxl_dec_box_sources + libjxl_dec_jpeg_sources + libjxl_enc_sources + libjxl_cms_sources,
-    compatible_with = DEFAULT_COMPATIBILITY,
-    defines = [
-        "JPEGXL_ENABLE_SKCMS=1",
-    ],
-    deps = [
-        ":base",
-        ":includes",
-    ] + libjxl_deps_brotli + libjxl_deps_hwy + libjxl_deps_skcms,
-)
-
-cc_library(
-    name = "jpegxl_private",
-    hdrs = [
-        path
-        for path in libjxl_dec_sources + libjxl_dec_box_sources + libjxl_dec_jpeg_sources + libjxl_enc_sources + libjxl_cms_sources
-        if path.endswith(".h") and not path.endswith("-inl.h")
-    ],
-    compatible_with = DEFAULT_COMPATIBILITY,
-    deps = [":jpegxl"],
+    deps = libjxl_deps_hwy,
 )
 
 cc_library(
     name = "jpegxl_threads",
     srcs = libjxl_threads_sources,
-    hdrs = libjxl_threads_public_headers + [JXL_THREADS_EXPORT_H],
+    hdrs = [JXL_THREADS_EXPORT_H],
     compatible_with = DEFAULT_COMPATIBILITY,
     strip_include_prefix = INCLUDES_DIR,
     deps = [
         ":base",
-        ":includes",
     ],
 )
 
-CODEC_FILES = libjxl_codec_apng_sources + libjxl_codec_exr_sources + libjxl_codec_gif_sources + libjxl_codec_jpegli_sources + libjxl_codec_jpg_sources + libjxl_codec_jxl_sources + libjxl_codec_npy_sources + libjxl_codec_pgx_sources + libjxl_codec_pnm_sources
+CODEC_FILES = libjxl_codec_apng_sources + libjxl_codec_exr_sources + libjxl_codec_gif_sources + libjxl_codec_jpegli_sources + libjxl_codec_jpg_sources + libjxl_codec_npy_sources + libjxl_codec_pgx_sources + libjxl_codec_pnm_sources
 
 CODEC_SRCS = [path for path in CODEC_FILES if path.endswith(".cc")]
 
@@ -225,15 +178,31 @@ cc_library(
     ],
     compatible_with = DEFAULT_COMPATIBILITY,
     deps = [
-        ":jpegxl_private",
+        ":base",
         ":libjpeg_includes",
     ] + libjxl_deps_hwy,
+)
+
+genrule(
+    name = "copy_apngdis_sources",
+    srcs = [
+        "//third_party/apngdis:dec.cc",
+        "//third_party/apngdis:enc.cc",
+    ],
+    outs = [
+        "apngdis/dec.cc",
+        "apngdis/enc.cc",
+    ],
+    cmd = "cp $(SRCS) $(RULEDIR)/apngdis",
 )
 
 # TODO(eustas): build codecs separately?
 cc_library(
     name = "jpegxl_extras",
-    srcs = libjxl_extras_sources + libjxl_extras_for_tools_sources + CODEC_SRCS,
+    srcs = libjxl_extras_sources + libjxl_extras_for_tools_sources + libjxl_cms_sources + CODEC_SRCS + [
+        "apngdis/dec.cc",
+        "apngdis/enc.cc",
+    ],
     hdrs = CODEC_HDRS,
     compatible_with = DEFAULT_COMPATIBILITY,
     defines = [
@@ -241,13 +210,13 @@ cc_library(
         "JPEGXL_ENABLE_EXR=1",
         "JPEGXL_ENABLE_GIF=1",
         "JPEGXL_ENABLE_JPEG=1",
+        "JPEGXL_ENABLE_SKCMS=1",
     ],
     deps = [
+        ":cms_includes",
         ":jpegli",
-        ":jpegxl_private",
         ":jpegxl_threads",
-        ":jxl_version",
-    ] + libjxl_deps_exr + libjxl_deps_gif + libjxl_deps_jpeg + libjxl_deps_png,
+    ] + libjxl_deps_exr + libjxl_deps_gif + libjxl_deps_jpeg + libjxl_deps_png + libjxl_deps_skcms,
 )
 
 TESTLIB_FILES = libjxl_testlib_files + libjxl_jpegli_testlib_files + libjxl_jpegli_libjpeg_helper_files
@@ -264,7 +233,6 @@ cc_library(
     deps = [
         ":jpegli",
         ":jpegxl_extras",
-        ":jpegxl_private",
     ] + libjxl_deps_runfiles,
 )
 
@@ -277,13 +245,11 @@ TESTS = [path.partition(".")[0] for path in libjxl_tests + libjxl_jpegli_tests]
         srcs = [
             test + ".cc",
             "jpegli/testing.h",
-            "jxl/base/testing.h",
         ],
         data = ["//:testdata"],
         shard_count = libjxl_test_shards.get(test, 1),
         deps = [
             ":jpegxl_extras",
-            ":jpegxl_private",
             ":jpegxl_threads",
             ":test_utils",
         ] + libjxl_deps_gtest + libjxl_deps_hwy_test_util + libjxl_deps_hwy_nanobenchmark,
