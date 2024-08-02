@@ -145,13 +145,6 @@ set(JPEGXL_INTERNAL_EXTRAS_SOURCES
   extras/time.h
 )
 
-set(JPEGXL_INTERNAL_GBENCH_SOURCES
-  jxl/dec_external_image_gbench.cc
-  jxl/enc_external_image_gbench.cc
-  jxl/splines_gbench.cc
-  jxl/tf_gbench.cc
-)
-
 set(JPEGXL_INTERNAL_JPEGLI_LIBJPEG_HELPER_FILES
   jpegli/libjpeg_test_util.cc
   jpegli/libjpeg_test_util.h
