@@ -138,9 +138,6 @@ jobs:
       WILL_TEST: ${{  github.event_name == 'push' || (github.event_name == 'pull_request' && matrix.name != 'coverage' && (matrix.test_in_pr || contains(github.event.pull_request.labels.*.name, 'CI:full'))) }}
       WILL_BUILD: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && matrix.name != 'coverage') }}
       WILL_BENCH: ${{ github.event_name != 'merge_group' && matrix.run_bench }}
-      # Temporarily disable doc-building, re-enable when sphinx is working again.
-      # WILL_DOC: ${{ github.event_name != 'merge_group' && matrix.name == 'release' }}
-      WILL_DOC: false
       WILL_COV: ${{ github.event_name == 'push' && matrix.name == 'coverage' }}
       JPEGXL_OPT_DBG: true
       FASTER_MSAN_BUILD: 1
@@ -230,12 +227,6 @@ jobs:
         ref: llvmorg-14.0.0 # NB: 15.0.0 does not build ¯\_(ツ)_/¯
         path: llvm_root
 
-    - name: Sphinx dependencies
-      # Dependencies for sphinx HTML documentation
-      if: env.WILL_DOC == 'true'
-      run: |
-        pip3 install -r doc/sphinx/requirements.txt
-
     - name: Install gcovr
       if: env.WILL_COV == 'true'
       run: pip install gcovr
@@ -316,11 +307,6 @@ jobs:
       if: env.WILL_TEST == 'true'
       run: |
         sort build/Testing/Temporary/CTestCostData.txt -k 3 -n | tail -n 20 || true
-
-    - name: Build HTML documentation (sphinx/readthetdocs)
-      if: env.WILL_DOC == 'true'
-      run: |
-        cmake --build build -- rtd-html
 
     - name: Coverage report
       if: env.WILL_COV == 'true'

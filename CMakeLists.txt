@@ -376,27 +376,6 @@ if(JPEGXL_ENABLE_DOXYGEN)
       "${CMAKE_CURRENT_SOURCE_DIR}/doc/api.txt"
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
       COMMENT "Generating C API documentation")
-
-    # Add sphinx doc build step for readthedocs.io (requires doxygen too).
-    find_program(SPHINX_BUILD_PROGRAM sphinx-build)
-    if(SPHINX_BUILD_PROGRAM)
-      add_custom_command(
-        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/rtd/nonexistent"
-        COMMENT "Generating readthedocs.io output on ${CMAKE_CURRENT_BINARY_DIR}/rtd"
-        COMMAND ${SPHINX_BUILD_PROGRAM} -q -W -b html -j auto
-          ${CMAKE_SOURCE_DIR}/doc/sphinx
-          ${CMAKE_CURRENT_BINARY_DIR}/rtd
-        DEPENDS doc
-      )
-      # This command runs the documentation generation every time since the output
-      # target file doesn't exist.
-      add_custom_target(rtd-html
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rtd/nonexistent
-      )
-    else() # SPHINX_BUILD_PROGRAM\
-      message(WARNING "sphinx-build not found, skipping rtd documentation")
-    endif() # SPHINX_BUILD_PROGRAM
-
   else()
     # Create a "doc" target for compatibility since "doc" is not otherwise added to
     # the build when doxygen is not installed.
