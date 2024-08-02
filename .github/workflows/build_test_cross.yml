@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        identifier: [arm64, arm64-sve, arm64-lowprecision, armhf, i386]
+        identifier: [arm64, arm64-sve, armhf, i386]
         include:
           - arch: arm64
             identifier: arm64
@@ -52,13 +52,6 @@ jobs:
             c_compiler: aarch64-linux-gnu-gcc
             cxx_compiler: aarch64-linux-gnu-g++
             disable_tests: true
-
-          - arch: arm64
-            identifier: arm64-lowprecision
-            build_target: aarch64-linux-gnu
-            cmake_args:
-             - -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-aarch64-static
-             - -DCMAKE_CXX_FLAGS=-DJXL_HIGH_PRECISION=0
 
           - arch: armhf
             identifier: armhf
@@ -169,14 +162,14 @@ jobs:
       env:
         SKIP_TEST: 1
         BUILD_TARGET: ${{ matrix.build_target }}
-        TARGETS: ${{ env.WILL_RUN_TESTS == 'true' && 'all_tests cjxl djxl libjxl.so libjxl_dec.so' || 'all' }}
+        TARGETS: ${{ env.WILL_RUN_TESTS == 'true' && 'all_tests cjpegli djpegli libjpeg.so' || 'all' }}
 
     - name: Build stats
       run: |
         tools/scripts/build_stats.py --save build/stats.json \
           --binutils ${{ matrix.build_target }}- \
           --max-stack ${{ matrix.max_stack || '0' }} \
-          cjxl djxl libjxl.so libjxl_dec.so
+          cjpegli djpegli libjpeg.so
 
     - name: Prepare artefacts
       if: env.WILL_RUN_TESTS == 'true'
@@ -214,7 +207,7 @@ jobs:
       fail-fast: false
       matrix:
         shard_number: [0, 1, 2, 3, 4, 5, 6, 7]
-        identifier: [arm64, arm64-lowprecision, armhf, i386]
+        identifier: [arm64, armhf, i386]
         include:
           - arch: arm64
           - identifier: arm64
@@ -223,10 +216,6 @@ jobs:
           #- arch: arm64
           #- identifier: arm64-sve
           #  last_shard: 8
-
-          - arch: arm64
-            identifier: arm64-lowprecision
-            last_shard: 8
 
           - arch: armhf
             identifier: armhf
@@ -239,7 +228,7 @@ jobs:
 
     env:
       BUILD_DIR: build
-      UPLOAD_TEST_COST: false
+      UPLOAD_TEST_COST: true
       LAST_SHARD: ${{ false && 1 || matrix.last_shard}}
       # Run the tests on push and when requested in pull_request.
       WILL_RUN_TESTS: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && (matrix.test_in_pr || contains(github.event.pull_request.labels.*.name, 'CI:full')))) }}
