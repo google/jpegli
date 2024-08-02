@@ -29,7 +29,9 @@ concurrency:
 
 jobs:
   fuzzing:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
+    # TODO(szabadka) Enable by default after there is a separate jpegli project
+    # on oss-fuzz.
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:fuzz') }}
     runs-on: ubuntu-latest
     steps:
     - name: Harden Runner
