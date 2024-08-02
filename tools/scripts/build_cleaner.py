@@ -77,8 +77,6 @@ def SplitLibFiles(repo_files):
 
   # Let's keep Jpegli sources a bit separate for a while.
   jpegli_srcs, srcs = Filter(srcs, HasPrefixFn('jpegli'))
-  # TODO(eustas): move to tools?
-  _, srcs = Filter(srcs, HasSuffixFn('gbench_main.cc'))
   # This stub compilation unit is manually referenced in CMake buildfile.
   _, srcs = Filter(srcs, HasSuffixFn('nothing.cc'))
 
@@ -92,7 +90,6 @@ def SplitLibFiles(repo_files):
   jpegli_testlib_files, jpegli_srcs = Filter(jpegli_srcs, ContainsFn('test'))
   jpegli_libjpeg_helper_files, jpegli_testlib_files = Filter(
     jpegli_testlib_files, ContainsFn('libjpeg_test_util'))
-  gbench_sources, srcs = Filter(srcs, HasSuffixFn('_gbench.cc'))
 
   extras_sources, srcs = Filter(srcs, HasPrefixFn('extras/'))
   lib_srcs, srcs = Filter(srcs, HasPrefixFn('jxl/'))
@@ -150,7 +147,6 @@ def SplitLibFiles(repo_files):
     'enc_sources': enc_sources,
     'extras_for_tools_sources': extras_for_tools_sources,
     'extras_sources': extras_sources,
-    'gbench_sources': gbench_sources,
     'jpegli_sources': jpegli_sources,
     'jpegli_testlib_files': jpegli_testlib_files,
     'jpegli_libjpeg_helper_files': jpegli_libjpeg_helper_files,
