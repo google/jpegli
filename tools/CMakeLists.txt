@@ -84,6 +84,13 @@ endif()  # JPEGXL_ENABLE_TOOLS
 
 # Other developer tools.
 if(JPEGXL_ENABLE_DEVTOOLS)
+  list(APPEND INTERNAL_TOOL_BINARIES
+    ssimulacra2
+  )
+
+  add_executable(ssimulacra2 ssimulacra2_main.cc ssimulacra2.cc)
+  target_link_libraries(ssimulacra2 jxl_gauss_blur)
+
   list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
   add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
   target_link_libraries(jpegli_dec_fuzzer_corpus
@@ -97,7 +104,6 @@ endif()  # JPEGXL_ENABLE_DEVTOOLS
 if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
   list(APPEND INTERNAL_TOOL_BINARIES
     benchmark_xl
-    ssimulacra2
   )
 
   add_executable(benchmark_xl
@@ -115,9 +121,6 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
   )
   target_link_libraries(benchmark_xl Threads::Threads)
   target_link_libraries(benchmark_xl jxl_gauss_blur) # for ssimulacra
-
-  add_executable(ssimulacra2 ssimulacra2_main.cc ssimulacra2.cc)
-  target_link_libraries(ssimulacra2 jxl_gauss_blur)
 
 if(MINGW)
   # MINGW doesn't support glob.h.
