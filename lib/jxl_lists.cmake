@@ -29,6 +29,7 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   base/sanitizers.h
   base/span.h
   base/status.h
+  base/testing.h
   base/types.h
 )
 
