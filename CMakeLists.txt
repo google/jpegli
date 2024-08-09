@@ -12,7 +12,7 @@ project(LIBJXL LANGUAGES C CXX)
 
 # TODO(sboukortt): remove once oss-fuzz passes -DBUILD_SHARED_LIBS=OFF
 if(JPEGXL_ENABLE_FUZZERS)
-  message(INFO "Fuzzer build detected, building static libs")
+  message(STATUS "Fuzzer build detected, building static libs")
   set(BUILD_SHARED_LIBS OFF)
 endif()
 
@@ -118,7 +118,7 @@ set(JPEGXL_ENABLE_SJPEG true CACHE BOOL
     "Build JPEGXL with support for encoding with sjpeg.")
 set(JPEGXL_ENABLE_OPENEXR true CACHE BOOL
     "Build JPEGXL with support for OpenEXR if available.")
-set(JPEGXL_ENABLE_SKCMS true CACHE BOOL
+set(JPEGXL_ENABLE_SKCMS ${ENABLE_SKCMS_DEFAULT} CACHE BOOL
     "Build with skcms instead of lcms2.")
 set(JPEGXL_ENABLE_TCMALLOC ${ENABLE_TCMALLOC_DEFAULT} CACHE BOOL
     "Build JPEGXL using gperftools (tcmalloc) allocator.")
