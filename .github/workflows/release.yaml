@@ -160,7 +160,7 @@ jobs:
     - name: Set git safe dir
       run: |
         export GIT_CEILING_DIRECTORIES=/__w # only work before git v2.35.2
-        git config --global --add safe.directory /__w/libjxl/libjxl
+        git config --global --add safe.directory /__w/jpegli/jpegli
 
     - name: Checkout the source
       uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
