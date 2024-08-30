@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/memory_manager.h"
