@@ -24,12 +24,21 @@ elseif(JPEGLI_LIBJPEG_LIBRARY_SOVERSION STREQUAL "8")
   set(JPEG_LIB_VERSION 80)
 endif()
 
-configure_file(
-  ../third_party/libjpeg-turbo/jconfig.h.in include/jpegli/jconfig.h)
-configure_file(
-  ../third_party/libjpeg-turbo/jpeglib.h include/jpegli/jpeglib.h COPYONLY)
-configure_file(
-  ../third_party/libjpeg-turbo/jmorecfg.h include/jpegli/jmorecfg.h COPYONLY)
+if(JPEGXL_DEBIAN_LIBJPEG_TURBO_HEADERS)
+  configure_file(
+    /usr/include/x86_64-linux-gnu/jconfig.h include/jpegli/jconfig.h COPYONLY)
+  configure_file(
+    /usr/include/jpeglib.h include/jpegli/jpeglib.h COPYONLY)
+  configure_file(
+    /usr/include/jmorecfg.h COPYONLY)
+else()
+  configure_file(
+    ../third_party/libjpeg-turbo/jconfig.h.in include/jpegli/jconfig.h)
+  configure_file(
+    ../third_party/libjpeg-turbo/jpeglib.h include/jpegli/jpeglib.h COPYONLY)
+  configure_file(
+    ../third_party/libjpeg-turbo/jmorecfg.h include/jpegli/jmorecfg.h COPYONLY)
+endif()
 
 add_library(jpegli-static STATIC EXCLUDE_FROM_ALL "${JPEGXL_INTERNAL_JPEGLI_SOURCES}")
 target_compile_options(jpegli-static PRIVATE "${JPEGXL_INTERNAL_FLAGS}")

@@ -150,6 +150,8 @@ set(JPEGXL_FORCE_SYSTEM_LCMS2 false CACHE BOOL
     "Force using system installed lcms2 instead of third_party/lcms source.")
 set(JPEGXL_FORCE_SYSTEM_HWY false CACHE BOOL
     "Force using system installed highway (libhwy-dev) instead of third_party/highway source.")
+set(JPEGXL_DEBIAN_LIBJPEG_TURBO_HEADERS false CACHE BOOL
+    "Force using Debian-installed libjpeg62-turbo-dev headers instead of third_party/libjpeg-turbo.")
 
 # Check minimum compiler versions. Older compilers are not supported and fail
 # with hard to understand errors.
