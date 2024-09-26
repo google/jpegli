@@ -16,6 +16,9 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
+#include "lib/extras/image.h"
+#include "lib/extras/packed_image.h"
+#include "lib/extras/packed_image_convert.h"
 
 #if !defined(TEST_DATA_PATH)
 #include "tools/cpp/runfiles/runfiles.h"
@@ -55,6 +58,15 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
   printf("Test data %s is %d bytes long.\n", filename.c_str(),
          static_cast<int>(data.size()));
   return data;
+}
+
+StatusOr<Image3F> GetColorImage(const extras::PackedPixelFile& ppf) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JXL_ENSURE(!ppf.frames.empty());
+  JXL_TEST_ASSIGN_OR_DIE(
+      Image3F color, Image3F::Create(memory_manager, ppf.xsize(), ppf.ysize()));
+  JXL_ENSURE(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
+  return color;
 }
 
 }  // namespace test

@@ -12,6 +12,8 @@
 #include <vector>
 
 #include "lib/base/memory_manager.h"
+#include "lib/extras/image.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace test {
@@ -30,6 +32,8 @@ void Check(bool ok);
 // NOLINTEND(bugprone-macro-parentheses)
 
 std::vector<uint8_t> ReadTestData(const std::string& filename);
+
+StatusOr<Image3F> GetColorImage(const extras::PackedPixelFile& ppf);
 
 JxlMemoryManager* MemoryManager();
 

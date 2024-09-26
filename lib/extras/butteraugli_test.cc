@@ -32,6 +32,7 @@ namespace {
 
 using ::jxl::extras::PackedImage;
 using ::jxl::extras::PackedPixelFile;
+using ::jxl::test::GetColorImage;
 using ::jxl::test::TestImage;
 
 Image3F SinglePixelImage(float red, float green, float blue) {
@@ -41,15 +42,6 @@ Image3F SinglePixelImage(float red, float green, float blue) {
   img.PlaneRow(1, 0)[0] = green;
   img.PlaneRow(2, 0)[0] = blue;
   return img;
-}
-
-StatusOr<Image3F> GetColorImage(const PackedPixelFile& ppf) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
-  JXL_ENSURE(!ppf.frames.empty());
-  JXL_TEST_ASSIGN_OR_DIE(
-      Image3F color, Image3F::Create(memory_manager, ppf.xsize(), ppf.ysize()));
-  JXL_ENSURE(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
-  return color;
 }
 
 void AddUniformNoise(Image3F* img, float d, uint64_t seed) {
