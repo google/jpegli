@@ -247,11 +247,14 @@ Status DoCompress(const std::string& filename, const PackedPixelFile& ppf,
   if (valid && !skip_butteraugli) {
     if (jxl::SameSize(ppf, ppf2)) {
       ButteraugliParams params;
-      // Hack the default intensity target value to be 80.0, the intensity
-      // target of sRGB images and a more reasonable viewing default than
-      // JPEG XL file format's default.
+      // Hack the default intensity target value for SDR images to be 80.0, the
+      // intensity target of sRGB images and a more reasonable viewing default
+      // than JPEG XL file format's default.
       // TODO(szabadka) Support different intensity targets as well.
-      params.intensity_target = 80.0;
+      const auto& transfer_function = ib1.c_current().Tf();
+      params.intensity_target = transfer_function.IsPQ()    ? 10000.f
+                                : transfer_function.IsHLG() ? 1000.f
+                                                            : 80.f;
 
       distance =
           ButteraugliDistance(memory_manager, ppf, ppf2, params, &distmap,
