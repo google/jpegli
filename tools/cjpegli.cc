@@ -15,6 +15,7 @@
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/enc/jpegli.h"
 #include "lib/extras/time.h"
+#include "lib/jpegli/encode.h"
 #include "tools/args.h"
 #include "tools/cmdline.h"
 #include "tools/file_io.h"
@@ -216,9 +217,13 @@ int CJpegliMain(int argc, const char* argv[]) {
 
   if (!args.quiet) {
     const jxl::extras::JpegSettings& s = args.settings;
+    float calculated_distance =
+        cmdline.GetOption(args.opt_quality_id)->matched()
+            ? jpegli_quality_to_distance(s.quality)
+            : s.distance;
     fprintf(stderr, "Encoding [%s%s d%.3f%s %sAQ p%d %s]\n",
-            s.xyb ? "XYB" : "YUV", s.chroma_subsampling.c_str(), s.distance,
-            s.use_std_quant_tables ? " StdQuant" : "",
+            s.xyb ? "XYB" : "YUV", s.chroma_subsampling.c_str(),
+            calculated_distance, s.use_std_quant_tables ? " StdQuant" : "",
             s.use_adaptive_quantization ? "" : "no", s.progressive_level,
             s.optimize_coding ? "OPT" : "FIX");
   }
