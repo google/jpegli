@@ -1,4 +1,4 @@
-<!-- Thank you for considering a contribution to `libjxl`! -->
+<!-- Thank you for considering a contribution to `jpegli`! -->
 
 ### Description
 
