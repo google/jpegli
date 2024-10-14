@@ -224,7 +224,6 @@ static std::string PrintFormattedEntries(
       value = values[i].i ? StringPrintf("%" PRIdS, values[i].i) : "---";
     } else if (descriptors[i].type == TYPE_POSITIVE_FLOAT) {
       value = FormatFloat(descriptors[i], values[i].f);
-      value = FormatFloat(descriptors[i], values[i].f);
     } else if (descriptors[i].type == TYPE_COUNT) {
       value = StringPrintf("%" PRIdS, values[i].i);
     }
