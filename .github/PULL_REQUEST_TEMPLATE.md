@@ -11,4 +11,4 @@
 - [ ] **Code Style**: Have you ensured your code adheres to the project's coding style guidelines? You can use `./ci.sh lint` for automatic code formatting.
 
 
-Please review the full [contributing guidelines](https://github.com/libjxl/libjxl/blob/main/CONTRIBUTING.md) for more details.
+Please review the full [contributing guidelines](https://github.com/google/jpegli/blob/main/CONTRIBUTING.md) for more details.
