@@ -81,7 +81,7 @@ if(PNG_FOUND)
   target_include_directories(jxl_extras_core-obj PRIVATE "${PNG_INCLUDE_DIRS}")
   target_compile_definitions(jxl_extras_core-obj PRIVATE -DJPEGXL_ENABLE_APNG=1)
   list(APPEND JXL_EXTRAS_CODEC_INTERNAL_LIBRARIES ${PNG_LIBRARIES})
-  configure_file(../third_party/apngdis/LICENSE
+  configure_file(extras/LICENSE.apngdis
                  ${PROJECT_BINARY_DIR}/LICENSE.apngdis COPYONLY)
 endif()
 

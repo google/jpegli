@@ -51,7 +51,9 @@ libjxl_cms_sources = [
 ]
 
 libjxl_codec_apng_sources = [
+    "extras/dec/apng.cc",
     "extras/dec/apng.h",
+    "extras/enc/apng.cc",
     "extras/enc/apng.h",
 ]
 

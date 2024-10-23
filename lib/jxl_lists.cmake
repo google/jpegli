@@ -49,9 +49,9 @@ set(JPEGXL_INTERNAL_CMS_SOURCES
 )
 
 set(JPEGXL_INTERNAL_CODEC_APNG_SOURCES
-  ../third_party/apngdis/dec.cc
+  extras/dec/apng.cc
   extras/dec/apng.h
-  ../third_party/apngdis/enc.cc
+  extras/enc/apng.cc
   extras/enc/apng.h
 )
 

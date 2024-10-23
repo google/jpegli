@@ -183,26 +183,10 @@ cc_library(
     ] + libjxl_deps_hwy,
 )
 
-genrule(
-    name = "copy_apngdis_sources",
-    srcs = [
-        "//third_party/apngdis:dec.cc",
-        "//third_party/apngdis:enc.cc",
-    ],
-    outs = [
-        "apngdis/dec.cc",
-        "apngdis/enc.cc",
-    ],
-    cmd = "cp $(SRCS) $(RULEDIR)/apngdis",
-)
-
 # TODO(eustas): build codecs separately?
 cc_library(
     name = "jpegxl_extras",
-    srcs = libjxl_extras_sources + libjxl_extras_for_tools_sources + libjxl_cms_sources + CODEC_SRCS + [
-        "apngdis/dec.cc",
-        "apngdis/enc.cc",
-    ],
+    srcs = libjxl_extras_sources + libjxl_extras_for_tools_sources + libjxl_cms_sources + CODEC_SRCS,
     hdrs = CODEC_HDRS,
     compatible_with = DEFAULT_COMPATIBILITY,
     defines = [
