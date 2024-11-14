@@ -212,6 +212,7 @@ if (JNI_FOUND AND Java_FOUND)
 
   add_jar(jpegli_jni_wrapper SOURCES
     jni/org/jpeg/jpegli/wrapper/Encoder.java
+    jni/org/jpeg/jpegli/wrapper/JniHelper.java
     OUTPUT_NAME org.jpeg.jpegli
   )
   get_target_property(JPEGLI_JNI_WRAPPER_JAR jpegli_jni_wrapper JAR_FILE)
