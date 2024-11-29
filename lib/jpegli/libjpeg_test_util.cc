@@ -6,6 +6,7 @@
 
 #include "lib/jpegli/libjpeg_test_util.h"
 
+#include <cstdlib>
 #include <cstring>
 
 #include "lib/base/compiler_specific.h"
@@ -249,6 +250,7 @@ size_t DecodeWithLibjpeg(const CompressParams& jparams,
     }
     jpeg_mem_src(&cinfo, compressed, len);
     DecodeWithLibjpeg(jparams, dparams, &cinfo, output);
+    jxl::msan::UnpoisonMemory(cinfo.src, sizeof(jpeg_source_mgr));
     bytes_read = len - cinfo.src->bytes_in_buffer;
     return true;
   };

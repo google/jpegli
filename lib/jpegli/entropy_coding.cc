@@ -107,7 +107,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
     eob_run = 0;
   };
   for (JDIMENSION by = 0; by < comp->height_in_blocks; ++by) {
-    JBLOCKARRAY ba = (*cinfo->mem->access_virt_barray)(
+    JBLOCKARRAY blocks = (*cinfo->mem->access_virt_barray)(
         reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx], by,
         1, FALSE);
     // Each coefficient can appear in at most one token, but we have to reserve
@@ -133,7 +133,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
         sti->restarts[restart_idx++] = m->total_num_tokens + ta->num_tokens;
         restarts_to_go = restart_interval;
       }
-      const coeff_t* block = &ba[0][bx][0];
+      const coeff_t* block = &blocks[0][bx][0];
       coeff_t temp2;
       coeff_t temp;
       int r = 0;
@@ -214,7 +214,7 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
   uint16_t* next_eobrun = sti->eobruns;
   size_t restart_idx = 0;
   for (JDIMENSION by = 0; by < comp->height_in_blocks; ++by) {
-    JBLOCKARRAY ba = (*cinfo->mem->access_virt_barray)(
+    JBLOCKARRAY blocks = (*cinfo->mem->access_virt_barray)(
         reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx], by,
         1, FALSE);
     for (JDIMENSION bx = 0; bx < comp->width_in_blocks; ++bx) {
@@ -224,7 +224,7 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
         next_eob_token = next_token;
         eob_run = eob_refbits = 0;
       }
-      const coeff_t* block = &ba[0][bx][0];
+      const coeff_t* block = &blocks[0][bx][0];
       int num_eob_refinement_bits = 0;
       int num_refinement_bits = 0;
       int num_nzeros = 0;
@@ -348,7 +348,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
     }
   }
 
-  JBLOCKARRAY ba[MAX_COMPS_IN_SCAN];
+  JBLOCKARRAY blocks[MAX_COMPS_IN_SCAN];
   size_t block_idx = 0;
   for (size_t mcu_y = 0; mcu_y < sti->MCU_rows_in_scan; ++mcu_y) {
     for (int i = 0; i < scan_info->comps_in_scan; ++i) {
@@ -358,7 +358,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
       int by0 = mcu_y * n_blocks_y;
       int block_rows_left = comp->height_in_blocks - by0;
       int max_block_rows = std::min(n_blocks_y, block_rows_left);
-      ba[i] = (*cinfo->mem->access_virt_barray)(
+      blocks[i] = (*cinfo->mem->access_virt_barray)(
           reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx],
           by0, max_block_rows, FALSE);
     }
@@ -401,7 +401,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
                 block_y >= comp->height_in_blocks) {
               block = kSinkBlock;
             } else {
-              block = &ba[i][iy][block_x][0];
+              block = &blocks[i][iy][block_x][0];
             }
             if (!is_progressive) {
               HWY_DYNAMIC_DISPATCH(ComputeTokensSequential)

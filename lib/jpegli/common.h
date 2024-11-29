@@ -23,7 +23,7 @@
 
 #include "lib/base/include_jpeglib.h"  // NOLINT
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -37,7 +37,7 @@ JQUANT_TBL* jpegli_alloc_quant_table(j_common_ptr cinfo);
 
 JHUFF_TBL* jpegli_alloc_huff_table(j_common_ptr cinfo);
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 }  // extern "C"
 #endif
 
