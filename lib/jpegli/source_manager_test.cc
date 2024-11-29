@@ -11,7 +11,7 @@
 #include "lib/jpegli/libjpeg_test_util.h"
 #include "lib/jpegli/test_utils.h"
 #include "lib/jpegli/testing.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jpegli {
 namespace {

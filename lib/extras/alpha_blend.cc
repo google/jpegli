@@ -7,7 +7,7 @@
 #include "lib/extras/alpha_blend.h"
 
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 namespace extras {

@@ -17,11 +17,11 @@
 #include "lib/base/status.h"
 #include "lib/jpegli/decode.h"
 #include "lib/jpegli/encode.h"
-#include "lib/jxl/base/byte_order.h"
-#include "lib/jxl/base/compiler_specific.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/sanitizers.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/byte_order.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/status.h"
 
 #if !defined(TEST_DATA_PATH)
 #include "tools/cpp/runfiles/runfiles.h"

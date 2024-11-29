@@ -19,9 +19,9 @@
 #include "lib/base/status.h"
 #include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/printf_macros.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/common.h"
+#include "lib/base/printf_macros.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 namespace extras {

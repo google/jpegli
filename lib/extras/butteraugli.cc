@@ -46,7 +46,7 @@
 #include "lib/extras/image_ops.h"
 
 #if BUTTERAUGLI_ENABLE_CHECKS
-#include "lib/jxl/base/printf_macros.h"
+#include "lib/base/printf_macros.h"
 #endif
 
 #ifndef JXL_BUTTERAUGLI_ONCE

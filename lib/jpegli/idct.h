@@ -9,7 +9,7 @@
 
 #include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jpegli {
 

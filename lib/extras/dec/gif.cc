@@ -6,7 +6,7 @@
 
 #include "lib/extras/dec/gif.h"
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 #if JPEGXL_ENABLE_GIF
 #include <gif_lib.h>

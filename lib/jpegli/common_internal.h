@@ -18,7 +18,7 @@
 #include "lib/base/status.h"             // for JXL_CHECK
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/simd.h"
-#include "lib/jxl/base/compiler_specific.h"  // for ssize_t
+#include "lib/base/compiler_specific.h"  // for ssize_t
 
 namespace jpegli {
 

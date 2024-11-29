@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "tools/gauss_blur.cc"

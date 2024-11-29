@@ -15,7 +15,7 @@
 #include "lib/base/types.h"
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
-#include "lib/jxl/base/status.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 namespace test {

@@ -16,8 +16,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "lib/jxl/base/common.h"
-#include "lib/jxl/base/compiler_specific.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
 
 namespace jxl {
 
