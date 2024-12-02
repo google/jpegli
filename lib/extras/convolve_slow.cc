@@ -12,44 +12,6 @@
 namespace jxl {
 
 //------------------------------------------------------------------------------
-// Kernels
-
-// 4 instances of a given literal value, useful as input to LoadDup128.
-#define JXL_REP4(literal) literal, literal, literal, literal
-
-const WeightsSeparable5& WeightsSeparable5Lowpass() {
-  constexpr float w0 = 0.41714928f;
-  constexpr float w1 = 0.25539268f;
-  constexpr float w2 = 0.03603267f;
-  static constexpr WeightsSeparable5 weights = {
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)},
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)}};
-  return weights;
-}
-
-const WeightsSeparable5& WeightsSeparable5Gaussian1() {
-  constexpr float w0 = 0.38774f;
-  constexpr float w1 = 0.24477f;
-  constexpr float w2 = 0.06136f;
-  static constexpr WeightsSeparable5 weights = {
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)},
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)}};
-  return weights;
-}
-
-const WeightsSeparable5& WeightsSeparable5Gaussian2() {
-  constexpr float w0 = 0.250301f;
-  constexpr float w1 = 0.221461f;
-  constexpr float w2 = 0.153388f;
-  static constexpr WeightsSeparable5 weights = {
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)},
-      {JXL_REP4(w0), JXL_REP4(w1), JXL_REP4(w2)}};
-  return weights;
-}
-
-#undef JXL_REP4
-
-//------------------------------------------------------------------------------
 // Slow
 
 namespace {

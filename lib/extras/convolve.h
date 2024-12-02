@@ -33,8 +33,6 @@ struct WeightsSeparable5 {
   float vert[3 * 4];
 };
 
-const WeightsSeparable5& WeightsSeparable5Lowpass();
-
 Status SlowSeparable5(const ImageF& in, const Rect& in_rect,
                       const WeightsSeparable5& weights, ThreadPool* pool,
                       ImageF* out, const Rect& out_rect);
