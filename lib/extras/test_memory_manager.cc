@@ -5,9 +5,9 @@
 
 #include "lib/extras/test_memory_manager.h"
 
-#include "lib/base/memory_manager.h"
-
 #include <cstdlib>
+
+#include "lib/base/memory_manager.h"
 
 namespace jxl {
 namespace test {
