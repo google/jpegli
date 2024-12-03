@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "lib/base/data_parallel.h"
-#include "lib/base/span.h"
 #include "lib/base/memory_manager.h"
+#include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
