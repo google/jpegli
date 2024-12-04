@@ -14,12 +14,10 @@
 #include <utility>
 #include <vector>
 
-#include "lib/base/sanitizers.h"
-#include "lib/base/status.h"
-#include "lib/jpegli/decode.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
+#include "lib/jpegli/decode.h"
 
 namespace jxl {
 namespace extras {
