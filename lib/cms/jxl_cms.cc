@@ -35,7 +35,7 @@
 #else  // JPEGXL_ENABLE_SKCMS
 #include "lcms2.h"
 #include "lcms2_plugin.h"
-#include "lib/jxl/base/span.h"
+#include "lib/base/span.h"
 #endif  // JPEGXL_ENABLE_SKCMS
 
 #define JXL_CMS_VERBOSE 0
