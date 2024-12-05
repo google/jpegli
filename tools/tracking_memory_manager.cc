@@ -9,8 +9,8 @@
 #include <mutex>
 
 #include "lib/base/memory_manager.h"
-#include "lib/extras/memory_manager_internal.h"
 #include "lib/base/status.h"
+#include "lib/extras/memory_manager_internal.h"
 
 namespace jpegxl {
 namespace tools {
