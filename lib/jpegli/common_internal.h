@@ -31,6 +31,7 @@
 
 #include <hwy/aligned_allocator.h>
 
+#include "lib/base/compiler_specific.h"  // for ssize_t
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/simd.h"
 
