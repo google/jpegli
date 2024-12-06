@@ -80,7 +80,9 @@ if(JPEGXL_ENABLE_TOOLS)
   # Depends on parts of jxl_extras that are only built if libjpeg is found and
   # jpegli is enabled.
   add_executable(cjpegli cjpegli.cc)
+  target_link_libraries(cjpegli jpegli-static)
   add_executable(djpegli djpegli.cc)
+  target_link_libraries(djpegli jpegli-static)
   list(APPEND INTERNAL_TOOL_BINARIES cjpegli djpegli)
 endif()  # JPEGXL_ENABLE_TOOLS
 
