@@ -29,6 +29,7 @@
 #include "lib/base/types.h"
 #include "lib/cms/cms.h"
 #include "lib/cms/cms_interface.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/dec/color_hints.h"
@@ -251,10 +252,11 @@ Status DoCompress(const std::string& filename, const PackedPixelFile& ppf,
       // intensity target of sRGB images and a more reasonable viewing default
       // than JPEG XL file format's default.
       // TODO(szabadka) Support different intensity targets as well.
-      const auto& transfer_function = ib1.c_current().Tf();
-      params.intensity_target = transfer_function.IsPQ()    ? 10000.f
-                                : transfer_function.IsHLG() ? 1000.f
-                                                            : 80.f;
+      const auto& transfer_function = ppf.color_encoding.transfer_function;
+      params.intensity_target =
+          (transfer_function == JXL_TRANSFER_FUNCTION_PQ)    ? 10000.f
+          : (transfer_function == JXL_TRANSFER_FUNCTION_HLG) ? 1000.f
+                                                             : 80.f;
 
       distance =
           ButteraugliDistance(memory_manager, ppf, ppf2, params, &distmap,
