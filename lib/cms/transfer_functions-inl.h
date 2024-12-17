@@ -17,6 +17,7 @@
 #include <cmath>
 #include <hwy/highway.h>
 
+#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/fast_math-inl.h"
 #include "lib/base/rational_polynomial-inl.h"
@@ -61,7 +62,7 @@ class TF_HLG : TF_HLG_Base {
     x = AndNot(kSign, x);  // abs
     const V below_div12 = Sqrt(Mul(Set(d, 3.0f), x));
     const V e =
-        MulAdd(Set(d, kA * 0.693147181f),
+        MulAdd(Set(d, kA * kInvLog2e),
                FastLog2f(d, MulAdd(Set(d, 12), x, Set(d, -kB))), Set(d, kC));
     const V magnitude = IfThenElse(Le(x, Set(d, kDiv12)), below_div12, e);
     return Or(AndNot(kSign, magnitude), original_sign);
