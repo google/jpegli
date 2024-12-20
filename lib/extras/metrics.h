@@ -28,8 +28,8 @@ float ButteraugliDistance(JxlMemoryManager* memory_manager,
                           bool ignore_alpha = false);
 
 // Computes p-norm given the butteraugli distmap.
-double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
-                        double p);
+StatusOr<double> ComputeDistanceP(const ImageF& distmap,
+                                  const ButteraugliParams& params, double p);
 
 float Butteraugli3Norm(JxlMemoryManager* memory_manager,
                        const extras::PackedPixelFile& a,
