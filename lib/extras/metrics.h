@@ -31,10 +31,10 @@ float ButteraugliDistance(JxlMemoryManager* memory_manager,
 StatusOr<double> ComputeDistanceP(const ImageF& distmap,
                                   const ButteraugliParams& params, double p);
 
-float Butteraugli3Norm(JxlMemoryManager* memory_manager,
-                       const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b,
-                       ThreadPool* pool = nullptr);
+StatusOr<double> Butteraugli3Norm(JxlMemoryManager* memory_manager,
+                                  const extras::PackedPixelFile& a,
+                                  const extras::PackedPixelFile& b,
+                                  ThreadPool* pool = nullptr);
 
 double ComputePSNR(JxlMemoryManager* memory_manager,
                    const extras::PackedPixelFile& a,

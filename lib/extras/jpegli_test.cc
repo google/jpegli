@@ -384,8 +384,10 @@ TEST_P(JpegliColorQuantTestParam, JpegliColorQuantizeTest) {
   dparams2.dither_mode = config.dither;
   ASSERT_TRUE(DecodeJpeg(compressed, dparams2, nullptr, &ppf2));
 
-  double dist1 = Butteraugli3Norm(memory_manager, ppf0, ppf1);
-  double dist2 = Butteraugli3Norm(memory_manager, ppf0, ppf2);
+  JXL_TEST_ASSIGN_OR_DIE(double dist1,
+                         Butteraugli3Norm(memory_manager, ppf0, ppf1));
+  JXL_TEST_ASSIGN_OR_DIE(double dist2,
+                         Butteraugli3Norm(memory_manager, ppf0, ppf2));
   printf("distance: %f  vs %f\n", dist2, dist1);
   if (config.passes == 1) {
     if (config.num_colors == 16 && config.dither == 2) {

@@ -306,9 +306,10 @@ StatusOr<double> ComputeDistanceP(const ImageF& distmap,
   return HWY_DYNAMIC_DISPATCH(ComputeDistanceP)(distmap, params, p);
 }
 
-float Butteraugli3Norm(JxlMemoryManager* memory_manager,
-                       const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b, ThreadPool* pool) {
+StatusOr<double> Butteraugli3Norm(JxlMemoryManager* memory_manager,
+                                  const extras::PackedPixelFile& a,
+                                  const extras::PackedPixelFile& b,
+                                  ThreadPool* pool) {
   ButteraugliParams params;
   ImageF distmap;
   ButteraugliDistance(memory_manager, a, b, params, &distmap, pool);
