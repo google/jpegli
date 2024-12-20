@@ -272,8 +272,9 @@ Status DoCompress(const std::string& filename, const PackedPixelFile& ppf,
                                    : jxl::ComputePSNR(memory_manager, ppf, ppf2,
                                                       *JxlGetDefaultCms()) *
                                          input_pixels;
-    double pnorm =
-        ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm);
+    JXL_ASSIGN_OR_RETURN(
+        double pnorm,
+        ComputeDistanceP(distmap, ButteraugliParams(), Args()->error_pnorm));
     s->distance_p_norm += pnorm * input_pixels;
     JXL_ASSIGN_OR_RETURN(Msssim msssim, ComputeSSIMULACRA2(ppf, ppf2));
     double ssimulacra2 = msssim.Score();
