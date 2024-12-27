@@ -68,7 +68,7 @@ size_t GetPrecision(JxlDataType data_type) {
     case JXL_TYPE_FLOAT16:
       return 11;
     default:
-      jxl::test::Check(false);
+      return jxl::test::Check(false), 8;
   }
 }
 
@@ -83,7 +83,7 @@ size_t GetDataBits(JxlDataType data_type) {
     case JXL_TYPE_FLOAT16:
       return 16;
     default:
-      jxl::test::Check(false);
+      return jxl::test::Check(false), 8;
   }
 }
 
