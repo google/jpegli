@@ -6,8 +6,8 @@
 """JPEG XL reference implementation"""
 
 module(
-    name = "libjxl",
-    repo_name = "libjxl",
+    name = "jpegli",
+    repo_name = "jpegli",
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
