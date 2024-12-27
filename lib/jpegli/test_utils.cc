@@ -47,7 +47,7 @@ std::string GetTestDataPath(const std::string& filename) {
 using ::bazel::tools::cpp::runfiles::Runfiles;
 const std::unique_ptr<Runfiles> kRunfiles(Runfiles::Create(""));
 std::string GetTestDataPath(const std::string& filename) {
-  std::string root(JPEGXL_ROOT_PACKAGE "/testdata/");
+  std::string root(JPEGLI_ROOT_PACKAGE "/testdata/");
   return kRunfiles->Rlocation(root + filename);
 }
 #endif
