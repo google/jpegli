@@ -409,24 +409,29 @@ void ProcessAPP(j_decompress_ptr cinfo, const uint8_t* data, size_t len) {
       payload += sizeof(kIccProfileTag);
       payload_size -= sizeof(kIccProfileTag);
       if (payload_size < 2) {
-        JPEGLI_ERROR("ICC chunk is too small.");
+        JPEGLI_WARN("ICC chunk is too small.");
+        return;
       }
       uint8_t index = payload[0];
       uint8_t total = payload[1];
       ++m->icc_index_;
       if (m->icc_index_ != index) {
-        JPEGLI_ERROR("Invalid ICC chunk order.");
+        JPEGLI_WARN("Invalid ICC chunk order.");
+        return;
       }
       if (total == 0) {
-        JPEGLI_ERROR("Invalid ICC chunk total.");
+        JPEGLI_WARN("Invalid ICC chunk total.");
+        return;
       }
       if (m->icc_total_ == 0) {
         m->icc_total_ = total;
       } else if (m->icc_total_ != total) {
-        JPEGLI_ERROR("Invalid ICC chunk total.");
+        JPEGLI_WARN("Invalid ICC chunk total.");
+        return;
       }
       if (m->icc_index_ > m->icc_total_) {
-        JPEGLI_ERROR("Invalid ICC chunk index.");
+        JPEGLI_WARN("Invalid ICC chunk index.");
+        return;
       }
       m->icc_profile_.insert(m->icc_profile_.end(), payload + 2,
                              payload + payload_size);
