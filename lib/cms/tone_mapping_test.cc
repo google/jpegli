@@ -4,16 +4,21 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <algorithm>
+#include <cstdlib>
+
+#include "lib/base/common.h"
+#include "lib/base/matrix_ops.h"
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/cms/tone_mapping_test.cc"
-#include "lib/cms/tone_mapping.h"
-
 #include <cstdio>
 #include <hwy/foreach_target.h>
 
 #include "lib/base/random.h"
 #include "lib/base/testing.h"
 #include "lib/cms/tone_mapping-inl.h"
+#include "lib/cms/tone_mapping.h"
 
 // Test utils
 #include <hwy/highway.h>

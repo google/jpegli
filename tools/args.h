@@ -15,6 +15,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "lib/base/override.h"
 #include "lib/base/status.h"

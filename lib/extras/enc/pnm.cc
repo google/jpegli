@@ -8,16 +8,19 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "lib/base/byte_order.h"
-#include "lib/base/compiler_specific.h"
+#include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
-#include "lib/extras/image.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
+#include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

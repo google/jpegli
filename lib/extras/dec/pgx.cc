@@ -6,10 +6,16 @@
 
 #include "lib/extras/dec/pgx.h"
 
-#include <string.h>
+#include <cstdint>
+#include <cstring>
+#include <utility>
 
-#include "lib/base/bits.h"
-#include "lib/base/compiler_specific.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
 namespace jxl {

@@ -6,6 +6,7 @@
 
 #include "lib/jpegli/render.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -15,11 +16,15 @@
 
 #include "lib/base/byte_order.h"
 #include "lib/base/compiler_specific.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/color_quantize.h"
 #include "lib/jpegli/color_transform.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/idct.h"
+#include "lib/jpegli/types.h"
 #include "lib/jpegli/upsample.h"
 
 #ifdef MEMORY_SANITIZER

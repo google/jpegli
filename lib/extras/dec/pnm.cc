@@ -6,15 +6,22 @@
 
 #include "lib/extras/dec/pnm.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
+#include <vector>
 
 #include "lib/base/bits.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
 namespace jxl {

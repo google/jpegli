@@ -6,19 +6,27 @@
 
 #include "lib/jpegli/decode.h"
 
-#include <string.h>
-
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <vector>
 
+#include "hwy/aligned_allocator.h"
 #include "lib/base/byte_order.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/color_quantize.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/decode_marker.h"
 #include "lib/jpegli/decode_scan.h"
 #include "lib/jpegli/error.h"
+#include "lib/jpegli/huffman.h"
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/render.h"
+#include "lib/jpegli/types.h"
 
 namespace jpegli {
 

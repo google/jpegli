@@ -6,12 +6,18 @@
 
 #include "lib/jpegli/libjpeg_test_util.h"
 
+#include <csetjmp>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
+#include <vector>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/include_jpeglib.h"  // NOLINT
 #include "lib/base/sanitizers.h"
-#include "lib/base/status.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/test_params.h"
 
 namespace jpegli {
 

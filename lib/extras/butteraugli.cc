@@ -24,15 +24,16 @@
 #include "lib/extras/butteraugli.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <vector>
 
 #include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/base/memory_manager.h"
 #include "lib/extras/image.h"
 
@@ -41,7 +42,6 @@
 #include <hwy/foreach_target.h>
 
 #include "lib/base/fast_math-inl.h"
-#include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/extras/convolve.h"
 #include "lib/extras/image_ops.h"

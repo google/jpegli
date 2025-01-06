@@ -4,8 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <string.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/memory_manager.h"

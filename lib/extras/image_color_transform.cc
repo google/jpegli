@@ -6,13 +6,17 @@
 
 #include "lib/extras/image_color_transform.h"
 
-#include <utility>
+#include <cstddef>
+#include <cstdint>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/extras/image.h"
 
 namespace jxl {
 

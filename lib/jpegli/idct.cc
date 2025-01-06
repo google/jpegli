@@ -6,10 +6,13 @@
 
 #include "lib/jpegli/idct.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/decode_internal.h"
 
 #undef HWY_TARGET_INCLUDE

@@ -21,6 +21,9 @@
 #ifndef LIB_JPEGLI_ENCODE_H_
 #define LIB_JPEGLI_ENCODE_H_
 
+#include <cstddef>
+#include <cstdio>
+
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/types.h"
 

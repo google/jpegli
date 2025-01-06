@@ -7,8 +7,8 @@
 #ifndef LIB_JPEGLI_BIT_WRITER_H_
 #define LIB_JPEGLI_BIT_WRITER_H_
 
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 
 #include "lib/base/byte_order.h"
 #include "lib/base/compiler_specific.h"

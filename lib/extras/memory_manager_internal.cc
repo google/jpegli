@@ -5,6 +5,7 @@
 
 #include "lib/extras/memory_manager_internal.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdio>

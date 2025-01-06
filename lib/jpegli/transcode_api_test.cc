@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "lib/base/status.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/decode.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/libjpeg_test_util.h"

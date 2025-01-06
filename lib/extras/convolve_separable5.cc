@@ -4,7 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
 #include "lib/extras/convolve.h"
+#include "lib/extras/image.h"
+#include "lib/extras/image_ops.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/convolve_separable5.cc"

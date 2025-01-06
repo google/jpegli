@@ -8,17 +8,25 @@
 
 #include <atomic>
 #include <cmath>
-#include <limits>
+#include <cstdio>
 #include <cstdlib>
+#include <limits>
+#include <memory>
+
+#include "lib/base/data_parallel.h"
+#include "lib/base/memory_manager.h"
+#include "lib/cms/cms_interface.h"
+#include "lib/extras/butteraugli.h"
+#include "lib/extras/image.h"
+#include "lib/extras/memory_manager_internal.h"
+#include "lib/extras/packed_image.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/extras/metrics.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
-#include "lib/base/memory_manager.h"
 #include "lib/base/rect.h"
 #include "lib/base/status.h"
 #include "lib/cms/cms.h"

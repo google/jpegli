@@ -4,6 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cstddef>
+#include <cstdint>
+
+#include "lib/base/compiler_specific.h"
+
 #if defined(LIB_EXTRAS_CONVOLVE_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_EXTRAS_CONVOLVE_INL_H_
 #undef LIB_EXTRAS_CONVOLVE_INL_H_
@@ -12,6 +17,10 @@
 #endif
 
 #include <hwy/highway.h>
+
+#if HWY_TARGET <= (1 << HWY_HIGHEST_TARGET_BIT_X86)
+#include <xmmintrin.h>
+#endif
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/rect.h"

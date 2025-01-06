@@ -6,7 +6,13 @@
 
 #include "lib/extras/dec/color_description.h"
 
+#include <cstdio>
+#include <string>
+#include <vector>
+
 #include "lib/base/testing.h"
+#include "lib/cms/color_encoding.h"
+#include "lib/cms/color_encoding_cms.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/test_utils.h"
 
