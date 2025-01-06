@@ -23,6 +23,7 @@
 
 #include "lib/base/byte_order.h"
 #include "lib/base/compiler_specific.h"
+#include "lib/base/sanitizers.h"  // for test_utils-inl.h
 #include "lib/base/status.h"
 #include "lib/base/types.h"
 #include "lib/jpegli/common.h"
