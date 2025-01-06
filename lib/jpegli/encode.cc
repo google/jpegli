@@ -6,8 +6,10 @@
 
 #include "lib/jpegli/encode.h"
 
-#include <cmath>
-#include <initializer_list>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include "lib/base/types.h"
@@ -15,6 +17,8 @@
 #include "lib/jpegli/bit_writer.h"
 #include "lib/jpegli/bitstream.h"
 #include "lib/jpegli/color_transform.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/downsample.h"
 #include "lib/jpegli/encode_finish.h"
 #include "lib/jpegli/encode_internal.h"
@@ -25,6 +29,8 @@
 #include "lib/jpegli/input.h"
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/quant.h"
+#include "lib/jpegli/simd.h"
+#include "lib/jpegli/types.h"
 
 namespace jpegli {
 

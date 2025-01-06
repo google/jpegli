@@ -9,10 +9,8 @@
 
 // Decodes PGX pixels in memory.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 
-#include "lib/base/data_parallel.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"

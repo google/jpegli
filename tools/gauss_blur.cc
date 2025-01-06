@@ -8,9 +8,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
+#include "lib/base/data_parallel.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
 #include "lib/extras/memory_manager_internal.h"

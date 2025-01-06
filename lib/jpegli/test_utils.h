@@ -7,14 +7,17 @@
 #ifndef LIB_JPEGLI_TEST_UTILS_H_
 #define LIB_JPEGLI_TEST_UTILS_H_
 
+#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <ostream>
 #include <string>
 #include <vector>
 
 #include "lib/base/include_jpeglib.h"  // NOLINT
 #include "lib/base/status.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/test_params.h"
 #include "lib/jpegli/types.h"
 

@@ -6,15 +6,23 @@
 
 #include "tools/gauss_blur.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <hwy/base.h>  // HWY_ALIGN_MAX
-#include <hwy/targets.h>
+#include <limits>
+#include <sstream>
+#include <type_traits>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/random.h"
+#include "lib/base/status.h"
 #include "lib/base/testing.h"
+#include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/test_memory_manager.h"
 #include "lib/extras/test_utils.h"

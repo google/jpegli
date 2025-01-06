@@ -4,6 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cmath>
+
+#include "lib/base/matrix_ops.h"
+
 #if defined(LIB_JXL_CMS_TONE_MAPPING_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JXL_CMS_TONE_MAPPING_INL_H_
 #undef LIB_JXL_CMS_TONE_MAPPING_INL_H_

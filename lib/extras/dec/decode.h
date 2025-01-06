@@ -13,9 +13,11 @@
 #include <cstdint>
 #include <string>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 

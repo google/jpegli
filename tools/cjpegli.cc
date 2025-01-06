@@ -8,12 +8,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <string>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/span.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/enc/jpegli.h"
+#include "lib/extras/packed_image.h"
 #include "lib/extras/time.h"
 #include "lib/jpegli/encode.h"
 #include "tools/args.h"

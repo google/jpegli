@@ -6,11 +6,19 @@
 
 #include "lib/jpegli/bitstream.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <initializer_list>
+#include <vector>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/bit_writer.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
+#include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jpegli/memory_manager.h"
 
 namespace jpegli {
 

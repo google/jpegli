@@ -9,11 +9,12 @@
 
 // Decodes PBM/PGM/PPM/PFM pixels in memory.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
+#include "lib/extras/codestream_header.h"
 // TODO(janwas): workaround for incorrect Win64 codegen (cause unknown)
-#include <hwy/highway.h>
+#include <vector>
 
 #include "lib/base/span.h"
 #include "lib/base/status.h"

@@ -11,8 +11,10 @@
 #include <functional>
 #include <hwy/base.h>  // HWY_ALIGN_MAX
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
 #include "lib/base/memory_manager.h"
+#include "lib/base/status.h"
 
 namespace jxl {
 

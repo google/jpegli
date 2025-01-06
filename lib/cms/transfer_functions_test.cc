@@ -4,16 +4,18 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <algorithm>
+#include <cstdlib>
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/cms/transfer_functions_test.cc"
-#include "lib/cms/transfer_functions.h"
-
 #include <cstdio>
 #include <hwy/foreach_target.h>
 
 #include "lib/base/random.h"
 #include "lib/base/testing.h"
 #include "lib/cms/transfer_functions-inl.h"
+#include "lib/cms/transfer_functions.h"
 
 // Test utils
 #include <hwy/highway.h>

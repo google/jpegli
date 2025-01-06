@@ -8,6 +8,8 @@
 
 #include <string.h>
 
+#include "lib/base/compiler_specific.h"
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/upsample.cc"
 #include <hwy/foreach_target.h>

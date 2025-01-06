@@ -6,6 +6,9 @@
 
 #include "lib/extras/exif.h"
 
+#include <cstdint>
+#include <vector>
+
 #include "lib/base/byte_order.h"
 
 namespace jxl {

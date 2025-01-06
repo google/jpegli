@@ -6,10 +6,15 @@
 
 #include "lib/extras/dec/color_hints.h"
 
+#include <cstdint>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "lib/base/status.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/extras/dec/color_description.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {

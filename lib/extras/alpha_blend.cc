@@ -6,7 +6,10 @@
 
 #include "lib/extras/alpha_blend.h"
 
+#include <cstddef>
+
 #include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {

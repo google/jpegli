@@ -10,17 +10,23 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/base/compiler_specific.h"  // ssize_t
 #include "lib/base/random.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_internal.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/dec/color_description.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
+#include "lib/extras/packed_image.h"
 #include "lib/extras/test_utils.h"
 
 namespace jxl {

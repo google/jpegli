@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -18,7 +19,6 @@
 
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
-#include "lib/jpegli/types.h"
 
 namespace org_jpeg_jpegli_wrapper {
 namespace {

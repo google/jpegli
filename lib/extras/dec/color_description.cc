@@ -6,11 +6,16 @@
 
 #include "lib/extras/dec/color_description.h"
 
-#include <errno.h>
-
+#include <array>
+#include <cerrno>
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <string>
 
 #include "lib/base/common.h"
+#include "lib/base/status.h"
+#include "lib/cms/color_encoding.h"
 
 namespace jxl {
 

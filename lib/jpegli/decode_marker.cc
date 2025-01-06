@@ -6,14 +6,16 @@
 
 #include "lib/jpegli/decode_marker.h"
 
-#include <string.h>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
 
 #include "lib/base/printf_macros.h"
 #include "lib/base/types.h"
 #include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jpegli/huffman.h"
 #include "lib/jpegli/memory_manager.h"
 
 namespace jpegli {

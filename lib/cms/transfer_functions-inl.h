@@ -6,6 +6,9 @@
 
 // Transfer functions for color encodings.
 
+#include <cstdint>
+
+#include "lib/base/common.h"
 #if defined(LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
 #undef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
@@ -13,15 +16,12 @@
 #define LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
 #endif
 
-#include <algorithm>
 #include <cmath>
 #include <hwy/highway.h>
 
-#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/fast_math-inl.h"
 #include "lib/base/rational_polynomial-inl.h"
-#include "lib/base/status.h"
 #include "lib/cms/transfer_functions.h"
 
 HWY_BEFORE_NAMESPACE();

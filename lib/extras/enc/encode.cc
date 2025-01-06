@@ -6,14 +6,27 @@
 
 #include "lib/extras/enc/encode.h"
 
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <cstdint>
 #include <locale>
+#include <memory>
+#include <string>
+#include <vector>
 
+#include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/enc/apng.h"
 #include "lib/extras/enc/exr.h"
 #include "lib/extras/enc/jpg.h"
 #include "lib/extras/enc/npy.h"
 #include "lib/extras/enc/pgx.h"
 #include "lib/extras/enc/pnm.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {

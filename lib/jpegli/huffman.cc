@@ -6,12 +6,17 @@
 
 #include "lib/jpegli/huffman.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 #include <vector>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
 #include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/error.h"
 
 namespace jpegli {

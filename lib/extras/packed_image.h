@@ -16,13 +16,12 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "lib/base/byte_order.h"
-#include "lib/base/c_callback_support.h"
 #include "lib/base/common.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"

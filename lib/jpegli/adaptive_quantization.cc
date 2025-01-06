@@ -6,14 +6,13 @@
 
 #include "lib/jpegli/adaptive_quantization.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-
 #include <algorithm>
-#include <cmath>
-#include <limits>
-#include <string>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+
+#include "lib/base/types.h"
+#include "lib/jpegli/common_internal.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/adaptive_quantization.cc"
@@ -21,7 +20,6 @@
 #include <hwy/highway.h>
 
 #include "lib/base/compiler_specific.h"
-#include "lib/base/status.h"
 #include "lib/base/types.h"
 #include "lib/jpegli/encode_internal.h"
 HWY_BEFORE_NAMESPACE();

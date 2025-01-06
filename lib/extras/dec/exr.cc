@@ -8,11 +8,11 @@
 
 #include <cstdint>
 
-#include "lib/base/common.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/packed_image.h"
+#include "lib/extras/size_constraints.h"
 
 #if !JPEGXL_ENABLE_EXR
 
@@ -34,14 +34,25 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
 
 #else  // JPEGXL_ENABLE_EXR
 
-#include <ImfChromaticitiesAttribute.h>
 #include <ImfIO.h>
+#include <ImfRgba.h>
 #include <ImfRgbaFile.h>
 #include <ImfStandardAttributes.h>
+#include <OpenEXRConfig.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstring>
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
+
 #ifdef __EXCEPTIONS
+#include <IexBaseExc.h>
 #define JXL_EXR_THROW_LENGTH_ERROR(M) throw Iex::InputExc(M);
 #else  // __EXCEPTIONS
 #define JXL_EXR_THROW_LENGTH_ERROR(M) JXL_CRASH()

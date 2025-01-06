@@ -6,10 +6,10 @@
 
 #include "lib/jpegli/error.h"
 
-#include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 
 #include "lib/jpegli/common.h"

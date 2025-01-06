@@ -4,6 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cstddef>
+#include <cstdint>
+
 #if defined(LIB_JPEGLI_ENTROPY_CODING_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #undef LIB_JPEGLI_ENTROPY_CODING_INL_H_
@@ -11,6 +14,7 @@
 #define LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #endif
 
+#include "lib/base/bits.h"
 #include "lib/base/compiler_specific.h"
 
 HWY_BEFORE_NAMESPACE();
