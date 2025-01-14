@@ -12,6 +12,7 @@
 #include <cstdlib>
 
 #include "lib/base/types.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/common_internal.h"
 
 #undef HWY_TARGET_INCLUDE
