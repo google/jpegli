@@ -13,6 +13,8 @@
 #define LIB_JPEGLI_TRANSPOSE_INL_H_
 #endif
 
+#include <hwy/highway.h>
+
 #include "lib/base/compiler_specific.h"
 
 HWY_BEFORE_NAMESPACE();

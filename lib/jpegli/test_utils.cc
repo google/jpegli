@@ -23,11 +23,9 @@
 
 #include "lib/base/byte_order.h"
 #include "lib/base/compiler_specific.h"
-#include "lib/base/sanitizers.h"  // for test_utils-inl.h
 #include "lib/base/status.h"
 #include "lib/base/types.h"
 #include "lib/jpegli/common.h"
-#include "lib/jpegli/decode.h"  // for test_utils-inl
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/test_params.h"
 #include "lib/jpegli/types.h"
@@ -36,20 +34,20 @@
 #include "tools/cpp/runfiles/runfiles.h"
 #endif
 
+#define J_TEST_UTILS jpegli
+#define JPEG_API_FLAVOUR_JPEGLI
+#include "lib/jpegli/test_utils-inl.h"
+#undef JPEG_API_FLAVOUR_JPEGLI
+#undef J_TEST_UTILS
+
 namespace jpegli {
 
-namespace {
 void Check(bool ok) {
   if (!ok) {
     JXL_CRASH();
   }
 }
 #define QUIT(M) Check(false);
-}  // namespace
-
-#define JPEG_API_FN(name) jpegli_##name
-#include "lib/jpegli/test_utils-inl.h"
-#undef JPEG_API_FN
 
 #if defined(TEST_DATA_PATH)
 std::string GetTestDataPath(const std::string& filename) {

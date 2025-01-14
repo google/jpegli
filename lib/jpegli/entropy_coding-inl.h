@@ -7,12 +7,18 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
+#include "lib/jpegli/encode_internal.h"
+
 #if defined(LIB_JPEGLI_ENTROPY_CODING_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #undef LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #else
 #define LIB_JPEGLI_ENTROPY_CODING_INL_H_
 #endif
+
+#include <hwy/highway.h>
 
 #include "lib/base/bits.h"
 #include "lib/base/compiler_specific.h"
