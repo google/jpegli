@@ -10,12 +10,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <hwy/aligned_allocator.h>
 #include <vector>
 
-#include "hwy/aligned_allocator.h"
-#include "lib/base/byte_order.h"
-#include "lib/base/status.h"
-#include "lib/base/types.h"
 #include "lib/jpegli/color_quantize.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/common_internal.h"
