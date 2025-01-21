@@ -9,17 +9,17 @@
 
 // Decodes JPG pixels and metadata in memory using the libjpegli library.
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <vector>
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
+
+class PackedPixelFile;
 
 struct JpegDecompressParams {
   JxlDataType output_data_type = JXL_TYPE_UINT8;

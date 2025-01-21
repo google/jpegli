@@ -4,8 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/extras/enc/apng.h"
-
 // Parts of this code are taken from apngdis, which has the following license:
 /* APNG Disassembler 2.8
  *
@@ -37,21 +35,47 @@
  *
  */
 
+#include "lib/extras/enc/apng.h"
+
+// IWYU pragma: no_include <pngconf.h>
+
+#include <memory>
+
+#include "lib/extras/enc/encode.h"
+
+#if !JPEGXL_ENABLE_APNG
+
+namespace jxl {
+namespace extras {
+std::unique_ptr<Encoder> GetAPNGEncoder() { return nullptr; }
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_APNG
+
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
 #include "lib/base/printf_macros.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/exif.h"
-#if JPEGXL_ENABLE_APNG
+#include "lib/extras/packed_image.h"
 #include "png.h" /* original (unpatched) libpng is ok */
-#endif
 
 namespace jxl {
 namespace extras {
 
-#if JPEGXL_ENABLE_APNG
 namespace {
 
 constexpr unsigned char kExifSignature[6] = {0x45, 0x78, 0x69,
@@ -497,15 +521,12 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
 }
 
 }  // namespace
-#endif
 
 std::unique_ptr<Encoder> GetAPNGEncoder() {
-#if JPEGXL_ENABLE_APNG
   return jxl::make_unique<APNGEncoder>();
-#else
-  return nullptr;
-#endif
 }
 
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_APNG

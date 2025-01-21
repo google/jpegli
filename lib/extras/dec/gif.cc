@@ -6,30 +6,45 @@
 
 #include "lib/extras/dec/gif.h"
 
+#include <cstdint>
+
+#include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
+#include "lib/extras/size_constraints.h"
 
-#if JPEGXL_ENABLE_GIF
+#if !JPEGXL_ENABLE_GIF
+
+namespace jxl {
+namespace extras {
+bool CanDecodeGIF() { return false; }
+Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
+                      PackedPixelFile* ppf,
+                      const SizeConstraints* constraints) {
+  return false;
+}
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_GIF
+
 #include <gif_lib.h>
-#endif
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "lib/base/compiler_specific.h"
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
+#include "lib/base/types.h"
 #include "lib/extras/codestream_header.h"
-#include "lib/extras/size_constraints.h"
-#include "lib/base/compiler_specific.h"
-#include "lib/base/rect.h"
-#include "lib/base/sanitizers.h"
 
 namespace jxl {
 namespace extras {
 
-#if JPEGXL_ENABLE_GIF
 namespace {
 
 struct ReadState {
@@ -67,20 +82,12 @@ Status ensure_have_alpha(PackedFrame* frame) {
   return true;
 }
 }  // namespace
-#endif
 
-bool CanDecodeGIF() {
-#if JPEGXL_ENABLE_GIF
-  return true;
-#else
-  return false;
-#endif
-}
+bool CanDecodeGIF() { return true; }
 
 Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
                       PackedPixelFile* ppf,
                       const SizeConstraints* constraints) {
-#if JPEGXL_ENABLE_GIF
   int error = GIF_OK;
   ReadState state = {bytes};
   const auto ReadFromSpan = [](GifFileType* const gif, GifByteType* const bytes,
@@ -427,10 +434,9 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
     }
   }
   return true;
-#else
-  return false;
-#endif
 }
 
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_GIF

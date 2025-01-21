@@ -9,7 +9,7 @@
 
 // GTest specific macros / wrappers.
 
-#include "gtest/gtest.h"
+#include "gtest/gtest.h"  // IWYU pragma: export
 
 #ifdef JXL_DISABLE_SLOW_TESTS
 #define JXL_SLOW_TEST(T, C) TEST(T, DISABLED_##C)

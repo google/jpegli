@@ -6,27 +6,45 @@
 
 #include "lib/extras/enc/jpg.h"
 
-#if JPEGXL_ENABLE_JPEG
-#include "lib/base/include_jpeglib.h"  // NOLINT
-#endif
+#include <memory>
+
+#include "lib/extras/enc/encode.h"
+
+#if !JPEGXL_ENABLE_JPEG
+
+namespace jxl {
+namespace extras {
+std::unique_ptr<Encoder> GetJPEGEncoder() { return nullptr; }
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_JPEG
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/include_jpeglib.h"
 #include "lib/base/sanitizers.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/exif.h"
-#include "lib/base/common.h"
-#include "lib/base/sanitizers.h"
-#include "lib/base/status.h"
+#include "lib/extras/packed_image.h"
+
 #if JPEGXL_ENABLE_SJPEG
 #include "sjpeg.h"
 #include "sjpegi.h"
@@ -34,8 +52,6 @@
 
 namespace jxl {
 namespace extras {
-
-#if JPEGXL_ENABLE_JPEG
 namespace {
 
 constexpr unsigned char kICCSignature[12] = {
@@ -225,7 +241,7 @@ void WriteExif(jpeg_compress_struct* const cinfo,
 Status SetChromaSubsampling(const std::string& subsampling,
                             jpeg_compress_struct* const cinfo) {
   const std::pair<const char*,
-                  std::pair<std::array<uint8_t, 3>, std::array<uint8_t, 3>>>
+                  std::pair<std::array<uint8_t, 3>, std::array<uint8_t, 3> > >
       options[] = {{"444", {{{1, 1, 1}}, {{1, 1, 1}}}},
                    {"420", {{{2, 1, 1}}, {{2, 1, 1}}}},
                    {"422", {{{2, 1, 1}}, {{1, 1, 1}}}},
@@ -357,7 +373,17 @@ Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
   return true;
 }
 
-#if JPEGXL_ENABLE_SJPEG
+#if !JPEGXL_ENABLE_SJPEG
+
+Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
+                       const std::vector<uint8_t>& icc,
+                       std::vector<uint8_t> exif, const JpegParams& params,
+                       std::vector<uint8_t>* bytes) {
+  return JXL_FAILURE("JPEG XL was built without sjpeg support");
+}
+
+#else  //  JPEGXL_ENABLE_SJPEG
+
 struct MySearchHook : public sjpeg::SearchHook {
   uint8_t base_tables[2][64];
   float q_start;
@@ -428,15 +454,11 @@ struct MySearchHook : public sjpeg::SearchHook {
   }
   ~MySearchHook() override = default;
 };
-#endif
 
 Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
                        const std::vector<uint8_t>& icc,
                        std::vector<uint8_t> exif, const JpegParams& params,
                        std::vector<uint8_t>* bytes) {
-#if !JPEGXL_ENABLE_SJPEG
-  return JXL_FAILURE("JPEG XL was built without sjpeg support");
-#else
   if (image.format.data_type != JXL_TYPE_UINT8) {
     return JXL_FAILURE("Unsupported pixel data type");
   }
@@ -497,8 +519,9 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
       reinterpret_cast<const uint8_t*>(output.data()),
       reinterpret_cast<const uint8_t*>(output.data() + output.size()));
   return true;
-#endif
 }
+
+#endif  // JPEGXL_ENABLE_SJPEG
 
 Status EncodeImageJPG(const PackedImage& image, const JxlBasicInfo& info,
                       const std::vector<uint8_t>& icc,
@@ -608,15 +631,12 @@ class JPEGEncoder : public Encoder {
 };
 
 }  // namespace
-#endif
 
 std::unique_ptr<Encoder> GetJPEGEncoder() {
-#if JPEGXL_ENABLE_JPEG
   return jxl::make_unique<JPEGEncoder>();
-#else
-  return nullptr;
-#endif
 }
 
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_JPEG

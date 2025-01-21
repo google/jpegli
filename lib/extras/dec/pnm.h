@@ -18,14 +18,15 @@
 
 #include "lib/base/span.h"
 #include "lib/base/status.h"
-#include "lib/extras/dec/color_hints.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 
 struct SizeConstraints;
 
 namespace extras {
+
+class ColorHints;
+class PackedPixelFile;
 
 // Decodes `bytes` into `ppf`. color_hints may specify "color_space", which
 // defaults to sRGB.
