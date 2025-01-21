@@ -9,19 +9,19 @@
 
 // Decodes GIF images in memory.
 
-#include <stdint.h>
+#include <cstdint>
 
-#include "lib/base/data_parallel.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
-#include "lib/extras/dec/color_hints.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 
 struct SizeConstraints;
 
 namespace extras {
+
+class ColorHints;
+class PackedPixelFile;
 
 bool CanDecodeGIF();
 

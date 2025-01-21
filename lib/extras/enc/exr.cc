@@ -6,23 +6,51 @@
 
 #include "lib/extras/enc/exr.h"
 
-#if JPEGXL_ENABLE_EXR
-#include <ImfChromaticitiesAttribute.h>
+#include <memory>
+
+// IWYU pragma: no_include "ImathConfig.h"
+// IWYU pragma: no_include "ImfChromaticities.h"
+// IWYU pragma: no_include "ImfHeader.h"
+// IWYU pragma: no_include "OpenEXRConfig.h"
+#include "lib/extras/enc/encode.h"
+
+#if !JPEGXL_ENABLE_EXR
+
+namespace jxl {
+namespace extras {
+std::unique_ptr<Encoder> GetEXREncoder() { return nullptr; }
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_EXR
+
+#include <ImathVec.h>
 #include <ImfIO.h>
+#include <ImfNamespace.h>  // IWYU pragma: keep
+#include <ImfRgba.h>
 #include <ImfRgbaFile.h>
 #include <ImfStandardAttributes.h>
-#endif
+#include <ImfThreading.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <utility>
 #include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
-
-#if JPEGXL_ENABLE_EXR
 namespace {
 
 namespace OpenEXR = OPENEXR_IMF_NAMESPACE;
@@ -195,15 +223,12 @@ class EXREncoder : public Encoder {
 };
 
 }  // namespace
-#endif
 
 std::unique_ptr<Encoder> GetEXREncoder() {
-#if JPEGXL_ENABLE_EXR
   return jxl::make_unique<EXREncoder>();
-#else
-  return nullptr;
-#endif
 }
 
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_EXR

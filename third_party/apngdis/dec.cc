@@ -4,8 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/extras/dec/apng.h"
-
 // Parts of this code are taken from apngdis, which has the following license:
 /* APNG Disassembler 2.8
  *
@@ -37,8 +35,35 @@
  *
  */
 
+#include "lib/extras/dec/apng.h"
+
+// IWYU pragma: no_include <pngconf.h>
+
+#include "lib/base/span.h"
+#include "lib/base/status.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
+#include "lib/extras/size_constraints.h"
+
+#if !JPEGXL_ENABLE_APNG
+
+namespace jxl {
+namespace extras {
+bool CanDecodeAPNG() { return false; }
+Status DecodeImageAPNG(const Span<const uint8_t> bytes,
+                       const ColorHints& color_hints, PackedPixelFile* ppf,
+                       const SizeConstraints* constraints) {
+  return false;
+}
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_APNG
+
+#include <algorithm>
 #include <array>
 #include <atomic>
+#include <csetjmp>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -50,32 +75,16 @@
 #include "lib/base/byte_order.h"
 #include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
-#include "lib/base/printf_macros.h"
+#include "lib/base/printf_macros.h"  // IWYU pragma: keep
 #include "lib/base/rect.h"
 #include "lib/base/sanitizers.h"
-#include "lib/base/span.h"
-#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/extras/codestream_header.h"
-#include "lib/extras/packed_image.h"
-#include "lib/extras/size_constraints.h"
-#if JPEGXL_ENABLE_APNG
 #include "png.h" /* original (unpatched) libpng is ok */
-#endif
 
 namespace jxl {
 namespace extras {
-
-#if !JPEGXL_ENABLE_APNG
-
-bool CanDecodeAPNG() { return false; }
-Status DecodeImageAPNG(const Span<const uint8_t> bytes,
-                       const ColorHints& color_hints, PackedPixelFile* ppf,
-                       const SizeConstraints* constraints) {
-  return false;
-}
-
-#else  // JPEGXL_ENABLE_APNG
-
 namespace {
 
 constexpr std::array<uint8_t, 8> kPngSignature = {137,  'P',  'N', 'G',
@@ -1285,7 +1294,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   return true;
 }
 
-#endif  // JPEGXL_ENABLE_APNG
-
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_APNG

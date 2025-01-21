@@ -16,10 +16,11 @@
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
+
+class PackedPixelFile;
 
 struct JpegSettings {
   bool xyb = false;

@@ -47,6 +47,7 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
 #include <utility>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/types.h"
 #include "lib/cms/color_encoding.h"
