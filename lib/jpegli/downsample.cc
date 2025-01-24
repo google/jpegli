@@ -9,8 +9,8 @@
 #include <cstddef>
 #include <cstdio>
 
-#include "lib/jpegli/common.h"
 #include "lib/base/compiler_specific.h"
+#include "lib/jpegli/common.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/downsample.cc"
