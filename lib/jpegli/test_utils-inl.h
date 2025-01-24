@@ -15,10 +15,10 @@
 #include <utility>
 #include <vector>
 
-#include "lib/jpegli/common.h"
-#include "lib/jpegli/test_params.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/base/sanitizers.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/test_params.h"
 
 #if defined(JPEG_API_FLAVOUR_JPEGLI)
 #include "lib/jpegli/decode.h"
