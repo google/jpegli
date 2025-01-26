@@ -6,29 +6,18 @@
 
 #include "tools/benchmark/benchmark_codec.h"
 
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
-#include <utility>
 #include <vector>
 
-#include "lib/base/common.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
-#include "lib/base/types.h"
 #include "lib/extras/image.h"
-#include "lib/extras/image_ops.h"
-#include "lib/extras/packed_image_convert.h"
-#include "lib/extras/time.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
-#include "tools/benchmark/benchmark_stats.h"
 #include "tools/cmdline.h"
-#include "tools/no_memory_manager.h"
-#include "tools/speed_stats.h"
-#include "tools/thread_pool_internal.h"
 
 namespace jpegxl {
 namespace tools {
