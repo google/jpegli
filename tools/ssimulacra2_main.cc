@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +11,7 @@
 
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/packed_image.h"
 #include "tools/file_io.h"
@@ -71,7 +71,7 @@ int PrintUsage(char** argv) {
 int main(int argc, char** argv) {
   if (argc != 3) return PrintUsage(argv);
 
-  jxl::extras::PackedPixelFile ppf[2];
+  std::vector<jxl::extras::PackedPixelFile> ppf(2);
   const char* purpose[] = {"original", "distorted"};
   for (size_t i = 0; i < 2; ++i) {
     std::vector<uint8_t> encoded;

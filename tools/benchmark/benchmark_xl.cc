@@ -15,7 +15,6 @@
 #include <numeric>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
 #include "lib/base/common.h"
@@ -23,22 +22,19 @@
 #include "lib/base/data_parallel.h"
 #include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
-#include "lib/base/random.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
 #include "lib/cms/cms.h"
-#include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/butteraugli.h"
-#include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/enc/apng.h"
+#include "lib/extras/enc/encode.h"
 #include "lib/extras/enc/pnm.h"
 #include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
-#include "lib/extras/memory_manager_internal.h"
 #include "lib/extras/metrics.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/packed_image_convert.h"
@@ -66,7 +62,6 @@ using ::jxl::Bytes;
 using ::jxl::ColorEncoding;
 using ::jxl::Image3F;
 using ::jxl::ImageF;
-using ::jxl::Rng;
 using ::jxl::Status;
 using ::jxl::StatusOr;
 using ::jxl::ThreadPool;
