@@ -129,10 +129,6 @@ jobs:
           # For OpenEXR:
           libilmbase-dev:${{ matrix.arch }}
           libopenexr-dev:${{ matrix.arch }}
-
-          # GTK plugins
-          libgdk-pixbuf2.0-dev:${{ matrix.arch }}
-          libgtk2.0-dev:${{ matrix.arch }}
         )
         if [[ "${{ matrix.build_target }}" != "x86_64-linux-gnu" ]]; then
           pkgs+=(
