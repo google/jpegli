@@ -181,10 +181,8 @@ jobs:
           graphviz \
           imagemagick \
           libbrotli-dev \
-          libgdk-pixbuf2.0-dev \
           libgif-dev \
           libgtest-dev \
-          libgtk2.0-dev  \
           libjpeg-dev \
           libjpeg-turbo-progs \
           libopenexr-dev \

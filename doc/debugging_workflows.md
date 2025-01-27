@@ -49,11 +49,10 @@ apt update
 
 apt-get install -y \
   clang-14 cmake doxygen g++-aarch64-linux-gnu graphviz libbrotli-dev:${ARCH} \
-  libc6-dev-${ARCH}-cross libgdk-pixbuf2.0-dev:${ARCH} libgif-dev:${ARCH} \
-  libgtk2.0-dev:${ARCH} libilmbase-dev:${ARCH} libjpeg-dev:${ARCH} \
-  libopenexr-dev:${ARCH} libpng-dev:${ARCH} libstdc++-12-dev-${ARCH}-cross \
-  libstdc++-12-dev:${ARCH} libwebp-dev:${ARCH} ninja-build pkg-config \
-  qemu-user-static unzip xdg-utils xvfb
+  libc6-dev-${ARCH}-cross libgif-dev:${ARCH} libilmbase-dev:${ARCH} \
+  libjpeg-dev:${ARCH} libopenexr-dev:${ARCH} libpng-dev:${ARCH} \
+  libstdc++-12-dev-${ARCH}-cross libstdc++-12-dev:${ARCH} libwebp-dev:${ARCH} \
+  ninja-build pkg-config qemu-user-static unzip xdg-utils xvfb
 
 #apt-get install -y binutils-${BUILD_TARGET} gcc-${BUILD_TARGET}
 #apt-get install -y \

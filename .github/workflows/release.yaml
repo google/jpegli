@@ -57,10 +57,8 @@ jobs:
           doxygen \
           graphviz \
           libbrotli-dev \
-          libgdk-pixbuf2.0-dev \
           libgif-dev \
           libgtest-dev \
-          libgtk2.0-dev  \
           libjpeg-dev \
           libopenexr-dev \
           libpng-dev \
@@ -127,10 +125,8 @@ jobs:
         - ubuntu:20.04
         - debian:bullseye
         - debian:bookworm
-        # GIMP-2 package is removed: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1078402
-        # GIMP-3 package has incompatible API: https://github.com/libjxl/libjxl/issues/4037
-        # - debian:trixie
-        # - debian:sid
+        - debian:trixie
+        - debian:sid
 
     container:
       image: ${{ matrix.os }}
