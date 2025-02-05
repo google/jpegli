@@ -648,7 +648,9 @@ void SetQuantMatrices(j_compress_ptr cinfo, float distances[NUM_QUANT_TBLS],
     base_quant_matrix[0] = kBaseQuantMatrixXYB;
     base_quant_matrix[1] = kBaseQuantMatrixXYB + DCTSIZE2;
     base_quant_matrix[2] = kBaseQuantMatrixXYB + 2 * DCTSIZE2;
-  } else if (cinfo->jpeg_color_space == JCS_YCbCr && !m->use_std_tables) {
+  } else if ((cinfo->jpeg_color_space == JCS_YCbCr ||
+              cinfo->jpeg_color_space == JCS_GRAYSCALE) &&
+             !m->use_std_tables) {
     global_scale = kGlobalScaleYCbCr;
     if (m->cicp_transfer_function == kTransferFunctionPQ) {
       global_scale *= .4f;
