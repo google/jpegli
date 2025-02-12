@@ -480,11 +480,16 @@ void AllocateBuffers(j_compress_ptr cinfo) {
     m->quant_field.FillRow(0, 0, m->xsize_blocks);
   }
   for (int c = 0; c < cinfo->num_components; ++c) {
-    m->zero_bias_offset[c] =
-        Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
-    m->zero_bias_mul[c] = Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
-    memset(m->zero_bias_mul[c], 0, DCTSIZE2 * sizeof(float));
-    memset(m->zero_bias_offset[c], 0, DCTSIZE2 * sizeof(float));
+    if (m->zero_bias_offset[c] == nullptr) {
+      m->zero_bias_offset[c] =
+          Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
+      memset(m->zero_bias_offset[c], 0, DCTSIZE2 * sizeof(float));
+    }
+    if (m->zero_bias_offset[c] == nullptr) {
+      m->zero_bias_mul[c] =
+          Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
+      memset(m->zero_bias_mul[c], 0, DCTSIZE2 * sizeof(float));
+    }
   }
 }
 
@@ -689,6 +694,11 @@ void jpegli_CreateCompress(j_compress_ptr cinfo, int version,
   cinfo->master->cicp_transfer_function = 2;  // unknown transfer function code
   cinfo->master->use_std_tables = false;
   cinfo->master->use_adaptive_quantization = true;
+  for (int c = 0; c < jpegli::kMaxComponents; ++c) {
+    cinfo->master->zero_bias_offset[c] = nullptr;
+    cinfo->master->zero_bias_mul[c] = nullptr;
+  }
+  cinfo->master->zero_bias_params_set = false;
   cinfo->master->progressive_level = jpegli::kDefaultProgressiveLevel;
   cinfo->master->data_type = JPEGLI_TYPE_UINT8;
   cinfo->master->endianness = JPEGLI_NATIVE_ENDIAN;
@@ -921,6 +931,34 @@ void jpegli_add_quant_table(j_compress_ptr cinfo, int which_tbl,
 void jpegli_enable_adaptive_quantization(j_compress_ptr cinfo, boolean value) {
   CheckState(cinfo, jpegli::kEncStart);
   cinfo->master->use_adaptive_quantization = FROM_JXL_BOOL(value);
+}
+
+void jpegli_set_adaptive_quantization_settings(j_compress_ptr cinfo,
+                                               int which_component,
+                                               const float* mul,
+                                               const float* offset) {
+  CheckState(cinfo, jpegli::kEncStart);
+  if (which_component < 0 || which_component >= cinfo->num_components) {
+    JPEGLI_ERROR("Invalid component index %d", which_component);
+  }
+  if (mul == nullptr || offset == nullptr) {
+    JPEGLI_ERROR("Invalid adaptive quantization parameters");
+  }
+  auto* master = cinfo->master;
+  // These are normally allocated in AllocateBuffers but we need to
+  // allocate them early to be abe to set override values.
+  if (master->zero_bias_mul[which_component] == nullptr) {
+    master->zero_bias_mul[which_component] =
+        jpegli::Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
+  }
+  if (master->zero_bias_offset[which_component] == nullptr) {
+    master->zero_bias_offset[which_component] =
+        jpegli::Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
+  }
+  memcpy(master->zero_bias_mul[which_component], mul, DCTSIZE2 * sizeof(float));
+  memcpy(master->zero_bias_offset[which_component], offset,
+         DCTSIZE2 * sizeof(float));
+  master->zero_bias_params_set = true;
 }
 
 void jpegli_simple_progression(j_compress_ptr cinfo) {
