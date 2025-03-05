@@ -106,7 +106,7 @@ endif()
 # Build libjpeg.so that links to libjpeg-static
 #
 
-if (JPEGXL_ENABLE_JPEGLI_LIBJPEG AND NOT WIN32 AND NOT EMSCRIPTEN)
+if (JPEGXL_ENABLE_JPEGLI_LIBJPEG AND NOT WIN32)
 add_library(jpegli-libjpeg-obj OBJECT "${JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES}")
 target_compile_options(jpegli-libjpeg-obj PRIVATE ${JPEGXL_INTERNAL_FLAGS})
 target_compile_options(jpegli-libjpeg-obj PUBLIC ${JPEGXL_COVERAGE_FLAGS})
