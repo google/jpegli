@@ -31,18 +31,16 @@ configure_file(
 configure_file(
   ../third_party/libjpeg-turbo/jmorecfg.h include/jpegli/jmorecfg.h COPYONLY)
 
-add_library(jpegli-static STATIC EXCLUDE_FROM_ALL "${JPEGXL_INTERNAL_JPEGLI_SOURCES}")
-target_compile_options(jpegli-static PRIVATE "${JPEGXL_INTERNAL_FLAGS}")
-target_compile_options(jpegli-static PUBLIC ${JPEGXL_COVERAGE_FLAGS})
-set_property(TARGET jpegli-static PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(jpegli-static PRIVATE
-  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
-  "${JXL_HWY_INCLUDE_DIRS}"
-)
-target_include_directories(jpegli-static PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/jpegli>"
-)
-target_link_libraries(jpegli-static PUBLIC ${JPEGLI_INTERNAL_LIBS})
+add_library(jpegli-static-obj OBJECT "${JPEGXL_INTERNAL_JPEGLI_SOURCES}")
+set_property(TARGET jpegli-static-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_compile_options(jpegli-static-obj PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
+target_include_directories(jpegli-static-obj
+  PRIVATE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>" "${JXL_HWY_INCLUDE_DIRS}"
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/jpegli>")
+target_link_libraries(jpegli-static-obj PUBLIC ${JPEGLI_INTERNAL_LIBS})
+
+add_library(jpegli-static STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:jpegli-static-obj>)
+target_link_libraries(jpegli-static PUBLIC jpegli-static-obj)
 
 #
 # Tests for jpegli-static
