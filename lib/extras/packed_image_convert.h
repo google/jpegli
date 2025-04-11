@@ -7,6 +7,8 @@
 #ifndef LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
 #define LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
 
+// Helper functions to convert from the external image types.
+
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
