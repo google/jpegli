@@ -806,6 +806,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[1].component_id = 'G';
     cinfo->comp_info[2].component_id = 'B';
     if (cinfo->master->xyb_mode) {
+      // Subsampling RGB JPEG is incompatible with JPEG XL transcoding.
       // Subsample blue channel.
       //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
       //cinfo->comp_info[1].h_samp_factor = cinfo->comp_info[1].v_samp_factor = 2;
@@ -825,6 +826,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[2].quant_tbl_no = 1;
     cinfo->comp_info[1].dc_tbl_no = cinfo->comp_info[1].ac_tbl_no = 1;
     cinfo->comp_info[2].dc_tbl_no = cinfo->comp_info[2].ac_tbl_no = 1;
+    // Subsampling is only useful at low qualities. Check added elsewhere.
     // Use chroma subsampling by default
     //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     if (colorspace == JCS_YCCK) {
