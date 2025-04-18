@@ -434,6 +434,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     }
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
+    float distance = jpegli_quality_to_distance(jpeg_settings.quality);
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
         cinfo.comp_info[0].h_samp_factor = 1;
@@ -454,11 +455,15 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[i].h_samp_factor = 1;
         cinfo.comp_info[i].v_samp_factor = 1;
       }
-    } else if (!jpeg_settings.xyb) {
-      // Default is no chroma subsampling.
-      cinfo.comp_info[0].h_samp_factor = 1;
-      cinfo.comp_info[0].v_samp_factor = 1;
-    }
+    } if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) || 
+	      (jpeg_settings.quality > 0.0 && jpegli_quality_to_distance(jpeg_settings.quality) >= 6.4)) {
+        // At lower qualities 420 subsampling begins to outperform 444
+        cinfo.comp_info[0].h_samp_factor = 2;
+        cinfo.comp_info[0].v_samp_factor = 2;
+      } else {
+        cinfo.comp_info[0].h_samp_factor = 1;
+        cinfo.comp_info[0].v_samp_factor = 1;
+      }
     jpegli_enable_adaptive_quantization(
         &cinfo, TO_JXL_BOOL(jpeg_settings.use_adaptive_quantization));
     if (jpeg_settings.psnr_target > 0.0) {
