@@ -783,8 +783,8 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     default:
       JPEGLI_ERROR("Unsupported jpeg colorspace %d", colorspace);
   }
-  // Adobe marker is only needed to distinguish CMYK and YCCK JPEGs.
-  cinfo->write_Adobe_marker = TO_JXL_BOOL(cinfo->jpeg_color_space == JCS_YCCK);
+ // Adobe marker is needed to distinguish CMYK, YCCK and RGB(XYB) JPEGs.
+  cinfo->write_Adobe_marker = TO_JXL_BOOL((cinfo->jpeg_color_space == JCS_YCCK || cinfo->master->xyb_mode));
   if (cinfo->comp_info == nullptr) {
     cinfo->comp_info =
         jpegli::Allocate<jpeg_component_info>(cinfo, MAX_COMPONENTS);
@@ -807,9 +807,9 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[2].component_id = 'B';
     if (cinfo->master->xyb_mode) {
       // Subsample blue channel.
-      cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
-      cinfo->comp_info[1].h_samp_factor = cinfo->comp_info[1].v_samp_factor = 2;
-      cinfo->comp_info[2].h_samp_factor = cinfo->comp_info[2].v_samp_factor = 1;
+      //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
+      //cinfo->comp_info[1].h_samp_factor = cinfo->comp_info[1].v_samp_factor = 2;
+      //cinfo->comp_info[2].h_samp_factor = cinfo->comp_info[2].v_samp_factor = 1;
       // Use separate quantization tables for each component
       cinfo->comp_info[1].quant_tbl_no = 1;
       cinfo->comp_info[2].quant_tbl_no = 2;
@@ -826,7 +826,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[1].dc_tbl_no = cinfo->comp_info[1].ac_tbl_no = 1;
     cinfo->comp_info[2].dc_tbl_no = cinfo->comp_info[2].ac_tbl_no = 1;
     // Use chroma subsampling by default
-    cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
+    //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     if (colorspace == JCS_YCCK) {
       cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
