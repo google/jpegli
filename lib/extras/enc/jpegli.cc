@@ -455,12 +455,12 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[i].h_samp_factor = 1;
         cinfo.comp_info[i].v_samp_factor = 1;
       }
-    } if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) || 
-	      (jpeg_settings.quality > 0.0 && jpegli_quality_to_distance(jpeg_settings.quality) >= 6.4)) {
+    } else if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) {
         // At lower qualities 420 subsampling begins to outperform 444
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 2;
       } else {
+	// Default to 444 for XYB or medium to high quality
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 1;
       }
