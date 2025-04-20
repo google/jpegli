@@ -801,16 +801,12 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     comp->dc_tbl_no = 0;
     comp->ac_tbl_no = 0;
   }
+  // Subsampling is handled in lib/extras/enc/jpegli.cc#L438
   if (colorspace == JCS_RGB) {
     cinfo->comp_info[0].component_id = 'R';
     cinfo->comp_info[1].component_id = 'G';
     cinfo->comp_info[2].component_id = 'B';
     if (cinfo->master->xyb_mode) {
-      // Subsampling RGB JPEG is incompatible with JPEG XL transcoding.
-      // Subsample blue channel.
-      //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
-      //cinfo->comp_info[1].h_samp_factor = cinfo->comp_info[1].v_samp_factor = 2;
-      //cinfo->comp_info[2].h_samp_factor = cinfo->comp_info[2].v_samp_factor = 1;
       // Use separate quantization tables for each component
       cinfo->comp_info[1].quant_tbl_no = 1;
       cinfo->comp_info[2].quant_tbl_no = 2;
@@ -826,9 +822,6 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[2].quant_tbl_no = 1;
     cinfo->comp_info[1].dc_tbl_no = cinfo->comp_info[1].ac_tbl_no = 1;
     cinfo->comp_info[2].dc_tbl_no = cinfo->comp_info[2].ac_tbl_no = 1;
-    // Subsampling is only useful at low qualities. Check added elsewhere.
-    // Use chroma subsampling by default
-    //cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     if (colorspace == JCS_YCCK) {
       cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
