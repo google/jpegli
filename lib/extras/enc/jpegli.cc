@@ -435,23 +435,60 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
     float distance = jpegli_quality_to_distance(jpeg_settings.quality);
+    // TODO(Jonnyawsom3): Clean up redundant variables later.
+    // Ideally use YBX instead of XYB, and try subsampling X too
+    // to avoid any of this. Subsampling doesn't help XYB much anyway
+    // but forcing it shouldn't ruin quality, hence spaghetti.
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
+	// Set all in case of 444 XYB
         cinfo.comp_info[0].h_samp_factor = 1;
-        cinfo.comp_info[0].v_samp_factor = 1;
+	cinfo.comp_info[0].v_samp_factor = 1;
+	cinfo.comp_info[1].h_samp_factor = 1;
+	cinfo.comp_info[1].v_samp_factor = 1;
+	cinfo.comp_info[2].h_samp_factor = 1;
+	cinfo.comp_info[2].v_samp_factor = 1;
       } else if (jpeg_settings.chroma_subsampling == "440") {
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 2;
+	if (cinfo->master->xyb_mode) {
+	// Subsample blue channel for XYB.
+	cinfo.comp_info[0].h_samp_factor = 1;
+	cinfo.comp_info[0].v_samp_factor = 2;
+	cinfo.comp_info[1].h_samp_factor = 1;
+	cinfo.comp_info[1].v_samp_factor = 2;
+	cinfo.comp_info[2].h_samp_factor = 1;
+	cinfo.comp_info[2].v_samp_factor = 1;
+	}
       } else if (jpeg_settings.chroma_subsampling == "422") {
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 1;
+	if (cinfo->master->xyb_mode) {
+	// Subsample blue channel for XYB.
+	cinfo.comp_info[0].h_samp_factor = 2;
+	cinfo.comp_info[0].v_samp_factor = 1;
+	cinfo.comp_info[1].h_samp_factor = 2;
+	cinfo.comp_info[1].v_samp_factor = 1;
+	cinfo.comp_info[2].h_samp_factor = 1;
+	cinfo.comp_info[2].v_samp_factor = 1;
+	}
       } else if (jpeg_settings.chroma_subsampling == "420") {
         cinfo.comp_info[0].h_samp_factor = 2;
-        cinfo.comp_info[0].v_samp_factor = 2;
+	cinfo.comp_info[0].h_samp_factor = 2;
+	if (cinfo->master->xyb_mode) {
+	// Subsample blue channel for XYB.
+	cinfo.comp_info[0].h_samp_factor = 2;
+	cinfo.comp_info[0].v_samp_factor = 2;
+	cinfo.comp_info[1].h_samp_factor = 2;
+	cinfo.comp_info[1].v_samp_factor = 2;
+	cinfo.comp_info[2].h_samp_factor = 1;
+	cinfo.comp_info[2].v_samp_factor = 1;
+	}
       } else {
         return false;
       }
-      for (int i = 1; i < cinfo.num_components; ++i) {
+      if (!cinfo->master->xyb_mode) {
+	for (int i = 1; i < cinfo.num_components; ++i) {
         cinfo.comp_info[i].h_samp_factor = 1;
         cinfo.comp_info[i].v_samp_factor = 1;
       }
