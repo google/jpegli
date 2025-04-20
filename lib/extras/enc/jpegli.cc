@@ -474,7 +474,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
 	}
       } else if (jpeg_settings.chroma_subsampling == "420") {
         cinfo.comp_info[0].h_samp_factor = 2;
-	cinfo.comp_info[0].h_samp_factor = 2;
+	cinfo.comp_info[0].v_samp_factor = 2;
 	if (cinfo->master->xyb_mode) {
 	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
