@@ -451,7 +451,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else if (jpeg_settings.chroma_subsampling == "440") {
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 2;
-	if (cinfo->master->xyb_mode) {
+	if (jpeg_settings.xyb) {
 	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 1;
 	cinfo.comp_info[0].v_samp_factor = 2;
@@ -463,7 +463,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else if (jpeg_settings.chroma_subsampling == "422") {
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 1;
-	if (cinfo->master->xyb_mode) {
+	if (jpeg_settings.xyb) {
 	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 1;
@@ -475,7 +475,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else if (jpeg_settings.chroma_subsampling == "420") {
         cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 2;
-	if (cinfo->master->xyb_mode) {
+	if (jpeg_settings.xyb) {
 	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 2;
@@ -487,12 +487,13 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else {
         return false;
       }
-      if (!cinfo->master->xyb_mode) {
+      if (!jpeg_settings.xyb) {
 	for (int i = 1; i < cinfo.num_components; ++i) {
         cinfo.comp_info[i].h_samp_factor = 1;
         cinfo.comp_info[i].v_samp_factor = 1;
       }
-    } else if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) {
+    } else if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) ||
+	       (jpeg_settings.quality > 0.0 && distance >= 6.4)) {
         // At lower qualities 420 subsampling begins to outperform 444
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 2;
