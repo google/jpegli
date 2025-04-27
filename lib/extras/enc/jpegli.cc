@@ -435,11 +435,10 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
     float distance = jpegli_quality_to_distance(jpeg_settings.quality);
-    // TODO(Jonnyawsom3): Clean up redundant variables later.
-    // Figure out why H and V are swapped in some cases.
+    // All factors need to be specified to subsample the blue channel
+    // for XYB. H and V are swapped between YCbCr and XYB.
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
-	// Set all in case of 444 XYB
         cinfo.comp_info[0].h_samp_factor = 1;
 	cinfo.comp_info[0].v_samp_factor = 1;
 	cinfo.comp_info[1].h_samp_factor = 1;
@@ -450,7 +449,6 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 2;
 	if (jpeg_settings.xyb) {
-	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 1;
 	cinfo.comp_info[1].h_samp_factor = 2;
@@ -462,7 +460,6 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 1;
 	if (jpeg_settings.xyb) {
-	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 2;
 	cinfo.comp_info[1].h_samp_factor = 2;
@@ -474,7 +471,6 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 2;
 	if (jpeg_settings.xyb) {
-	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
 	cinfo.comp_info[0].v_samp_factor = 2;
 	cinfo.comp_info[1].h_samp_factor = 2;
@@ -489,14 +485,15 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
 	for (int i = 1; i < cinfo.num_components; ++i) {
         cinfo.comp_info[i].h_samp_factor = 1;
         cinfo.comp_info[i].v_samp_factor = 1;
+	}
       }
-    } else if ((jpeg_settings.distance >= 6.4 && !jpeg_settings.xyb) ||
+    } else if ((jpeg_settings.distance >= 6.4 && colorspace == JCS_YCbCr) ||
 	       (jpeg_settings.quality > 0.0 && distance >= 6.4)) {
-        // At lower qualities 420 subsampling begins to outperform 444
+        // At low quality, 420 subsampling begins to outperform 444.
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 2;
       } else {
-	// Default to 444 for XYB or medium to high quality
+	// Default to 444 for RGB(XYB) JPEG or medium to high quality.
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 1;
       }
