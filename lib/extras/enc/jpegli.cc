@@ -436,9 +436,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     jpegli_set_defaults(&cinfo);
     float distance = jpegli_quality_to_distance(jpeg_settings.quality);
     // TODO(Jonnyawsom3): Clean up redundant variables later.
-    // Ideally use YBX instead of XYB, and try subsampling X too
-    // to avoid any of this. Subsampling doesn't help XYB much anyway
-    // but forcing it shouldn't ruin quality, hence spaghetti.
+    // Figure out why H and V are swapped in some cases.
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
 	// Set all in case of 444 XYB
