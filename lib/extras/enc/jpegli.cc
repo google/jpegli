@@ -453,11 +453,11 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         cinfo.comp_info[0].v_samp_factor = 2;
 	if (jpeg_settings.xyb) {
 	// Subsample blue channel for XYB.
-	cinfo.comp_info[0].h_samp_factor = 1;
-	cinfo.comp_info[0].v_samp_factor = 2;
-	cinfo.comp_info[1].h_samp_factor = 1;
+	cinfo.comp_info[0].h_samp_factor = 2;
+	cinfo.comp_info[0].v_samp_factor = 1;
+	cinfo.comp_info[1].h_samp_factor = 2;
 	cinfo.comp_info[1].v_samp_factor = 2;
-	cinfo.comp_info[2].h_samp_factor = 1;
+	cinfo.comp_info[2].h_samp_factor = 2;
 	cinfo.comp_info[2].v_samp_factor = 1;
 	}
       } else if (jpeg_settings.chroma_subsampling == "422") {
@@ -466,11 +466,11 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
 	if (jpeg_settings.xyb) {
 	// Subsample blue channel for XYB.
 	cinfo.comp_info[0].h_samp_factor = 2;
-	cinfo.comp_info[0].v_samp_factor = 1;
+	cinfo.comp_info[0].v_samp_factor = 2;
 	cinfo.comp_info[1].h_samp_factor = 2;
-	cinfo.comp_info[1].v_samp_factor = 1;
+	cinfo.comp_info[1].v_samp_factor = 2;
 	cinfo.comp_info[2].h_samp_factor = 1;
-	cinfo.comp_info[2].v_samp_factor = 1;
+	cinfo.comp_info[2].v_samp_factor = 2;
 	}
       } else if (jpeg_settings.chroma_subsampling == "420") {
         cinfo.comp_info[0].h_samp_factor = 2;
