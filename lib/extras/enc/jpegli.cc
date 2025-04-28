@@ -434,17 +434,13 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     }
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
-    float qDistance = jpegli_quality_to_distance(jpeg_settings.quality);
+    // Defaults are set in lib/jpegli/encode.cc#L799
     // All factors need to be specified to subsample the blue channel
     // for XYB. H and V are swapped between YCbCr and XYB.
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
         cinfo.comp_info[0].h_samp_factor = 1;
 	cinfo.comp_info[0].v_samp_factor = 1;
-	cinfo.comp_info[1].h_samp_factor = 1;
-	cinfo.comp_info[1].v_samp_factor = 1;
-	cinfo.comp_info[2].h_samp_factor = 1;
-	cinfo.comp_info[2].v_samp_factor = 1;
       } else if (jpeg_settings.chroma_subsampling == "440") {
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 2;
@@ -481,22 +477,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else {
         return false;
       }
-      if (!jpeg_settings.xyb) {
-	for (int i = 1; i < cinfo.num_components; ++i) {
-        cinfo.comp_info[i].h_samp_factor = 1;
-        cinfo.comp_info[i].v_samp_factor = 1;
-	}
-      }
-    } else if ((jpeg_settings.distance >= 6.4 && colorspace == JCS_YCbCr) ||
-	       (jpeg_settings.quality > 0.0 && qDistance >= 6.4)) {
-        // At low quality, 420 subsampling begins to outperform 444.
-        cinfo.comp_info[0].h_samp_factor = 2;
-        cinfo.comp_info[0].v_samp_factor = 2;
-      } else {
-	// Default to 444 for RGB(XYB) JPEG or medium to high quality.
-        cinfo.comp_info[0].h_samp_factor = 1;
-        cinfo.comp_info[0].v_samp_factor = 1;
-      }
+    }
     jpegli_enable_adaptive_quantization(
         &cinfo, TO_JXL_BOOL(jpeg_settings.use_adaptive_quantization));
     if (jpeg_settings.psnr_target > 0.0) {
