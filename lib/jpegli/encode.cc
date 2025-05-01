@@ -796,7 +796,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     jpeg_component_info* comp = &cinfo->comp_info[c];
     comp->component_index = c;
     comp->component_id = c + 1;
-	// Default is no chroma subsampling.
+    // Default is no chroma subsampling.
     comp->h_samp_factor = 1;
     comp->v_samp_factor = 1;
     comp->quant_tbl_no = 0;
@@ -838,13 +838,13 @@ void jpegli_set_distance(j_compress_ptr cinfo, float distance,
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/true);
   if (distance >= 6.4 && !(cinfo->master->xyb_mode)) {
-	// At low qualities, 420 subsampling begins to outperform 444.
+    // At low qualities, 420 subsampling begins to outperform 444.
     // Therefore it's enabled by default.
     cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     }
   // At quality 100 (distance 0) auto select RGB colorspace.
   // Disable adaptive quantization since it's unnecessary.
-  if (distance < 0.02f) {
+  if (distance < 0.01f && cinfo->in_color_space == JCS_RGB) {
 	  jpegli_set_colorspace(cinfo, JCS_RGB);
 	  cinfo->master->use_adaptive_quantization = false;
   }
@@ -874,13 +874,13 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
   if (distance >= 6.4 && !(cinfo->master->xyb_mode)) {
-	// At low qualities, 420 subsampling begins to outperform 444.
+    // At low qualities, 420 subsampling begins to outperform 444.
     // Therefore it's enabled by default.
     cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     }
   // At quality 100 (distance 0) auto select RGB colorspace.
   // Disable adaptive quantization since it's unnecessary.
-  if (distance < 0.02f) {
+  if (distance < 0.01f && cinfo->in_color_space == JCS_RGB) {
 	  jpegli_set_colorspace(cinfo, JCS_RGB);
 	  cinfo->master->use_adaptive_quantization = false;
   }
