@@ -834,7 +834,7 @@ void jpegli_set_distance(j_compress_ptr cinfo, float distance,
     !cinfo->master->chroma_subsampling_set_by_cli) {
     // At medium qualities, 420 subsampling begins to outperform 444.
 	cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
-    if (cinfo->jpeg_color_space == JCS_YCCK || cinfo->jpeg_color_space == JCS_CMYK) {
+    if (cinfo->jpeg_color_space == JCS_YCCK) {
     cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
   }
@@ -875,7 +875,7 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
     !cinfo->master->chroma_subsampling_set_by_cli) {
     // At medium qualities, 420 subsampling begins to outperform 444.
 	cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
-    if (cinfo->jpeg_color_space == JCS_YCCK || cinfo->jpeg_color_space == JCS_CMYK) {
+    if (cinfo->jpeg_color_space == JCS_YCCK) {
     cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
   }
