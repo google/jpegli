@@ -839,7 +839,7 @@ void jpegli_set_distance(j_compress_ptr cinfo, float distance,
     }
   }
   // Disable adaptive quantization at high qualities.
-  if (distance <= 1.0f) {
+  if (distance <= 1.0f && !(cinfo->master->xyb_mode)) {
       cinfo->master->use_adaptive_quantization = false;
   }
   // At quality 100 (distance 0) auto select RGB colorspace.
@@ -880,7 +880,7 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
     }
   }
   // Disable adaptive quantization at high qualities.
-  if (distance <= 1.0f) {
+  if (distance <= 1.0f && !(cinfo->master->xyb_mode)) {
       cinfo->master->use_adaptive_quantization = false;
   }
   // At quality 100 (distance 0) auto select RGB colorspace.
