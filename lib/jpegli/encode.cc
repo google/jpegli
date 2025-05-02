@@ -823,11 +823,6 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
     cinfo->comp_info[2].quant_tbl_no = 1;
     cinfo->comp_info[1].dc_tbl_no = cinfo->comp_info[1].ac_tbl_no = 1;
     cinfo->comp_info[2].dc_tbl_no = cinfo->comp_info[2].ac_tbl_no = 1;
-    // Use chroma subsampling by default
-    cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
-    if (colorspace == JCS_YCCK) {
-      cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
-    }
   }
 }
 
@@ -835,19 +830,21 @@ void jpegli_set_distance(j_compress_ptr cinfo, float distance,
                          boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
   cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
-  float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
-  jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/true);
-  if (distance >= 6.4 && !(cinfo->master->xyb_mode)) {
-    // At low qualities, 420 subsampling begins to outperform 444.
-    // Therefore it's enabled by default.
+  if (distance >= 1.9f && !(cinfo->master->xyb_mode) &&
+    !cinfo->master->chroma_subsampling_set_by_cli) {
+    // At medium qualities, 420 subsampling begins to outperform 444.
     cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     }
-  // At quality 100 (distance 0) auto select RGB colorspace.
-  // Disable adaptive quantization since it's unnecessary.
-  if (distance < 0.01f && cinfo->in_color_space == JCS_RGB) {
-	  jpegli_set_colorspace(cinfo, JCS_RGB);
-	  cinfo->master->use_adaptive_quantization = false;
+  // Disable adaptive quantization at high qualities.
+  if (distance <= 1.0f) {
+      cinfo->master->use_adaptive_quantization = false;
   }
+  // At quality 100 (distance 0) auto select RGB colorspace.
+  if (distance <= 0.01f && cinfo->in_color_space == JCS_RGB) {
+      jpegli_set_colorspace(cinfo, JCS_RGB);
+  }
+  float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
+  jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/true);
 }
 
 float jpegli_quality_to_distance(int quality) {
@@ -871,19 +868,21 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
   CheckState(cinfo, jpegli::kEncStart);
   cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
   float distance = jpegli_quality_to_distance(quality);
-  float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
-  jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
-  if (distance >= 6.4 && !(cinfo->master->xyb_mode)) {
-    // At low qualities, 420 subsampling begins to outperform 444.
-    // Therefore it's enabled by default.
+  if (distance >= 1.9f && !(cinfo->master->xyb_mode) &&
+    !cinfo->master->chroma_subsampling_set_by_cli) {
+    // At medium qualities, 420 subsampling begins to outperform 444.
     cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     }
-  // At quality 100 (distance 0) auto select RGB colorspace.
-  // Disable adaptive quantization since it's unnecessary.
-  if (distance < 0.01f && cinfo->in_color_space == JCS_RGB) {
-	  jpegli_set_colorspace(cinfo, JCS_RGB);
-	  cinfo->master->use_adaptive_quantization = false;
+  // Disable adaptive quantization at high qualities.
+  if (distance <= 1.0f) {
+      cinfo->master->use_adaptive_quantization = false;
   }
+  // At quality 100 (distance 0) auto select RGB colorspace.
+  if (distance <= 0.01f && cinfo->in_color_space == JCS_RGB) {
+      jpegli_set_colorspace(cinfo, JCS_RGB);
+  }
+  float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
+  jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
 }
 
 void jpegli_set_linear_quality(j_compress_ptr cinfo, int scale_factor,
