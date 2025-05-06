@@ -66,6 +66,6 @@
     ASSERT_TRUE(F) << _.str(); \
   }
 
-#define QUIT(M) FAIL() << M;
+#define QUIT(M) FAIL() << (M);
 
 #endif  // LIB_JXL_BASE_TESTING_H_
