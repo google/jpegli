@@ -784,8 +784,10 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
       JPEGLI_ERROR("Unsupported jpeg colorspace %d", colorspace);
   }
   // Adobe marker is needed to distinguish CMYK, YCCK and RGB(XYB) JPEGs.
-  cinfo->write_Adobe_marker = TO_JXL_BOOL((cinfo->jpeg_color_space == JCS_CMYK ||
-  cinfo->jpeg_color_space == JCS_YCCK || cinfo->jpeg_color_space == JCS_RGB));
+  cinfo->write_Adobe_marker =
+      TO_JXL_BOOL((cinfo->jpeg_color_space == JCS_CMYK ||
+                   cinfo->jpeg_color_space == JCS_YCCK ||
+                   cinfo->jpeg_color_space == JCS_RGB));
   if (cinfo->comp_info == nullptr) {
     cinfo->comp_info =
         jpegli::Allocate<jpeg_component_info>(cinfo, MAX_COMPONENTS);
@@ -831,20 +833,20 @@ void jpegli_set_distance(j_compress_ptr cinfo, float distance,
   CheckState(cinfo, jpegli::kEncStart);
   cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
   if (distance >= 1.9f && !(cinfo->master->xyb_mode) &&
-    !cinfo->master->chroma_subsampling_set_by_cli) {
+      !cinfo->master->chroma_subsampling_set_by_cli) {
     // At medium qualities, 420 subsampling begins to outperform 444.
-	cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
+    cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     if (cinfo->jpeg_color_space == JCS_YCCK) {
-    cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
+      cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
   }
   // Disable adaptive quantization at high qualities.
   if (distance <= 1.0f && !(cinfo->master->xyb_mode)) {
-      cinfo->master->use_adaptive_quantization = false;
+    cinfo->master->use_adaptive_quantization = false;
   }
   // At quality 100 (distance 0) auto select RGB colorspace.
   if (distance <= 0.01f && cinfo->in_color_space == JCS_RGB) {
-      jpegli_set_colorspace(cinfo, JCS_RGB);
+    jpegli_set_colorspace(cinfo, JCS_RGB);
   }
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/true);
@@ -872,20 +874,20 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
   cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
   float distance = jpegli_quality_to_distance(quality);
   if (distance >= 1.9f && !(cinfo->master->xyb_mode) &&
-    !cinfo->master->chroma_subsampling_set_by_cli) {
+      !cinfo->master->chroma_subsampling_set_by_cli) {
     // At medium qualities, 420 subsampling begins to outperform 444.
-	cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
+    cinfo->comp_info[0].h_samp_factor = cinfo->comp_info[0].v_samp_factor = 2;
     if (cinfo->jpeg_color_space == JCS_YCCK) {
-    cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
+      cinfo->comp_info[3].h_samp_factor = cinfo->comp_info[3].v_samp_factor = 2;
     }
   }
   // Disable adaptive quantization at high qualities.
   if (distance <= 1.0f && !(cinfo->master->xyb_mode)) {
-      cinfo->master->use_adaptive_quantization = false;
+    cinfo->master->use_adaptive_quantization = false;
   }
   // At quality 100 (distance 0) auto select RGB colorspace.
   if (distance <= 0.01f && cinfo->in_color_space == JCS_RGB) {
-      jpegli_set_colorspace(cinfo, JCS_RGB);
+    jpegli_set_colorspace(cinfo, JCS_RGB);
   }
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
