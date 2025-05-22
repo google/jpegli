@@ -14,6 +14,7 @@
 #include <string>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/base/types.h"
@@ -114,7 +115,8 @@ std::string ListOfDecodeCodecs() {
 
 Status DecodeBytes(const Span<const uint8_t> bytes,
                    const ColorHints& color_hints, extras::PackedPixelFile* ppf,
-                   const SizeConstraints* constraints, Codec* orig_codec) {
+                   const SizeConstraints* constraints, Codec* orig_codec,
+                   JxlMemoryManager* memory_manager) {
   if (bytes.size() < kMinBytes) return JXL_FAILURE("Too few bytes");
 
   *ppf = extras::PackedPixelFile();
