@@ -116,7 +116,7 @@ std::string ListOfDecodeCodecs() {
 Status DecodeBytes(const Span<const uint8_t> bytes,
                    const ColorHints& color_hints, extras::PackedPixelFile* ppf,
                    const SizeConstraints* constraints, Codec* orig_codec,
-                   JxlMemoryManager* memory_manager) {
+                   JxlMemoryManager* memory_manager, bool coalescing) {
   if (bytes.size() < kMinBytes) return JXL_FAILURE("Too few bytes");
 
   *ppf = extras::PackedPixelFile();
