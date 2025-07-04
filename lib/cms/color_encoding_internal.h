@@ -177,6 +177,7 @@ struct ColorEncoding {
   Status SetICC(IccBytes&& icc, const JxlCmsInterface* cms) {
     JXL_ENSURE(cms != nullptr);
     JXL_ENSURE(!icc.empty());
+    storage_.have_fields = true;
     return storage_.SetFieldsFromICC(std::move(icc), *cms);
   }
 
