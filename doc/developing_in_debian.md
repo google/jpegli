@@ -11,9 +11,7 @@ Apart from the dependencies in `third_party`, some of the tools use external
 dependencies that need to be installed on your system first:
 
 ```bash
-sudo apt install cmake clang doxygen g++ extra-cmake-modules \
-  libgif-dev libjpeg-dev ninja-build libgoogle-perftools-dev \
-  graphviz
+sudo apt install clang cmake doxygen graphviz ninja-build libpng-dev
 ```
 
 Make sure your default `clang` compiler is at least version 6 by running
@@ -22,8 +20,9 @@ Make sure your default `clang` compiler is at least version 6 by running
 clang --version
 ```
 
-If it still shows an old version despite having, for example, `clang-7` installed, you need
-to update the default `clang` compiler. On Debian-based systems run:
+If it still shows an old version despite having, for example, `clang-7`
+installed, you need to update the default `clang` compiler.
+On Debian-based systems run:
 
 ```bash
 sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 100
@@ -34,8 +33,9 @@ Optionally, to compile some of the extra tool support and tests you can install
 the following packages:
 
 ```bash
-sudo apt install qt6-base-dev libwebp-dev libgimp2.0-dev libopenexr-dev \
-  libgtest-dev libbenchmark-dev libbenchmark-tools xdg-utils
+sudo apt install extra-cmake-modules g++ libbenchmark-dev libbenchmark-tools \
+  libgif-dev libgoogle-perftools-dev libgtest-dev libjpeg-dev libopenexr-dev \
+  libwebp-dev qt6-base-dev xdg-utils
 ```
 
 For the lint/coverage commands, you will also need additional packages:
@@ -46,8 +46,8 @@ sudo apt install clang-format clang-tidy curl parallel gcovr
 
 ## Building
 
-The `libjxl` project uses CMake to build. We provide a script that simplifies the
-invocation. To build and test the project, run
+The `libjxl` project uses CMake to build. We provide a script that simplifies
+the invocation. To build and test the project, run
 
 ```bash
 ./ci.sh opt
