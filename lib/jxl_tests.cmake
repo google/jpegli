@@ -6,7 +6,7 @@
 
 include(jxl_lists.cmake)
 
-if(BUILD_TESTING OR JPEGXL_ENABLE_TOOLS)
+if (BUILD_TESTING OR JPEGXL_ENABLE_TOOLS)
 # Library with test-only code shared between all tests / fuzzers.
 add_library(jxl_testlib-internal STATIC ${JPEGXL_INTERNAL_TESTLIB_FILES})
 target_compile_options(jxl_testlib-internal PRIVATE
@@ -25,8 +25,12 @@ target_link_libraries(jxl_testlib-internal
 )
 endif()
 
-if(NOT BUILD_TESTING)
+if (NOT BUILD_TESTING)
   return()
+endif()
+
+if (NOT PNG_FOUND)
+  message(FATAL_ERROR "PNG library is required by some tests")
 endif()
 
 list(APPEND JPEGXL_INTERNAL_TESTS
