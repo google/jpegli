@@ -212,7 +212,7 @@ Status ComputeSumOfSquares(JxlMemoryManager* memory_manager,
         }
       }
       for (size_t j = 0; j < 3; j++) {
-        sum_of_squares[j] += yuvdiff[j] * yuvdiff[j];
+        sum_of_squares[j] += static_cast<double>(yuvdiff[j]) * yuvdiff[j];
       }
     }
   }
