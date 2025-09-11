@@ -136,6 +136,7 @@ libjxl_extras_sources = [
     "extras/memory_manager_internal.h",
     "extras/mmap.cc",
     "extras/mmap.h",
+    "extras/packed_image.cc",
     "extras/packed_image.h",
     "extras/simd_util.cc",
     "extras/simd_util.h",
