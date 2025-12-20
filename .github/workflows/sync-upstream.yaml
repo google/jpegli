@@ -27,32 +27,21 @@ jobs:
       - name: Add upstream remote
         run: |
           git remote add upstream https://github.com/google/jpegli.git
-          git fetch upstream
-          git fetch origin
+          git fetch --no-tags --prune --prune-tags origin
+          git fetch --no-tags --prune --prune-tags upstream
 
-      - name: Build expected tree from upstream/main + fork overrides
+      - name: Compare origin/main with upstream/main (excluding workflows and README)
         run: |
-          # Create a temporary branch from upstream/main
-          git checkout -B tmp-sync upstream/main
+          # Compare the two branches while excluding .github/workflows and README.md
+          # If they are identical (except for those paths), exit successfully.
 
-          # Restore fork-specific files from origin/main (if they exist there)
-          git checkout origin/main -- .github/workflows || echo "No workflows to restore from origin/main"
-          git checkout origin/main -- README.md || echo "No README.md to restore from origin/main"
-
-      - name: Compare with origin/main (excluding workflows and README via overrides)
-        run: |
-          # At this point, HEAD represents the desired state of origin/main:
-          #   - All content from upstream/main
-          #   - But .github/workflows and README.md from origin/main
-          # So a clean diff vs origin/main means we're in sync except for those paths.
-
-          if git diff --quiet origin/main; then
-            echo "Repository is in sync with upstream (excluding .github/workflows and README.md)."
+          if git diff --quiet origin/main upstream/main -- . ':(exclude).github/workflows' ':(exclude)README.md'; then
+            echo "Repository is in sync with upstream google/jpegli (excluding .github/workflows and README.md)."
           else
             echo "::error::Repository is OUT OF SYNC with upstream google/jpegli (excluding .github/workflows and README.md)." 
             echo ""
-            echo "Summary of differences vs origin/main (after applying upstream/main and keeping workflows/README):"
-            git diff --stat origin/main || true
+            echo "Summary of differences between origin/main and upstream/main (excluding .github/workflows and README.md):"
+            git diff --stat origin/main upstream/main -- . ':(exclude).github/workflows' ':(exclude)README.md' || true
             echo ""
             echo "To sync manually, run these commands locally (or in a one-off workflow):"
             echo "  git fetch origin upstream"
