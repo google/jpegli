@@ -1,3 +1,25 @@
+![GitHub Release](https://img.shields.io/github/v/release/dhcgn/jpegli_release?label=Windows%20Release)  
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/sync-upstream.yaml?label=In%20Sync%20with%20github.com%2Fgoogle%2Fjpegli)  
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/release.yaml?label=Windows%20Static%20Build)
+
+
+# About this fork
+
+This repository is a fork of the original jpegli project for two reasons:
+
+1. To provide a functional static build for Windows.
+2. To publish versioned releases.
+
+The upstream repository currently does not provide version tags, so this fork adds
+automation around releases. The workflow `.github/workflows/sync-upstream.yaml`
+checks whether this fork is out of sync with upstream, and when it is, the
+workflow `.github/workflows/release.yaml` is used to build a new version and
+attach the artifacts to a GitHub release.
+
+In addition, only the build pipeline has been adjusted to use `vcpkg` version
+`2025.12.12`, because the previously used version was broken. These changes
+will be reverted once the upstream Google Developers fix their workflow.
+
 # Jpegli: an improved JPEG encoder and decoder implementation
 
 This repository contains a JPEG encoder and decoder implementation that is

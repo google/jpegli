@@ -19,6 +19,9 @@ on:
     branches:
       - main
       - v*.*.x
+    paths-ignore:
+      - '**.md'
+      - 'AUTHORS'
   pull_request:
     types: [opened, reopened, labeled, unlabeled, synchronize]
     paths-ignore:
