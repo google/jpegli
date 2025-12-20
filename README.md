@@ -1,6 +1,6 @@
-![GitHub Release](https://img.shields.io/github/v/release/dhcgn/jpegli_release?label=Windows%20Release)  
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/sync-upstream.yaml?label=In%20Sync%20with%20github.com%2Fgoogle%2Fjpegli)  
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/release.yaml?label=Windows%20Static%20Build)
+[![GitHub Release](https://img.shields.io/github/v/release/dhcgn/jpegli_release?label=Windows%20Release)](https://github.com/dhcgn/jpegli_release/releases)  
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/sync-upstream.yaml?label=In%20Sync%20with%20github.com%2Fgoogle%2Fjpegli)](https://github.com/dhcgn/jpegli_release/actions/workflows/sync-upstream.yaml)  
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dhcgn/jpegli_release/release.yaml?label=Windows%20Static%20Build)](https://github.com/dhcgn/jpegli_release/actions/workflows/release.yaml)
 
 
 # About this fork
