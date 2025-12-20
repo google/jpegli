@@ -1,0 +1,67 @@
+name: Check sync with upstream jpegli
+
+on:
+  schedule:
+    # Runs every day at 03:00 UTC; adjust as needed
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/google/jpegli.git
+          git fetch upstream
+          git fetch origin
+
+      - name: Build expected tree from upstream/main + fork overrides
+        run: |
+          # Create a temporary branch from upstream/main
+          git checkout -B tmp-sync upstream/main
+
+          # Restore fork-specific files from origin/main (if they exist there)
+          git checkout origin/main -- .github/workflows || echo "No workflows to restore from origin/main"
+          git checkout origin/main -- README.md || echo "No README.md to restore from origin/main"
+
+      - name: Compare with origin/main (excluding workflows and README via overrides)
+        run: |
+          # At this point, HEAD represents the desired state of origin/main:
+          #   - All content from upstream/main
+          #   - But .github/workflows and README.md from origin/main
+          # So a clean diff vs origin/main means we're in sync except for those paths.
+
+          if git diff --quiet origin/main; then
+            echo "Repository is in sync with upstream (excluding .github/workflows and README.md)."
+          else
+            echo "::error::Repository is OUT OF SYNC with upstream google/jpegli (excluding .github/workflows and README.md)." 
+            echo ""
+            echo "Summary of differences vs origin/main (after applying upstream/main and keeping workflows/README):"
+            git diff --stat origin/main || true
+            echo ""
+            echo "To sync manually, run these commands locally (or in a one-off workflow):"
+            echo "  git fetch origin upstream"
+            echo "  git checkout -B sync-upstream upstream/main"
+            echo "  git checkout origin/main -- .github/workflows || true"
+            echo "  git checkout origin/main -- README.md || true"
+            echo "  git status"
+            echo "  # If everything looks good:"
+            echo "  git commit -am 'Sync with upstream google/jpegli'"
+            echo "  git push origin sync-upstream:main"
+            exit 1
+          fi
