@@ -250,14 +250,14 @@ jobs:
           - triplet: x64-windows-static
             arch: '-A x64'
             run_benchmark: true
-          - triplet: x86-windows
-            arch: '-A Win32'
-            static: 'OFF'
-            tools: 'OFF'
-          - triplet: x64-windows
-            arch: '-A x64'
-            static: 'OFF'
-            tools: 'OFF'
+          # - triplet: x86-windows
+          #   arch: '-A Win32'
+          #   static: 'OFF'
+          #   tools: 'OFF'
+          # - triplet: x64-windows
+          #   arch: '-A x64'
+          #   static: 'OFF'
+          #   tools: 'OFF'
 
     env:
       VCPKG_VERSION: '2023.12.12'
