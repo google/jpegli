@@ -38,7 +38,7 @@ concurrency:
 jobs:
   ubuntu_static_x86_64:
     name: Release linux x86_64 static
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') && false }}
     runs-on: [ubuntu-latest]
     steps:
     - name: Harden Runner
@@ -114,7 +114,7 @@ jobs:
   # Build .deb packages Ubuntu/Debian
   release_ubuntu_pkg:
     name: .deb packages / ${{ matrix.os }}
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') && false }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
