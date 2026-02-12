@@ -268,6 +268,7 @@ jobs:
       VCPKG_ROOT: vcpkg
       VCPKG_DISABLE_METRICS: 1
       BUILD_TYPE: ${{ matrix.build_type || 'Release' }}
+      PREFIX: ${{matrix.triplet}}
 
     steps:
     - name: Harden Runner
@@ -327,7 +328,7 @@ jobs:
           -DJPEGXL_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
           -DBUILD_TESTING=OFF \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -DCMAKE_INSTALL_PREFIX=`pwd`/prefix \
+          -DCMAKE_INSTALL_PREFIX=`pwd`/${PREFIX} \
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
           -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
           -DJPEGXL_ENABLE_OPENEXR=OFF \
@@ -349,12 +350,12 @@ jobs:
         cmake --build build --config ${{ env.BUILD_TYPE }} --target install
         for pkg in giflib libjpeg-turbo libpng libwebp zlib; do
           cp vcpkg/installed/${{matrix.triplet}}/share/${pkg}/copyright \
-            prefix/bin/LICENSE.${pkg}
+            ${PREFIX}/bin/LICENSE.${pkg}
         done
-        cp third_party/sjpeg/COPYING prefix/bin/LICENSE.sjpeg
-        cp third_party/skcms/LICENSE prefix/bin/LICENSE.skcms
-        cp third_party/highway/LICENSE prefix/bin/LICENSE.highway
-        cp LICENSE prefix/bin/LICENSE.jpegli
+        cp third_party/sjpeg/COPYING ${PREFIX}/bin/LICENSE.sjpeg
+        cp third_party/skcms/LICENSE ${PREFIX}/bin/LICENSE.skcms
+        cp third_party/highway/LICENSE ${PREFIX}/bin/LICENSE.highway
+        cp LICENSE ${PREFIX}/bin/LICENSE.jpegli
 
     - name: Fast benchmark ${{ matrix.triplet }}
       shell: 'bash'
@@ -367,16 +368,47 @@ jobs:
         export PATH=$PATH:`pwd`/build/lib
         BUILD_CONFIG=Release/ BENCHMARK_NUM_THREADS=2 STORE_IMAGES=0 ./ci.sh fast_benchmark
 
-    - name: Package release zip
+    - name: Package release
+      shell: 'bash'
       if: matrix.upload != 'OFF'
-      shell: 'powershell'
       run: |
-        Compress-Archive -Path prefix\bin\*, prefix\lib\* `
-          -DestinationPath jpegli-${{matrix.triplet}}.zip
+        7z -mx a jpegli-${{matrix.triplet}}.7z ${PREFIX}/bin/* ${PREFIX}/lib/*
+        7z -mx a jpegli-${{matrix.triplet}}.zip ${PREFIX}/bin/* ${PREFIX}/lib/*
 
-    - name: Upload release zip
+    - name: Upload release
       if: matrix.upload != 'OFF'
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
-        files: jpegli-${{matrix.triplet}}.zip
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        name: jpegli-${{matrix.triplet}}
+        path: |
+          jpegli-${{matrix.triplet}}.7z
+          jpegli-${{matrix.triplet}}.zip
+        compression-level: 0
+
+
+  publish_release_assets:
+    name: Publish release assets
+    needs: [ubuntu_static_x86_64, release_ubuntu_pkg, windows_build]
+    if: github.event_name == 'release'
+    runs-on: [ubuntu-latest]
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout the source
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        submodules: true
+        fetch-depth: 1
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      with:
+        path: release_assets
+        merge-multiple: true
+
+    - name: Publish assets
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} ./release_assets/*
