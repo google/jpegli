@@ -39,7 +39,7 @@ download_corpus() {
   if [[ ! -d "${localdir}" ]]; then
     mkdir -p "${localdir}"
   fi
-  gsutil -m rsync "${remotedir}" "${localdir}"
+  gcloud storage rsync "${remotedir}" "${localdir}"
 }
 
 create_report() {
@@ -72,7 +72,7 @@ create_report() {
      ${use_decompressed} \
      --originals_url="${originals}" \
      $@
-   gsutil -m rsync "${output_dir}" "${GSROOT}/${bucket}"
+   gcloud storage rsync "${output_dir}" "${GSROOT}/${bucket}"
    echo "You can view evaluation results at:"
    echo "${url}"
   )
@@ -80,7 +80,7 @@ create_report() {
 
 cmd_upload_corpus() {
   local corpus="$1"
-  gsutil -m rsync "${HOME}/corpora/${corpus}" "${GSROOT}/corpora/${corpus}"
+  gcloud storage rsync "${HOME}/corpora/${corpus}" "${GSROOT}/corpora/${corpus}"
 }
 
 cmd_report() {
