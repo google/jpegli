@@ -245,7 +245,7 @@ class PAMEncoder : public BasePNMEncoder {
     for (const auto& info : ec_info) {
       n = snprintf(header + pos, kMaxHeaderSize - pos, "TUPLTYPE %s\n",
                    ExtraChannelTypeName(info.ec_info.type).c_str());
-     if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
+      if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
         return JXL_FAILURE("PNM header is too long");
       }
       pos += n;

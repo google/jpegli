@@ -17,8 +17,6 @@
 #include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
 #include "lib/extras/metrics.h"
-#include "lib/extras/image.h"
-#include "lib/extras/image_ops.h"
 #include "lib/extras/test_image.h"
 #include "lib/extras/test_memory_manager.h"
 #include "lib/extras/test_utils.h"

@@ -439,8 +439,8 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   if (ec_out.empty()) {
     const bool flipped_y = (header.bits_per_sample == 32);  // PFMs are flipped
     if (!flipped_y) {
-    // When there are no EC and input is not flipped we can copy the whole
-    // image at once.
+      // When there are no EC and input is not flipped we can copy the whole
+      // image at once.
       memcpy(out, pos, header.ysize * frame->color.stride);
     } else {
       // Otherwise copy row-by-row.

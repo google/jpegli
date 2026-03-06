@@ -207,7 +207,7 @@ Status ParseTransferFunction(Tokenizer* tokenizer, JxlColorEncoding* c) {
   }
   if (str == "Ado") {
     c->transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
-    c->gamma = 256.0/563.0;
+    c->gamma = 256.0 / 563.0;
     return true;
   }
   if (str[0] == 'g') {
