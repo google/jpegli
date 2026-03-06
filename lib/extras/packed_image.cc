@@ -8,7 +8,6 @@
 
 #include "packed_image.h"
 
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
