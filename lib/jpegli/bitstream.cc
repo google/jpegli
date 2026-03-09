@@ -195,7 +195,7 @@ void EncodeDHT(j_compress_ptr cinfo, size_t offset, size_t num) {
     for (size_t j = 0; j <= kJpegHuffmanMaxBitLength; ++j) {
       marker_len += table.bits[j];
     }
-    // Special case: empty DHT markerAdd commentMore actions
+    // Special case: empty DHT marker
     if (marker_len == 2) break;
     marker_len += kJpegHuffmanMaxBitLength + 1;
   }
