@@ -55,9 +55,9 @@ else ()
     # NB: use `-Rpass-analysis=stack-frame-layout -g` for investigation.
     # TODO(eustas): tighten
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=4352)
+      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=5632)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=5120)
+      list(APPEND JPEGXL_INTERNAL_FLAGS -Wframe-larger-than=5632)
     endif()
   endif()
 
@@ -139,6 +139,11 @@ else ()
   endif()  # WIN32
 endif()  #!MSVC
 
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=109740
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  list(APPEND JPEGXL_INTERNAL_FLAGS -Wno-overloaded-virtual)
+endif()
+
 if (JPEGXL_ENABLE_SKCMS)
   list(APPEND JPEGXL_INTERNAL_FLAGS -DJPEGXL_ENABLE_SKCMS=1)
 endif ()
@@ -208,10 +213,6 @@ include(jpegli.cmake)
 # together at build time.
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/jxl
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-
-if(BUILD_TESTING)
-  include(GoogleTest)
-endif()
 
 # Tests for the jxl library.
 include(jxl_tests.cmake)

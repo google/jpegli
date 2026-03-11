@@ -432,12 +432,12 @@ StatusOr<TestImage::Frame> TestImage::AddFrame() {
 }
 
 void TestImage::CropLayerInfo(size_t xsize, size_t ysize, JxlLayerInfo* info) {
-  if (info->crop_x0 < static_cast<ssize_t>(xsize)) {
+  if (info->crop_x0 < static_cast<ptrdiff_t>(xsize)) {
     info->xsize = std::min<size_t>(info->xsize, xsize - info->crop_x0);
   } else {
     info->xsize = 0;
   }
-  if (info->crop_y0 < static_cast<ssize_t>(ysize)) {
+  if (info->crop_y0 < static_cast<ptrdiff_t>(ysize)) {
     info->ysize = std::min<size_t>(info->ysize, ysize - info->crop_y0);
   } else {
     info->ysize = 0;
