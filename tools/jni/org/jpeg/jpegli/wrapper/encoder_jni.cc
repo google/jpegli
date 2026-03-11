@@ -107,7 +107,7 @@ struct DestinationManager {
   }
 };
 
-typedef std::array<jint, 33> Config;
+using Config = std::array<jint, 33>;
 
 class Encoder {
  public:
@@ -260,7 +260,7 @@ const JNINativeMethod kEncoderMethods[] = {
      reinterpret_cast<void*>(
          Java_org_jpeg_jpegli_wrapper_Encoder_nativeEncode)}};
 
-static const size_t kNumEncoderMethods = 1;
+const size_t kNumEncoderMethods = 1;
 
 }  // namespace
 

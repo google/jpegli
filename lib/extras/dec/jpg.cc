@@ -31,7 +31,6 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
 #else  // JPEGXL_ENABLE_JPEG
 
 #include <algorithm>
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <numeric>

@@ -67,7 +67,6 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 #include <cstdint>
 #include <cstring>
 #include <limits>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -461,24 +460,21 @@ constexpr uint32_t MakeTag(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 /** Reusable image data container. */
 struct Pixels {
   // Use array instead of vector to avoid memory initialization.
-  std::unique_ptr<uint8_t[]> pixels;
+  uninitialized_vector<uint8_t> pixels_storage =
+      jxl::make_uninitialized_vector<uint8_t>(0);
   size_t pixels_size = 0;
   std::vector<uint8_t*> rows;
-  std::atomic<bool> has_error{false};
+  std::atomic<uint32_t> has_error{0};
 
   Status Resize(size_t row_bytes, size_t num_rows) {
     size_t new_size = row_bytes * num_rows;  // it is assumed size is sane
     if (new_size > pixels_size) {
-      pixels.reset(new uint8_t[new_size]);
-      if (!pixels) {
-        // TODO(szabadka): use specialized OOM error code
-        return JXL_FAILURE("Failed to allocate memory for image buffer");
-      }
+      pixels_storage.resize(new_size);
       pixels_size = new_size;
     }
     rows.resize(num_rows);
     for (size_t y = 0; y < num_rows; y++) {
-      rows[y] = pixels.get() + y * row_bytes;
+      rows[y] = pixels_storage.data() + y * row_bytes;
     }
     return true;
   }
@@ -543,7 +539,7 @@ void ProgressiveRead_OnRow(png_structp png_ptr, png_bytep new_row,
     return;
   }
   if (row_num >= frame->rows.size()) {
-    frame->has_error = true;
+    frame->has_error = 1;
     return;
   }
   png_progressive_combine_row(png_ptr, frame->rows[row_num], new_row);

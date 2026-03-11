@@ -105,7 +105,7 @@ class RowBuffer {
     data_ = ::jpegli::Allocate<T>(cinfo, ysize_ * stride_, JPOOL_IMAGE_ALIGNED);
   }
 
-  T* Row(ssize_t y) const {
+  T* Row(ptrdiff_t y) const {
     return &data_[((ysize_ + y) % ysize_) * stride_ + offset_];
   }
 
@@ -124,12 +124,12 @@ class RowBuffer {
     }
   }
 
-  void CopyRow(ssize_t dst_row, ssize_t src_row, int border) {
+  void CopyRow(ptrdiff_t dst_row, ptrdiff_t src_row, int border) {
     memcpy(Row(dst_row) - border, Row(src_row) - border,
            (xsize_ + 2 * border) * sizeof(T));
   }
 
-  void FillRow(ssize_t y, T val, size_t len) {
+  void FillRow(ptrdiff_t y, T val, size_t len) {
     T* row = Row(y);
     for (size_t x = 0; x < len; ++x) {
       row[x] = val;

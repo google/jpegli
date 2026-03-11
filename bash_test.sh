@@ -106,13 +106,21 @@ test_printf_size_t() {
       "'%\" PRIuS \"' or '%\" PRIdS \"'." >&2
     ret=1
   fi
+  return ${ret}
+}
 
+test_no_include_gtest() {
+  local ret=0
   if grep -n -E '[^_]gtest\.h' \
       $(git ls-files | grep -E '(\.c|\.cc|\.cpp|\.h)$' | grep -v -F /testing.h); then
     echo "Don't include gtest directly, instead include 'testing.h'. " >&2
     ret=1
   fi
+  return ${ret}
+}
 
+test_include_printf_macros() {
+  local ret=0
   local f
   for f in $(git ls-files | grep -E "\.cc$" | xargs grep 'PRI[udx]S' |
       cut -f 1 -d : | uniq); do
@@ -125,7 +133,11 @@ test_printf_size_t() {
       ret=1
     fi
   done
+  return ${ret}
+}
 
+test_no_priudxs_in_headers() {
+  local ret=0
   for f in $(git ls-files | grep -E "\.h$" | grep -v -E '(printf_macros\.h|testing\.h)' |
       xargs grep -n 'PRI[udx]S'); do
     # Having PRIuS / PRIdS in a header file means that printf_macros.h may
@@ -134,7 +146,6 @@ test_printf_size_t() {
     echo "$f: Don't use PRI.S in header files. Sorry."
     ret=1
   done
-
   return ${ret}
 }
 

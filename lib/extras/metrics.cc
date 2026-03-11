@@ -123,7 +123,7 @@ StatusOr<double> ComputeDistanceP(const ImageF& distmap,
     v /= 3.0;
     return v;
   } else {
-    static std::atomic<int> once{0};
+    static std::atomic<uint32_t> once{0};
     if (once.fetch_add(1, std::memory_order_relaxed) == 0) {
       JXL_WARNING("WARNING: using slow ComputeDistanceP");
     }
@@ -212,7 +212,7 @@ Status ComputeSumOfSquares(JxlMemoryManager* memory_manager,
         }
       }
       for (size_t j = 0; j < 3; j++) {
-        sum_of_squares[j] += yuvdiff[j] * yuvdiff[j];
+        sum_of_squares[j] += static_cast<double>(yuvdiff[j]) * yuvdiff[j];
       }
     }
   }
