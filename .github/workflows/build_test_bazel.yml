@@ -46,8 +46,8 @@ jobs:
         run: |
           cd third_party/highway
           # TODO(eustas): stick to deps.sh commit
-          git fetch origin 457c891775a7397bdb0376bb1031e6e027af1c48
-          git checkout 457c891775a7397bdb0376bb1031e6e027af1c48
+          git fetch origin 271a9a0ed9de1232d9117f1572c3fe28f8542ec1
+          git checkout 271a9a0ed9de1232d9117f1572c3fe28f8542ec1
           git apply ${{ github.workspace }}/.github/workflows/highway.patch
       - name: Build
         run: bazel build -c opt ...:all
