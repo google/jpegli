@@ -119,7 +119,7 @@ jobs:
         echo "CC=${{ matrix.c_compiler || 'clang-11' }}" >> $GITHUB_ENV
         echo "CXX=${{ matrix.cxx_compiler || 'clang++-11' }}" >> $GITHUB_ENV
     - name: Checkout the source
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         submodules: true
         fetch-depth: 1
@@ -133,7 +133,7 @@ jobs:
         SKIP_BUILD: 1
         BUILD_TARGET: ${{ matrix.build_target }}
     - name: Setup tmate session
-      uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # v3.19
+      uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3.23
       timeout-minutes: 15
 
 
