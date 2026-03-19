@@ -6,6 +6,9 @@
 
 // Transfer functions for color encodings.
 
+#include <cstdint>
+
+#include "lib/base/common.h"
 #if defined(LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
 #undef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
@@ -13,14 +16,12 @@
 #define LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
 #endif
 
-#include <algorithm>
 #include <cmath>
 #include <hwy/highway.h>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/fast_math-inl.h"
 #include "lib/base/rational_polynomial-inl.h"
-#include "lib/base/status.h"
 #include "lib/cms/transfer_functions.h"
 
 HWY_BEFORE_NAMESPACE();
@@ -59,13 +60,38 @@ class TF_HLG : TF_HLG_Base {
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
     x = AndNot(kSign, x);  // abs
-    const V below_div12 = Sqrt(Mul(Set(d, 3.0f), x));
-    const V e =
-        MulAdd(Set(d, kA * 0.693147181f),
+    const auto belowInv12 = Le(x, Set(d, kInv12));
+    const V lo = Sqrt(Mul(Set(d, k3), x));
+    const V hi =
+        MulAdd(Set(d, kA * kInvLog2e),
                FastLog2f(d, MulAdd(Set(d, 12), x, Set(d, -kB))), Set(d, kC));
-    const V magnitude = IfThenElse(Le(x, Set(d, kDiv12)), below_div12, e);
+    const V magnitude = IfThenElse(belowInv12, lo, hi);
     return Or(AndNot(kSign, magnitude), original_sign);
   }
+
+  template <class D, class V>
+  JXL_INLINE V DisplayFromEncoded(D d, V x) const {
+    const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
+    const V kSign = BitCast(d, Set(du, 0x80000000u));
+    const V original_sign = And(x, kSign);
+    x = AndNot(kSign, x);  // abs
+    const auto below05 = Le(x, Set(d, k05));
+    const V lo = Mul(x, Mul(x, Set(d, kInv3)));
+    const V hi = MulAdd(FastPow2f(d, Mul(x, Set(d, kHiPow))), Set(d, kHiMul),
+                        Set(d, kHiAdd));
+    const V magnitude = IfThenElse(below05, lo, hi);
+    return Or(AndNot(kSign, magnitude), original_sign);
+  }
+
+ private:
+  static constexpr double k05 = 0.5;
+  static constexpr double k3 = 3.0;
+  static constexpr double kInv3 = 1.0 / 3.0;
+  static constexpr double kHiAdd = kB * kInv12;
+  // std::exp(-kC * kRA) * kInv12;
+  static constexpr double kHiMul = 0.003639807079052639;
+  // kRA * std::log2e_v
+  static constexpr double kHiPow = 8.067285659607931;
 };
 
 class TF_709 {
@@ -200,20 +226,14 @@ class TF_SRGB {
     // TODO(janwas): range reduction
     // Computed via af_cheb_rational (k=100); replicated 4x.
     HWY_ALIGN constexpr float p[(4 + 1) * 4] = {
-        2.200248328e-04f, 2.200248328e-04f, 2.200248328e-04f, 2.200248328e-04f,
-        1.043637593e-02f, 1.043637593e-02f, 1.043637593e-02f, 1.043637593e-02f,
-        1.624820318e-01f, 1.624820318e-01f, 1.624820318e-01f, 1.624820318e-01f,
-        7.961564959e-01f, 7.961564959e-01f, 7.961564959e-01f, 7.961564959e-01f,
-        8.210152774e-01f, 8.210152774e-01f, 8.210152774e-01f, 8.210152774e-01f,
+        HWY_REP4(2.200248328e-04f), HWY_REP4(1.043637593e-02f),
+        HWY_REP4(1.624820318e-01f), HWY_REP4(7.961564959e-01f),
+        HWY_REP4(8.210152774e-01f),
     };
     HWY_ALIGN constexpr float q[(4 + 1) * 4] = {
-        2.631846970e-01f,  2.631846970e-01f,  2.631846970e-01f,
-        2.631846970e-01f,  1.076976492e+00f,  1.076976492e+00f,
-        1.076976492e+00f,  1.076976492e+00f,  4.987528350e-01f,
-        4.987528350e-01f,  4.987528350e-01f,  4.987528350e-01f,
-        -5.512498495e-02f, -5.512498495e-02f, -5.512498495e-02f,
-        -5.512498495e-02f, 6.521209011e-03f,  6.521209011e-03f,
-        6.521209011e-03f,  6.521209011e-03f,
+        HWY_REP4(2.631846970e-01f), HWY_REP4(1.076976492e+00f),
+        HWY_REP4(4.987528350e-01f), HWY_REP4(-5.512498495e-02f),
+        HWY_REP4(6.521209011e-03f),
     };
     const V linear = Mul(x, Set(d, kLowDivInv));
     const V poly = EvalRationalPolynomial(d, x, p, q);
@@ -232,20 +252,14 @@ class TF_SRGB {
 
     // Computed via af_cheb_rational (k=100); replicated 4x.
     HWY_ALIGN constexpr float p[(4 + 1) * 4] = {
-        -5.135152395e-04f, -5.135152395e-04f, -5.135152395e-04f,
-        -5.135152395e-04f, 5.287254571e-03f,  5.287254571e-03f,
-        5.287254571e-03f,  5.287254571e-03f,  3.903842876e-01f,
-        3.903842876e-01f,  3.903842876e-01f,  3.903842876e-01f,
-        1.474205315e+00f,  1.474205315e+00f,  1.474205315e+00f,
-        1.474205315e+00f,  7.352629620e-01f,  7.352629620e-01f,
-        7.352629620e-01f,  7.352629620e-01f,
+        HWY_REP4(-5.135152395e-04f), HWY_REP4(5.287254571e-03f),
+        HWY_REP4(3.903842876e-01f),  HWY_REP4(1.474205315e+00f),
+        HWY_REP4(7.352629620e-01f),
     };
     HWY_ALIGN constexpr float q[(4 + 1) * 4] = {
-        1.004519624e-02f, 1.004519624e-02f, 1.004519624e-02f, 1.004519624e-02f,
-        3.036675394e-01f, 3.036675394e-01f, 3.036675394e-01f, 3.036675394e-01f,
-        1.340816930e+00f, 1.340816930e+00f, 1.340816930e+00f, 1.340816930e+00f,
-        9.258482155e-01f, 9.258482155e-01f, 9.258482155e-01f, 9.258482155e-01f,
-        2.424867759e-02f, 2.424867759e-02f, 2.424867759e-02f, 2.424867759e-02f,
+        HWY_REP4(1.004519624e-02f), HWY_REP4(3.036675394e-01f),
+        HWY_REP4(1.340816930e+00f), HWY_REP4(9.258482155e-01f),
+        HWY_REP4(2.424867759e-02f),
     };
     const V linear = Mul(x, Set(d, kLowDiv));
     const V poly = EvalRationalPolynomial(d, Sqrt(x), p, q);

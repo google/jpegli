@@ -8,15 +8,13 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
 
-#include "lib/base/byte_order.h"
-#include "lib/base/status.h"
-#include "lib/jpegli/adaptive_quantization.h"
 #include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jpegli/memory_manager.h"
 
 namespace jpegli {
 
@@ -650,7 +648,9 @@ void SetQuantMatrices(j_compress_ptr cinfo, float distances[NUM_QUANT_TBLS],
     base_quant_matrix[0] = kBaseQuantMatrixXYB;
     base_quant_matrix[1] = kBaseQuantMatrixXYB + DCTSIZE2;
     base_quant_matrix[2] = kBaseQuantMatrixXYB + 2 * DCTSIZE2;
-  } else if (cinfo->jpeg_color_space == JCS_YCbCr && !m->use_std_tables) {
+  } else if ((cinfo->jpeg_color_space == JCS_YCbCr ||
+              cinfo->jpeg_color_space == JCS_GRAYSCALE) &&
+             !m->use_std_tables) {
     global_scale = kGlobalScaleYCbCr;
     if (m->cicp_transfer_function == kTransferFunctionPQ) {
       global_scale *= .4f;
@@ -706,7 +706,7 @@ void SetQuantMatrices(j_compress_ptr cinfo, float distances[NUM_QUANT_TBLS],
 
 void InitQuantizer(j_compress_ptr cinfo, QuantPass pass) {
   jpeg_comp_master* m = cinfo->master;
-  // Compute quantization multupliers from the quant table values.
+  // Compute quantization multipliers from the quant table values.
   for (int c = 0; c < cinfo->num_components; ++c) {
     int quant_idx = cinfo->comp_info[c].quant_tbl_no;
     JQUANT_TBL* quant_table = cinfo->quant_tbl_ptrs[quant_idx];

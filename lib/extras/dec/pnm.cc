@@ -6,15 +6,22 @@
 
 #include "lib/extras/dec/pnm.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
+#include <vector>
 
 #include "lib/base/bits.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
 namespace jxl {
@@ -34,6 +41,15 @@ class Parser {
     pos_ += 2;
 
     switch (type) {
+      case '1':
+        return JXL_FAILURE("ascii pbm not supported");
+
+      case '2':
+        return JXL_FAILURE("ascii pgm not supported");
+
+      case '3':
+        return JXL_FAILURE("ascii ppm not supported");
+
       case '4':
         return JXL_FAILURE("pbm not supported");
 
@@ -225,6 +241,10 @@ class Parser {
           header->ec_types.push_back(JXL_CHANNEL_CFA);
         } else if (MatchString("Thermal")) {
           header->ec_types.push_back(JXL_CHANNEL_THERMAL);
+        } else if (MatchString("Unknown")) {
+          header->ec_types.push_back(JXL_CHANNEL_UNKNOWN);
+        } else if (MatchString("Optional")) {
+          header->ec_types.push_back(JXL_CHANNEL_OPTIONAL);
         } else {
           return JXL_FAILURE("PAM: unknown TUPLTYPE");
         }
@@ -313,10 +333,6 @@ class Parser {
   const uint8_t* const end_;
 };
 
-Span<const uint8_t> MakeSpan(const char* str) {
-  return Bytes(reinterpret_cast<const uint8_t*>(str), strlen(str));
-}
-
 }  // namespace
 
 Status DecodeImagePNM(const Span<const uint8_t> bytes,
@@ -361,7 +377,7 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   ppf->info.num_extra_channels = num_alpha_channels + header.ec_types.size();
 
   for (auto type : header.ec_types) {
-    PackedExtraChannel pec;
+    PackedExtraChannel pec = {};
     pec.ec_info.bits_per_sample = ppf->info.bits_per_sample;
     pec.ec_info.type = type;
     ppf->extra_channels_info.emplace_back(std::move(pec));
@@ -379,13 +395,26 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
     }
   }
 
+  // No align - pixels are tightly packed.
+  constexpr size_t kAlign = 0;
+  size_t twidth = PackedImage::BitsPerChannel(data_type) / 8;
   const JxlPixelFormat format{
       /*num_channels=*/num_interleaved_channels,
       /*data_type=*/data_type,
       /*endianness=*/header.big_endian ? JXL_BIG_ENDIAN : JXL_LITTLE_ENDIAN,
-      /*align=*/0,
+      kAlign,
   };
-  const JxlPixelFormat ec_format{1, format.data_type, format.endianness, 0};
+  // EC format is same as color, but 1-channel.
+  JxlPixelFormat ec_format = format;
+  ec_format.num_channels = 1;
+  size_t required_pnm_size =
+      header.ysize * header.xsize *
+      (num_interleaved_channels + header.ec_types.size()) * twidth;
+  size_t pnm_remaining_size = bytes.data() + bytes.size() - pos;
+  if (pnm_remaining_size < required_pnm_size) {
+    return JXL_FAILURE("PNM file too small");
+  }
+
   ppf->frames.clear();
   {
     JXL_ASSIGN_OR_RETURN(
@@ -394,41 +423,47 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
     ppf->frames.emplace_back(std::move(frame));
   }
   auto* frame = &ppf->frames.back();
+  uint8_t* out = reinterpret_cast<uint8_t*>(frame->color.pixels());
+  std::vector<uint8_t*> ec_out;
   for (size_t i = 0; i < header.ec_types.size(); ++i) {
     JXL_ASSIGN_OR_RETURN(
         PackedImage ec,
         PackedImage::Create(header.xsize, header.ysize, ec_format));
     frame->extra_channels.emplace_back(std::move(ec));
+    ec_out.emplace_back(
+        reinterpret_cast<uint8_t*>(frame->extra_channels.back().pixels()));
+    JXL_DASSERT(frame->extra_channels.back().stride == header.xsize * twidth);
   }
-  size_t pnm_remaining_size = bytes.data() + bytes.size() - pos;
-  if (pnm_remaining_size < frame->color.pixels_size) {
-    return JXL_FAILURE("PNM file too small");
-  }
-
-  uint8_t* out = reinterpret_cast<uint8_t*>(frame->color.pixels());
-  std::vector<uint8_t*> ec_out(header.ec_types.size());
-  for (size_t i = 0; i < ec_out.size(); ++i) {
-    ec_out[i] = reinterpret_cast<uint8_t*>(frame->extra_channels[i].pixels());
-  }
+  JXL_DASSERT(frame->color.stride ==
+              header.xsize * num_interleaved_channels * twidth);
   if (ec_out.empty()) {
-    const bool flipped_y = header.bits_per_sample == 32;  // PFMs are flipped
-    for (size_t y = 0; y < header.ysize; ++y) {
-      size_t y_in = flipped_y ? header.ysize - 1 - y : y;
-      const uint8_t* row_in = &pos[y_in * frame->color.stride];
-      uint8_t* row_out = &out[y * frame->color.stride];
-      memcpy(row_out, row_in, frame->color.stride);
+    const bool flipped_y = (header.bits_per_sample == 32);  // PFMs are flipped
+    if (!flipped_y) {
+      // When there are no EC and input is not flipped we can copy the whole
+      // image at once.
+      memcpy(out, pos, header.ysize * frame->color.stride);
+    } else {
+      // Otherwise copy row-by-row.
+      for (size_t y = 0; y < header.ysize; ++y) {
+        size_t y_out = header.ysize - 1 - y;
+        const uint8_t* row_in = pos + y * frame->color.stride;
+        uint8_t* row_out = out + y_out * frame->color.stride;
+        memcpy(row_out, row_in, frame->color.stride);
+      }
     }
   } else {
-    size_t pwidth = PackedImage::BitsPerChannel(data_type) / 8;
+    // In case there are EC, we have to deinterleave data pixel-wise.
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(data_type));
+    size_t color_stride = twidth * num_interleaved_channels;
     for (size_t y = 0; y < header.ysize; ++y) {
       for (size_t x = 0; x < header.xsize; ++x) {
         memcpy(out, pos, frame->color.pixel_stride());
-        out += frame->color.pixel_stride();
-        pos += frame->color.pixel_stride();
+        out += color_stride;
+        pos += color_stride;
         for (auto& p : ec_out) {
-          memcpy(p, pos, pwidth);
-          pos += pwidth;
-          p += pwidth;
+          memcpy(p, pos, twidth);
+          pos += twidth;
+          p += twidth;
         }
       }
     }
@@ -439,39 +474,13 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   return true;
 }
 
-void TestCodecPNM() {
-  size_t u = 77777;  // Initialized to wrong value.
-  double d = 77.77;
-// Failing to parse invalid strings results in a crash if `JXL_CRASH_ON_ERROR`
-// is defined and hence the tests fail. Therefore we only run these tests if
-// `JXL_CRASH_ON_ERROR` is not defined.
-#ifndef JXL_CRASH_ON_ERROR
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseUnsigned(&u));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseUnsigned(&u));
+// Exposed for testing.
+Status PnmParseSigned(Bytes str, double* v) {
+  return Parser(str).ParseSigned(v);
+}
 
-  JXL_CHECK(false == Parser(MakeSpan("")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("+")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("-")).ParseSigned(&d));
-  JXL_CHECK(false == Parser(MakeSpan("A")).ParseSigned(&d));
-#endif
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseUnsigned(&u));
-  JXL_CHECK(u == 1);
-
-  JXL_CHECK(true == Parser(MakeSpan("32")).ParseUnsigned(&u));
-  JXL_CHECK(u == 32);
-
-  JXL_CHECK(true == Parser(MakeSpan("1")).ParseSigned(&d));
-  JXL_CHECK(d == 1.0);
-  JXL_CHECK(true == Parser(MakeSpan("+2")).ParseSigned(&d));
-  JXL_CHECK(d == 2.0);
-  JXL_CHECK(true == Parser(MakeSpan("-3")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.0) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - 3.141592) < 1E-15);
-  JXL_CHECK(true == Parser(MakeSpan("-3.141592")).ParseSigned(&d));
-  JXL_CHECK(std::abs(d - -3.141592) < 1E-15);
+Status PnmParseUnsigned(Bytes str, size_t* v) {
+  return Parser(str).ParseUnsigned(v);
 }
 
 }  // namespace extras

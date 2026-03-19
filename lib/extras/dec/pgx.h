@@ -9,20 +9,19 @@
 
 // Decodes PGX pixels in memory.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 
-#include "lib/base/data_parallel.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
-#include "lib/extras/dec/color_hints.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 
 struct SizeConstraints;
 
 namespace extras {
+
+class ColorHints;
+class PackedPixelFile;
 
 // Decodes `bytes` into `ppf`.
 Status DecodeImagePGX(Span<const uint8_t> bytes, const ColorHints& color_hints,

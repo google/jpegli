@@ -14,7 +14,7 @@
 #include "lib/base/types.h"
 #include "lib/cms/color_encoding.h"
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -237,7 +237,7 @@ typedef struct {
   jpegxl_cms_destroy_func destroy;
 } JxlCmsInterface;
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 }
 #endif
 

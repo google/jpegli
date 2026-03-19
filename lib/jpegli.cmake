@@ -46,8 +46,6 @@ target_compile_options(jpegli-static PUBLIC ${JPEGXL_COVERAGE_FLAGS})
 set_property(TARGET jpegli-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(jpegli-static PRIVATE
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   "${JXL_HWY_INCLUDE_DIRS}"
 )
 target_include_directories(jpegli-static PUBLIC
@@ -98,8 +96,8 @@ foreach (TESTFILE IN LISTS JPEGXL_INTERNAL_JPEGLI_TESTS)
   target_link_libraries(${TESTNAME}
     hwy
     jpegli-static
-    GTest::GTest
-    GTest::Main
+    gtest
+    gtest_main
     ${JPEG_LIBRARIES}
   )
   set_target_properties(${TESTNAME} PROPERTIES LINK_FLAGS "${JPEGXL_COVERAGE_LINK_FLAGS}")

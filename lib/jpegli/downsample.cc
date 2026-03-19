@@ -6,6 +6,12 @@
 
 #include "lib/jpegli/downsample.h"
 
+#include <cstddef>
+#include <cstdio>
+
+#include "lib/base/compiler_specific.h"
+#include "lib/jpegli/common.h"
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/downsample.cc"
 #include <hwy/foreach_target.h>
@@ -296,13 +302,14 @@ void DownsampleInputBuffer(j_compress_ptr cinfo) {
     }
     auto& input = *m->smooth_input[c];
     auto& output = *m->raw_data[c];
-    const size_t yout0 = y0 / v_factor;
+    const size_t y_out0 = y0 / v_factor;
     float* rows_in[MAX_SAMP_FACTOR];
-    for (size_t yin = y0, yout = yout0; yin < y1; yin += v_factor, ++yout) {
+    for (size_t y_in = y0, y_out = y_out0; y_in < y1;
+         y_in += v_factor, ++y_out) {
       for (int iy = 0; iy < v_factor; ++iy) {
-        rows_in[iy] = input.Row(yin + iy);
+        rows_in[iy] = input.Row(y_in + iy);
       }
-      float* row_out = output.Row(yout);
+      float* row_out = output.Row(y_out);
       (*m->downsample_method[c])(rows_in, xsize_padded, row_out);
     }
   }
@@ -316,9 +323,9 @@ void ApplyInputSmoothing(j_compress_ptr cinfo) {
   const float kW1 = cinfo->smoothing_factor / 1024.0;
   const float kW0 = 1.0f - 8.0f * kW1;
   const size_t iMCU_height = DCTSIZE * cinfo->max_v_samp_factor;
-  const ssize_t y0 = m->next_iMCU_row * iMCU_height;
-  const ssize_t y1 = y0 + iMCU_height;
-  const ssize_t xsize_padded = m->xsize_blocks * DCTSIZE;
+  const ptrdiff_t y0 = m->next_iMCU_row * iMCU_height;
+  const ptrdiff_t y1 = y0 + iMCU_height;
+  const ptrdiff_t xsize_padded = m->xsize_blocks * DCTSIZE;
   for (int c = 0; c < cinfo->num_components; c++) {
     auto& input = m->input_buffer[c];
     auto& output = *m->smooth_input[c];
@@ -330,12 +337,12 @@ void ApplyInputSmoothing(j_compress_ptr cinfo) {
       input.CopyRow(last_row + 1, last_row, 1);
     }
     // TODO(szabadka) SIMDify this.
-    for (ssize_t y = y0; y < y1; ++y) {
+    for (ptrdiff_t y = y0; y < y1; ++y) {
       const float* row_t = input.Row(y - 1);
       const float* row_m = input.Row(y);
       const float* row_b = input.Row(y + 1);
       float* row_out = output.Row(y);
-      for (ssize_t x = 0; x < xsize_padded; ++x) {
+      for (ptrdiff_t x = 0; x < xsize_padded; ++x) {
         float val_tl = row_t[x - 1];
         float val_tm = row_t[x];
         float val_tr = row_t[x + 1];

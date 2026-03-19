@@ -6,13 +6,18 @@
 
 #include "lib/jpegli/encode_streaming.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
-#include "lib/base/bits.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/bit_writer.h"
 #include "lib/jpegli/bitstream.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
+#include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/entropy_coding.h"
-#include "lib/jpegli/error.h"
 #include "lib/jpegli/memory_manager.h"
 
 #undef HWY_TARGET_INCLUDE
@@ -109,20 +114,20 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
   JpegBitWriter* bw = &m->bw;
   int xsize_mcus = DivCeil(cinfo->image_width, 8 * cinfo->max_h_samp_factor);
   int ysize_mcus = DivCeil(cinfo->image_height, 8 * cinfo->max_v_samp_factor);
-  int mcu_y = m->next_iMCU_row;
+  size_t mcu_y = m->next_iMCU_row;
   int32_t* block = m->block_tmp;
   int32_t* symbols = m->block_tmp + DCTSIZE2;
   int32_t* nonzero_idx = m->block_tmp + 3 * DCTSIZE2;
   coeff_t* JXL_RESTRICT last_dc_coeff = m->last_dc_coeff;
   bool adaptive_quant = m->use_adaptive_quantization && m->psnr_target == 0;
-  JBLOCKARRAY ba[kMaxComponents];
+  JBLOCKARRAY blocks[kMaxComponents];
   if (kMode == kStreamingModeCoefficients) {
     for (int c = 0; c < cinfo->num_components; ++c) {
       jpeg_component_info* comp = &cinfo->comp_info[c];
       int by0 = mcu_y * comp->v_samp_factor;
       int block_rows_left = comp->height_in_blocks - by0;
       int max_block_rows = std::min(comp->v_samp_factor, block_rows_left);
-      ba[c] = (*cinfo->mem->access_virt_barray)(
+      blocks[c] = (*cinfo->mem->access_virt_barray)(
           reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[c], by0,
           max_block_rows, true);
     }
@@ -190,7 +195,7 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
                                   aq_strength, zero_bias_offset, zero_bias_mul,
                                   m->dct_buffer, block);
           if (kMode == kStreamingModeCoefficients) {
-            JCOEF* cblock = &ba[c][iy][bx][0];
+            JCOEF* cblock = &blocks[c][iy][bx][0];
             for (int k = 0; k < DCTSIZE2; ++k) {
               cblock[k] = block[kJPEGNaturalOrder[k]];
             }

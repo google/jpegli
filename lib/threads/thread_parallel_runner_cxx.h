@@ -22,7 +22,7 @@
 #include "lib/base/memory_manager.h"
 #include "lib/threads/thread_parallel_runner.h"
 
-#if !(defined(__cplusplus) || defined(c_plusplus))
+#ifndef __cplusplus
 #error \
     "This a C++ only header. Use jxl/jxl_thread_parallel_runner.h from C" \
     "sources."

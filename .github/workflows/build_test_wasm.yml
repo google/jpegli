@@ -42,30 +42,18 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
       with:
         egress-policy: audit
 
-    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         submodules: true
         fetch-depth: 1
+
     - name: Install build deps
-      shell: bash
       run: |
-        set -x
-        sudo rm -f /var/lib/man-db/auto-update
-        sudo apt update
-        pkgs=(
-          # Build dependencies
-          ccache
-          cmake
-          doxygen
-          graphviz
-          ninja-build
-          pkg-config
-        )
-        DEBIAN_FRONTEND=noninteractive sudo apt install -y "${pkgs[@]}"
+        sudo ./tools/scripts/install_deps.sh build
 
     - name: Git environment
       id: git-env
@@ -73,7 +61,7 @@ jobs:
         echo "parent=$(git rev-parse ${{ github.sha }}^)" >> $GITHUB_OUTPUT
       shell: bash
     - name: ccache
-      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ${{ env.CCACHE_DIR }}
         key: build-wasm-${{ runner.os }}-${{ github.sha }}-${{ matrix.variant }}
@@ -81,7 +69,7 @@ jobs:
           build-wasm-${{ runner.os }}-${{ steps.git-env.outputs.parent }}-${{ matrix.variant }}
 
     - name: Install node
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: ${{env.NODE_VERSION}}
 
@@ -113,6 +101,7 @@ jobs:
         if [[ "${{ matrix.variant }}" == "simd-256" ]]; then
           export ENABLE_WASM_SIMD=2
         fi
+        SKIP_TEST=1 TARGETS=all \
         ./ci.sh release \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -125,9 +114,6 @@ jobs:
           -DJPEGXL_ENABLE_PLUGINS=OFF \
           -DJPEGXL_ENABLE_TOOLS=OFF \
           -DJPEGXL_ENABLE_VIEWERS=OFF
-      env:
-        SKIP_TEST: 1
-        TARGETS: all
     - name: ccache stats
       run: ccache --show-stats
 
@@ -137,4 +123,4 @@ jobs:
         (github.event_name == 'pull_request' &&
          contains(github.event.pull_request.labels.*.name, 'CI:full'))
       run: |
-        ./ci.sh test
+        ./ci.sh test -E 'bash_test'

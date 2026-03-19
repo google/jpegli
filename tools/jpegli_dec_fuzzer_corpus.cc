@@ -5,16 +5,21 @@
 // https://developers.google.com/open-source/licenses/bsd
 
 #include <setjmp.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <thread>
+#include <utility>
+
+#include "lib/base/status.h"
 #if defined(_WIN32) || defined(_WIN64)
 #include "third_party/dirent.h"
 #else
-#include <dirent.h>
-#include <unistd.h>
 #endif
 
 #include <algorithm>
@@ -25,6 +30,7 @@
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/random.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/encode.h"
 #include "tools/file_io.h"
 #include "tools/thread_pool_internal.h"
@@ -104,7 +110,7 @@ std::vector<uint8_t> GetSomeTestImage(size_t xsize, size_t ysize,
 struct ImageSpec {
   bool Validate() const {
     if (width > kMaxWidth || height > kMaxHeight ||
-        width * height > kMaxPixels) {
+        static_cast<size_t>(width) * height > kMaxPixels) {
       return false;
     }
     return true;
@@ -176,7 +182,8 @@ bool EncodeWithJpegli(const ImageSpec& spec, const std::vector<uint8_t>& pixels,
     jpegli_set_progressive_level(&cinfo, spec.progressive_level);
     cinfo.restart_interval = spec.restart_interval;
     jpegli_start_compress(&cinfo, TRUE);
-    size_t stride = cinfo.image_width * cinfo.input_components;
+    size_t stride =
+        cinfo.image_width * static_cast<size_t>(cinfo.input_components);
     std::vector<uint8_t> row_bytes(stride);
     for (size_t y = 0; y < cinfo.image_height; ++y) {
       memcpy(row_bytes.data(), &pixels[y * stride], stride);
@@ -219,8 +226,7 @@ bool GenerateFile(const char* output_dir, const ImageSpec& spec,
 
   if (!quiet) {
     std::unique_lock<std::mutex> lock(stderr_mutex);
-    std::cerr << "Generating " << spec << " as " << hash_str << "\n"
-              << std::flush;
+    std::cerr << "Generating " << spec << " as " << hash_str << "\n";
   }
 
   uint8_t hash[16];
@@ -230,7 +236,9 @@ bool GenerateFile(const char* output_dir, const ImageSpec& spec,
   std::vector<uint8_t> pixels =
       GetSomeTestImage(spec.width, spec.height, spec.num_channels, spec.seed);
   std::vector<uint8_t> compressed;
-  JXL_CHECK(EncodeWithJpegli(spec, pixels, &compressed));
+  if (!EncodeWithJpegli(spec, pixels, &compressed)) {
+    return false;
+  }
 
   // Append 4 bytes with the flags used by jpegli_dec_fuzzer to select the
   // decoding output.
@@ -245,8 +253,7 @@ bool GenerateFile(const char* output_dir, const ImageSpec& spec,
   if (!quiet) {
     std::unique_lock<std::mutex> lock(stderr_mutex);
     std::cerr << "Stored " << output_fn << " size: " << compressed.size()
-              << "\n"
-              << std::flush;
+              << "\n";
   }
 
   return true;
@@ -339,7 +346,7 @@ int main(int argc, const char** argv) {
                 spec.seed = mt() % 777777;
                 if (!spec.Validate()) {
                   if (!quiet) {
-                    std::cerr << "Skipping " << spec << "\n" << std::flush;
+                    std::cerr << "Skipping " << spec << "\n";
                   }
                 } else {
                   specs.push_back(spec);
@@ -354,15 +361,17 @@ int main(int argc, const char** argv) {
 
   jpegxl::tools::ThreadPoolInternal pool{num_threads};
   const auto generate = [&specs, dest_dir, regenerate, quiet](
-                            const uint32_t task, size_t /* thread */) {
+                            const uint32_t task,
+                            size_t /* thread */) -> jxl::Status {
     const ImageSpec& spec = specs[task];
-    GenerateFile(dest_dir, spec, regenerate, quiet);
+    JXL_RETURN_IF_ERROR(GenerateFile(dest_dir, spec, regenerate, quiet));
+    return true;
   };
   if (!RunOnPool(pool.get(), 0, specs.size(), jxl::ThreadPool::NoInit, generate,
                  "FuzzerCorpus")) {
-    std::cerr << "Error generating fuzzer corpus\n" << std::flush;
-    return 1;
+    std::cerr << "Error generating fuzzer corpus\n";
+    return EXIT_FAILURE;
   }
-  std::cerr << "Finished generating fuzzer corpus\n" << std::flush;
-  return 0;
+  std::cerr << "Finished generating fuzzer corpus\n";
+  return EXIT_SUCCESS;
 }

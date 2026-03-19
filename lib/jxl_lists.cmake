@@ -29,7 +29,6 @@ set(JPEGXL_INTERNAL_BASE_SOURCES
   base/sanitizers.h
   base/span.h
   base/status.h
-  base/testing.h
   base/types.h
 )
 
@@ -49,9 +48,7 @@ set(JPEGXL_INTERNAL_CMS_SOURCES
 )
 
 set(JPEGXL_INTERNAL_CODEC_APNG_SOURCES
-  ../third_party/apngdis/dec.cc
   extras/dec/apng.h
-  ../third_party/apngdis/enc.cc
   extras/enc/apng.h
 )
 
@@ -101,33 +98,22 @@ set(JPEGXL_INTERNAL_CODEC_PNM_SOURCES
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_FOR_TOOLS_SOURCES
-  extras/cache_aligned.cc
-  extras/cache_aligned.h
-  extras/butteraugli.cc
-  extras/butteraugli.h
-  extras/convolve-inl.h
-  extras/convolve.h
-  extras/convolve_separable5.cc
-  extras/convolve_slow.cc
-  extras/image.cc
-  extras/image.h
-  extras/image_color_transform.cc
-  extras/image_color_transform.h
-  extras/image_ops.h
   extras/metrics.cc
   extras/metrics.h
   extras/packed_image_convert.cc
   extras/packed_image_convert.h
-  extras/simd_util.cc
-  extras/simd_util.h
-  extras/xyb_transform.cc
-  extras/xyb_transform.h
 )
 
 set(JPEGXL_INTERNAL_EXTRAS_SOURCES
   extras/alpha_blend.cc
   extras/alpha_blend.h
+  extras/butteraugli.cc
+  extras/butteraugli.h
   extras/codestream_header.h
+  extras/convolve-inl.h
+  extras/convolve.h
+  extras/convolve_separable5.cc
+  extras/convolve_slow.cc
   extras/dec/color_description.cc
   extras/dec/color_description.h
   extras/dec/color_hints.cc
@@ -138,12 +124,24 @@ set(JPEGXL_INTERNAL_EXTRAS_SOURCES
   extras/enc/encode.h
   extras/exif.cc
   extras/exif.h
+  extras/image.cc
+  extras/image.h
+  extras/image_color_transform.cc
+  extras/image_color_transform.h
+  extras/image_ops.h
+  extras/memory_manager_internal.cc
+  extras/memory_manager_internal.h
   extras/mmap.cc
   extras/mmap.h
+  extras/packed_image.cc
   extras/packed_image.h
+  extras/simd_util.cc
+  extras/simd_util.h
   extras/size_constraints.h
   extras/time.cc
   extras/time.h
+  extras/xyb_transform.cc
+  extras/xyb_transform.h
 )
 
 set(JPEGXL_INTERNAL_JPEGLI_LIBJPEG_HELPER_FILES
@@ -210,6 +208,7 @@ set(JPEGXL_INTERNAL_JPEGLI_SOURCES
 )
 
 set(JPEGXL_INTERNAL_JPEGLI_TESTLIB_FILES
+  jpegli/fuzztest.h
   jpegli/test_params.h
   jpegli/test_utils-inl.h
   jpegli/test_utils.cc
@@ -234,12 +233,16 @@ set(JPEGXL_INTERNAL_JPEGLI_WRAPPER_SOURCES
 set(JPEGXL_INTERNAL_TESTLIB_FILES
   extras/test_image.cc
   extras/test_image.h
+  extras/test_memory_manager.cc
+  extras/test_memory_manager.h
   extras/test_utils.cc
   extras/test_utils.h
   threads/test_utils.h
 )
 
 set(JPEGXL_INTERNAL_TESTS
+  cms/tone_mapping_test.cc
+  cms/transfer_functions_test.cc
   extras/butteraugli_test.cc
   extras/codec_test.cc
   extras/dec/color_description_test.cc
@@ -249,8 +252,8 @@ set(JPEGXL_INTERNAL_TESTS
 
 set(JPEGXL_INTERNAL_THREADS_SOURCES
   threads/thread_parallel_runner.cc
-  threads/thread_parallel_runner_internal.cc
-  threads/thread_parallel_runner_internal.h
   threads/thread_parallel_runner.h
   threads/thread_parallel_runner_cxx.h
+  threads/thread_parallel_runner_internal.cc
+  threads/thread_parallel_runner_internal.h
 )

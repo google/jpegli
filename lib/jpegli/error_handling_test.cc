@@ -48,10 +48,10 @@ TEST(EncoderErrorHandlingTest, MinimalSuccess) {
   TestImage output;
   DecodeWithLibjpeg(CompressParams(), DecompressParams(), nullptr, 0, buffer,
                     buffer_size, &output);
-  EXPECT_EQ(1, output.xsize);
-  EXPECT_EQ(1, output.ysize);
-  EXPECT_EQ(1, output.components);
-  EXPECT_EQ(0, output.pixels[0]);
+  EXPECT_EQ(1u, output.xsize);
+  EXPECT_EQ(1u, output.ysize);
+  EXPECT_EQ(1u, output.components);
+  EXPECT_EQ(0u, output.pixels[0]);
   if (buffer) free(buffer);
 }
 
@@ -1054,23 +1054,23 @@ const size_t kDHTOffset = 84;
 const size_t kSOSOffset = 296;
 
 TEST(DecoderErrorHandlingTest, MinimalSuccess) {
-  JXL_CHECK(kCompressed0[kDQTOffset] == 0xff);
-  JXL_CHECK(kCompressed0[kSOFOffset] == 0xff);
-  JXL_CHECK(kCompressed0[kDHTOffset] == 0xff);
-  JXL_CHECK(kCompressed0[kSOSOffset] == 0xff);
+  ASSERT_TRUE(kCompressed0[kDQTOffset] == 0xff);
+  ASSERT_TRUE(kCompressed0[kSOFOffset] == 0xff);
+  ASSERT_TRUE(kCompressed0[kDHTOffset] == 0xff);
+  ASSERT_TRUE(kCompressed0[kSOSOffset] == 0xff);
   jpeg_decompress_struct cinfo = {};
   const auto try_catch_block = [&]() -> bool {
     ERROR_HANDLER_SETUP(jpegli);
     jpegli_create_decompress(&cinfo);
     jpegli_mem_src(&cinfo, kCompressed0, kLen0);
     jpegli_read_header(&cinfo, TRUE);
-    EXPECT_EQ(1, cinfo.image_width);
-    EXPECT_EQ(1, cinfo.image_height);
+    EXPECT_EQ(1u, cinfo.image_width);
+    EXPECT_EQ(1u, cinfo.image_height);
     jpegli_start_decompress(&cinfo);
     JSAMPLE image[1];
     JSAMPROW row[] = {image};
     jpegli_read_scanlines(&cinfo, row, 1);
-    EXPECT_EQ(0, image[0]);
+    EXPECT_EQ(0u, image[0]);
     jpegli_finish_decompress(&cinfo);
     return true;
   };
@@ -1110,12 +1110,12 @@ TEST(DecoderErrorHandlingTest, NoStartDecompress) {
     jpegli_create_decompress(&cinfo);
     jpegli_mem_src(&cinfo, kCompressed0, kLen0);
     jpegli_read_header(&cinfo, TRUE);
-    EXPECT_EQ(1, cinfo.image_width);
-    EXPECT_EQ(1, cinfo.image_height);
+    EXPECT_EQ(1u, cinfo.image_width);
+    EXPECT_EQ(1u, cinfo.image_height);
     JSAMPLE image[1];
     JSAMPROW row[] = {image};
     jpegli_read_scanlines(&cinfo, row, 1);
-    EXPECT_EQ(0, image[0]);
+    EXPECT_EQ(0u, image[0]);
     jpegli_finish_decompress(&cinfo);
     return true;
   };
@@ -1130,8 +1130,8 @@ TEST(DecoderErrorHandlingTest, NoReadScanlines) {
     jpegli_create_decompress(&cinfo);
     jpegli_mem_src(&cinfo, kCompressed0, kLen0);
     jpegli_read_header(&cinfo, TRUE);
-    EXPECT_EQ(1, cinfo.image_width);
-    EXPECT_EQ(1, cinfo.image_height);
+    EXPECT_EQ(1u, cinfo.image_width);
+    EXPECT_EQ(1u, cinfo.image_height);
     jpegli_start_decompress(&cinfo);
     jpegli_finish_decompress(&cinfo);
     return true;
@@ -1178,7 +1178,7 @@ TEST(DecoderErrorHandlingTest, InvalidDQT) {
     compressed[kDQTOffset + 3] += diff;
     EXPECT_FALSE(ParseCompressed(compressed));
   }
-  // inavlid table index / precision
+  // invalid table index / precision
   for (int val : {0x20, 0x05}) {
     std::vector<uint8_t> compressed(kCompressed0, kCompressed0 + kLen0);
     compressed[kDQTOffset + 4] = val;
@@ -1243,7 +1243,7 @@ TEST(DecoderErrorHandlingTest, InvalidDHT) {
     compressed[kDHTOffset + 2] += 17;
     EXPECT_FALSE(ParseCompressed(compressed));
   }
-  // inavlid table slot_id
+  // invalid table slot_id
   for (int val : {0x05, 0x15, 0x20}) {
     std::vector<uint8_t> compressed(kCompressed0, kCompressed0 + kLen0);
     compressed[kDHTOffset + 4] = val;

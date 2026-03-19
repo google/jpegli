@@ -4,13 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <iterator>
-#include <vector>
 
-#include "lib/threads/thread_parallel_runner.h"
-#include "lib/threads/thread_parallel_runner_cxx.h"
+#include "lib/base/parallel_runner.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 
@@ -19,7 +18,7 @@ void ProcessInput(const char* filename) {
   std::vector<char> contents((std::istreambuf_iterator<char>(ifs)),
                              std::istreambuf_iterator<char>());
   ifs.close();
-  std::cout << "Processing " << filename << "\n" << std::flush;
+  std::cout << "Processing " << filename << "\n";
   LLVMFuzzerTestOneInput(reinterpret_cast<uint8_t*>(contents.data()),
                          contents.size());
 }

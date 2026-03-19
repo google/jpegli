@@ -7,6 +7,8 @@
 #ifndef LIB_EXTRAS_MMAP_H_
 #define LIB_EXTRAS_MMAP_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 
 #include "lib/base/status.h"

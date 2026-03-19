@@ -6,10 +6,14 @@
 
 #include "mmap.h"
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
+#include <utility>
 
 #include "lib/base/common.h"
+#include "lib/base/status.h"
 
 #if defined(__unix__) || defined(__unix) || \
     defined(__APPLE__) && defined(__MACH__)

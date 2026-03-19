@@ -51,67 +51,41 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c7f9125735019aa87cfc361530512d50ea439c71 # v3.25.1
+        uses: github/codeql-action/init@b1bff81932f5cdfc8695c7752dcee935dcd061c8 # v4.33.0
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
           # By default, queries listed here will override any specified in a config file.
           # Prefix the list here with "+" to use these queries and those in the config file.
 
-      - name: Install build deps
-        run: |
-          sudo rm -f /var/lib/man-db/auto-update
-          sudo apt update
-          sudo apt install -y \
-            ccache \
-            clang \
-            cmake \
-            doxygen \
-            graphviz \
-            imagemagick \
-            libbenchmark-dev \
-            libbenchmark-tools \
-            libbrotli-dev \
-            libgdk-pixbuf2.0-dev \
-            libgif-dev \
-            libgtest-dev \
-            libgtk2.0-dev  \
-            libjpeg-dev \
-            libjpeg-turbo-progs \
-            libopenexr-dev \
-            libpng-dev \
-            libwebp-dev \
-            ninja-build \
-            pkg-config \
-            xvfb \
-            ${{ matrix.apt_pkgs }} \
-          #
-          echo "CC=${{ matrix.cc || 'clang' }}" >> $GITHUB_ENV
-          echo "CXX=${{ matrix.cxx || 'clang++' }}" >> $GITHUB_ENV
       - name: Checkout the source
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
           fetch-depth: 2
 
-
+      - name: Install build deps
+        run: |
+          sudo ./tools/scripts/install_deps.sh build extras plugins
+  
       - name: Build
         run: |
-          ./ci.sh opt -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
+          CC=clang CXX=clang++ \
+          SKIP_TEST=1 TARGETS=all \
+          ./ci.sh opt \
+            -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
             -DBUILD_TESTING=OFF
-        env:
-          SKIP_TEST: 1
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c7f9125735019aa87cfc361530512d50ea439c71 # v3.25.1
+        uses: github/codeql-action/analyze@b1bff81932f5cdfc8695c7752dcee935dcd061c8 # v4.33.0
         with:
           category: "/language:${{matrix.language}}"

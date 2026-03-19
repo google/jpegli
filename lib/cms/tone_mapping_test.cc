@@ -4,16 +4,21 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <algorithm>
+#include <cstdlib>
+
+#include "lib/base/common.h"
+#include "lib/base/matrix_ops.h"
+
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/cms/tone_mapping_test.cc"
-#include "lib/cms/tone_mapping.h"
-
 #include <cstdio>
 #include <hwy/foreach_target.h>
 
 #include "lib/base/random.h"
 #include "lib/base/testing.h"
 #include "lib/cms/tone_mapping-inl.h"
+#include "lib/cms/tone_mapping.h"
 
 // Test utils
 #include <hwy/highway.h>
@@ -35,12 +40,14 @@ HWY_NOINLINE void TestRec2408ToneMap() {
                        rng.UniformF(0.2f, 0.4f)};
     Color rgb{rng.UniformF(0.0f, 1.0f), rng.UniformF(0.0f, 1.0f),
               rng.UniformF(0.0f, 1.0f)};
-    Rec2408ToneMapper<decltype(d)> tone_mapper({0, src}, {0, tgt}, luminances);
+    Rec2408ToneMapper<decltype(d)> tone_mapper({0.0f, src}, {0.0f, tgt},
+                                               luminances);
     auto r = Set(d, rgb[0]);
     auto g = Set(d, rgb[1]);
     auto b = Set(d, rgb[2]);
     tone_mapper.ToneMap(&r, &g, &b);
-    Rec2408ToneMapperBase tone_mapper_base({0, src}, {0, tgt}, luminances);
+    Rec2408ToneMapperBase tone_mapper_base({0.0f, src}, {0.0f, tgt},
+                                           luminances);
     tone_mapper_base.ToneMap(rgb);
     const float actual_r = GetLane(r);
     const float expected_r = rgb[0];

@@ -6,23 +6,28 @@
 
 #include "lib/extras/enc/pnm.h"
 
-#include <string.h>
-
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "lib/base/byte_order.h"
-#include "lib/base/compiler_specific.h"
+#include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/status.h"
-#include "lib/extras/image.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
+#include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
 namespace {
 
-constexpr size_t kMaxHeaderSize = 200;
+constexpr size_t kMaxHeaderSize = 2000;
 
 class BasePNMEncoder : public Encoder {
  public:
@@ -194,6 +199,8 @@ class PAMEncoder : public BasePNMEncoder {
     }
     return formats;
   }
+  bool AcceptsCmyk() const override { return true; }
+
   Status EncodeFrame(const PackedPixelFile& ppf, const PackedFrame& frame,
                      std::vector<uint8_t>* bytes) const override {
     const PackedImage& color = frame.color;
@@ -224,20 +231,30 @@ class PAMEncoder : public BasePNMEncoder {
     uint32_t depth = color.format.num_channels + ec_info.size();
     char header[kMaxHeaderSize];
     size_t pos = 0;
-    pos += snprintf(header + pos, kMaxHeaderSize - pos,
-                    "P7\nWIDTH %" PRIuS "\nHEIGHT %" PRIuS
-                    "\nDEPTH %u\n"
-                    "MAXVAL %u\nTUPLTYPE %s\n",
-                    color.xsize, color.ysize, depth, maxval,
-                    kColorTypes[color.format.num_channels - 1]);
-    JXL_RETURN_IF_ERROR(pos < kMaxHeaderSize);
-    for (const auto& info : ec_info) {
-      pos += snprintf(header + pos, kMaxHeaderSize - pos, "TUPLTYPE %s\n",
-                      ExtraChannelTypeName(info.ec_info.type).c_str());
-      JXL_RETURN_IF_ERROR(pos < kMaxHeaderSize);
+    int n = snprintf(header + pos, kMaxHeaderSize - pos,
+                     "P7\nWIDTH %" PRIuS "\nHEIGHT %" PRIuS
+                     "\nDEPTH %u\n"
+                     "MAXVAL %u\nTUPLTYPE %s\n",
+                     color.xsize, color.ysize, depth, maxval,
+                     kColorTypes[color.format.num_channels - 1]);
+    if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
+      return JXL_FAILURE("PNM header is too long");
     }
-    pos += snprintf(header + pos, kMaxHeaderSize - pos, "ENDHDR\n");
     JXL_RETURN_IF_ERROR(pos < kMaxHeaderSize);
+    pos += n;
+    for (const auto& info : ec_info) {
+      n = snprintf(header + pos, kMaxHeaderSize - pos, "TUPLTYPE %s\n",
+                   ExtraChannelTypeName(info.ec_info.type).c_str());
+      if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
+        return JXL_FAILURE("PNM header is too long");
+      }
+      pos += n;
+    }
+    n = snprintf(header + pos, kMaxHeaderSize - pos, "ENDHDR\n");
+    if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
+      return JXL_FAILURE("PNM header is too long");
+    }
+    pos += n;
     size_t total_size = color.pixels_size;
     for (const auto& ec : frame.extra_channels) {
       total_size += ec.pixels_size;
@@ -258,6 +275,7 @@ class PAMEncoder : public BasePNMEncoder {
           reinterpret_cast<const uint8_t*>(frame.extra_channels[i].pixels());
     }
     uint8_t* out = bytes->data() + pos;
+    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(color.format.data_type));
     size_t pwidth = PackedImage::BitsPerChannel(color.format.data_type) / 8;
     for (size_t y = 0; y < color.ysize; ++y) {
       for (size_t x = 0; x < color.xsize; ++x) {
@@ -295,6 +313,10 @@ class PAMEncoder : public BasePNMEncoder {
         return std::string("CFA");
       case JXL_CHANNEL_THERMAL:
         return std::string("Thermal");
+      case JXL_CHANNEL_UNKNOWN:
+        return std::string("Unknown");
+      case JXL_CHANNEL_OPTIONAL:
+        return std::string("Optional");
       default:
         return std::string("UNKNOWN");
     }

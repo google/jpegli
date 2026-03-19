@@ -4,11 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <stddef.h>
-
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <sstream>
@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/base/data_parallel.h"
 #include "lib/base/float.h"
 #include "lib/base/random.h"
@@ -29,7 +31,6 @@
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
-#include "lib/extras/dec/pnm.h"
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/test_utils.h"
@@ -37,9 +38,13 @@
 
 namespace jxl {
 
-using test::ThreadPoolForTests;
+using ::jxl::test::ThreadPoolForTests;
 
 namespace extras {
+
+Status PnmParseSigned(Bytes str, double* v);
+Status PnmParseUnsigned(Bytes str, size_t* v);
+
 namespace {
 
 float LoadLEFloat16(const uint8_t* p) {
@@ -64,7 +69,7 @@ size_t GetPrecision(JxlDataType data_type) {
     case JXL_TYPE_FLOAT16:
       return 11;
     default:
-      JXL_ABORT("Unhandled JxlDataType");
+      return jxl::test::Check(false), 8;
   }
 }
 
@@ -79,7 +84,7 @@ size_t GetDataBits(JxlDataType data_type) {
     case JXL_TYPE_FLOAT16:
       return 16;
     default:
-      JXL_ABORT("Unhandled JxlDataType");
+      return jxl::test::Check(false), 8;
   }
 }
 
@@ -119,7 +124,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
       }
     }
   } else if (format.data_type == JXL_TYPE_UINT16) {
-    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
     // Multiplier to bring to 0-1.0 range
     double mul = factor > 0.0 ? factor : 1.0 / 65535.0;
     for (size_t y = 0; y < ysize; ++y) {
@@ -152,7 +157,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
       }
     }
   } else if (format.data_type == JXL_TYPE_FLOAT) {
-    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
     for (size_t y = 0; y < ysize; ++y) {
       for (size_t x = 0; x < xsize; ++x) {
         size_t j = (y * xsize + x) * 4;
@@ -179,7 +184,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
       }
     }
   } else if (format.data_type == JXL_TYPE_FLOAT16) {
-    JXL_ASSERT(endianness != JXL_NATIVE_ENDIAN);
+    ::jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
     for (size_t y = 0; y < ysize; ++y) {
       for (size_t x = 0; x < xsize; ++x) {
         size_t j = (y * xsize + x) * 4;
@@ -206,9 +211,13 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
       }
     }
   } else {
-    JXL_ASSERT(false);  // Unsupported type
+    ::jxl::test::Check(false);  // Unsupported type
   }
   return result;
+}
+
+Span<const uint8_t> MakeSpan(const char* str) {
+  return Bytes(reinterpret_cast<const uint8_t*>(str), strlen(str));
 }
 
 std::string ExtensionFromCodec(Codec codec, const bool is_gray,
@@ -277,15 +286,15 @@ JxlColorEncoding CreateTestColorEncoding(bool is_gray) {
   // Roundtrip through internal color encoding to fill in primaries and white
   // point CIE xy coordinates.
   ColorEncoding c_internal;
-  JXL_CHECK(c_internal.FromExternal(c));
+  EXPECT_TRUE(c_internal.FromExternal(c));
   c = c_internal.ToExternal();
   return c;
 }
 
 std::vector<uint8_t> GenerateICC(JxlColorEncoding color_encoding) {
   ColorEncoding c;
-  JXL_CHECK(c.FromExternal(color_encoding));
-  JXL_CHECK(!c.ICC().empty());
+  EXPECT_TRUE(c.FromExternal(color_encoding));
+  EXPECT_TRUE(!c.ICC().empty());
   return c.ICC();
 }
 
@@ -398,7 +407,7 @@ void CreateTestImage(const TestImageParams& params, PackedPixelFile* ppf) {
   ppf->icc = GenerateICC(color_encoding);
   ppf->color_encoding = color_encoding;
 
-  JXL_ASSIGN_OR_DIE(
+  JXL_TEST_ASSIGN_OR_DIE(
       PackedFrame frame,
       PackedFrame::Create(params.xsize, params.ysize, params.PixelFormat()));
   FillPackedImage(params.bits_per_sample, &frame.color);
@@ -406,7 +415,7 @@ void CreateTestImage(const TestImageParams& params, PackedPixelFile* ppf) {
     for (size_t i = 0; i < 7; ++i) {
       JxlPixelFormat ec_format = params.PixelFormat();
       ec_format.num_channels = 1;
-      JXL_ASSIGN_OR_DIE(
+      JXL_TEST_ASSIGN_OR_DIE(
           PackedImage ec,
           PackedImage::Create(params.xsize, params.ysize, ec_format));
       FillPackedImage(params.bits_per_sample, &ec);
@@ -428,17 +437,21 @@ void TestRoundTrip(const TestImageParams& params, ThreadPool* pool) {
       params.codec, params.is_gray, params.add_alpha, params.bits_per_sample);
   printf("Codec %s %s\n", extension.c_str(), params.DebugString().c_str());
 
-  PackedPixelFile ppf_in;
-  CreateTestImage(params, &ppf_in);
-
-  EncodedImage encoded;
-  auto encoder = Encoder::FromExtension(extension);
-  if (!encoder) {
-    fprintf(stderr, "Skipping test because of missing codec support.\n");
+  if (!CanDecode(params.codec)) {
+    fprintf(stderr, "Skipping test because of missing decoding support.\n");
     return;
   }
+  auto encoder = Encoder::FromExtension(extension);
+  if (!encoder) {
+    fprintf(stderr, "Skipping test because of missing encoding support.\n");
+    return;
+  }
+
+  PackedPixelFile ppf_in;
+  CreateTestImage(params, &ppf_in);
+  EncodedImage encoded;
   ASSERT_TRUE(encoder->Encode(ppf_in, &encoded, pool));
-  ASSERT_EQ(encoded.bitstreams.size(), 1);
+  ASSERT_EQ(encoded.bitstreams.size(), 1u);
 
   PackedPixelFile ppf_out;
   ColorHints color_hints;
@@ -467,7 +480,7 @@ void TestRoundTrip(const TestImageParams& params, ThreadPool* pool) {
     EXPECT_EQ(ppf_in.icc, ppf_out.icc);
   }
 
-  ASSERT_EQ(ppf_out.frames.size(), 1);
+  ASSERT_EQ(ppf_out.frames.size(), 1u);
   const auto& frame_in = ppf_in.frames[0];
   const auto& frame_out = ppf_out.frames[0];
   VerifySameImage(frame_in.color, ppf_in.info.bits_per_sample, frame_out.color,
@@ -534,14 +547,13 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
       ColorHints color_hints;
       color_hints.Add("color_space",
                       channels < 3 ? "Gra_D65_Rel_SRG" : "RGB_D65_SRG_Rel_SRG");
-      ASSERT_TRUE(
-          DecodeBytes(Bytes(orig.data(), orig.size()), color_hints, &ppf));
+      ASSERT_TRUE(DecodeBytes(Bytes(orig), color_hints, &ppf));
 
       EncodedImage encoded;
       auto encoder = Encoder::FromExtension(extension);
       ASSERT_TRUE(encoder.get());
       ASSERT_TRUE(encoder->Encode(ppf, &encoded, pool.get()));
-      ASSERT_EQ(encoded.bitstreams.size(), 1);
+      ASSERT_EQ(encoded.bitstreams.size(), 1u);
       ASSERT_EQ(orig.size(), encoded.bitstreams[0].size());
       EXPECT_EQ(0,
                 memcmp(orig.data(), encoded.bitstreams[0].data(), orig.size()));
@@ -549,7 +561,40 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
   }
 }
 
-TEST(CodecTest, TestPNM) { TestCodecPNM(); }
+TEST(CodecTest, TestPNM) {
+  size_t u = 77777;  // Initialized to wrong value.
+  double d = 77.77;
+// Failing to parse invalid strings results in a crash if `JXL_CRASH_ON_ERROR`
+// is defined and hence the tests fail. Therefore we only run these tests if
+// `JXL_CRASH_ON_ERROR` is not defined.
+#if (!JXL_CRASH_ON_ERROR)
+  ASSERT_FALSE(PnmParseUnsigned(MakeSpan(""), &u));
+  ASSERT_FALSE(PnmParseUnsigned(MakeSpan("+"), &u));
+  ASSERT_FALSE(PnmParseUnsigned(MakeSpan("-"), &u));
+  ASSERT_FALSE(PnmParseUnsigned(MakeSpan("A"), &u));
+
+  ASSERT_FALSE(PnmParseSigned(MakeSpan(""), &d));
+  ASSERT_FALSE(PnmParseSigned(MakeSpan("+"), &d));
+  ASSERT_FALSE(PnmParseSigned(MakeSpan("-"), &d));
+  ASSERT_FALSE(PnmParseSigned(MakeSpan("A"), &d));
+#endif
+  ASSERT_TRUE(PnmParseUnsigned(MakeSpan("1"), &u));
+  ASSERT_TRUE(u == 1);
+
+  ASSERT_TRUE(PnmParseUnsigned(MakeSpan("32"), &u));
+  ASSERT_TRUE(u == 32);
+
+  ASSERT_TRUE(PnmParseSigned(MakeSpan("1"), &d));
+  ASSERT_TRUE(d == 1.0);
+  ASSERT_TRUE(PnmParseSigned(MakeSpan("+2"), &d));
+  ASSERT_TRUE(d == 2.0);
+  ASSERT_TRUE(PnmParseSigned(MakeSpan("-3"), &d));
+  ASSERT_TRUE(std::abs(d - -3.0) < 1E-15);
+  ASSERT_TRUE(PnmParseSigned(MakeSpan("3.141592"), &d));
+  ASSERT_TRUE(std::abs(d - 3.141592) < 1E-15);
+  ASSERT_TRUE(PnmParseSigned(MakeSpan("-3.141592"), &d));
+  ASSERT_TRUE(std::abs(d - -3.141592) < 1E-15);
+}
 
 TEST(CodecTest, EncodeToPNG) {
   ThreadPool* const pool = nullptr;
@@ -576,14 +621,14 @@ TEST(CodecTest, EncodeToPNG) {
   EncodedImage encoded_png;
   ASSERT_TRUE(png_encoder->Encode(ppf, &encoded_png, pool));
   EXPECT_TRUE(encoded_png.icc.empty());
-  ASSERT_EQ(encoded_png.bitstreams.size(), 1);
+  ASSERT_EQ(encoded_png.bitstreams.size(), 1u);
 
   PackedPixelFile decoded_ppf;
   ASSERT_TRUE(extras::DecodeBytes(Bytes(encoded_png.bitstreams.front()),
                                   ColorHints(), &decoded_ppf));
 
   ASSERT_EQ(decoded_ppf.info.bits_per_sample, ppf.info.bits_per_sample);
-  ASSERT_EQ(decoded_ppf.frames.size(), 1);
+  ASSERT_EQ(decoded_ppf.frames.size(), 1u);
   VerifySameImage(ppf.frames[0].color, ppf.info.bits_per_sample,
                   decoded_ppf.frames[0].color,
                   decoded_ppf.info.bits_per_sample);

@@ -17,6 +17,7 @@
 
 #include "lib/base/status.h"
 #include "lib/base/types.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/decode.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/libjpeg_test_util.h"
@@ -55,7 +56,7 @@ class SourceManager {
   }
 
   ~SourceManager() {
-    EXPECT_EQ(0, pub_.bytes_in_buffer);
+    EXPECT_EQ(0u, pub_.bytes_in_buffer);
     EXPECT_EQ(len_, pos_);
   }
 
@@ -120,7 +121,7 @@ uint8_t get_next_byte(j_decompress_ptr cinfo) {
 boolean test_marker_processor(j_decompress_ptr cinfo) {
   markers_seen[num_markers_seen] = cinfo->unread_marker;
   size_t marker_len = (get_next_byte(cinfo) << 8) + get_next_byte(cinfo);
-  EXPECT_EQ(2 + ((num_markers_seen + 2) % sizeof(kMarkerData)), marker_len);
+  EXPECT_EQ(2u + ((num_markers_seen + 2u) % sizeof(kMarkerData)), marker_len);
   if (marker_len > 2) {
     (*cinfo->src->skip_input_data)(cinfo, marker_len - 2);
   }
@@ -230,13 +231,14 @@ struct TestConfig {
   float max_diff = 35.0f;
 };
 
-std::vector<uint8_t> GetTestJpegData(TestConfig& config) {
+jxl::StatusOr<std::vector<uint8_t>> GetTestJpegData(TestConfig& config) {
   std::vector<uint8_t> compressed;
   if (!config.fn.empty()) {
-    compressed = ReadTestData(config.fn);
+    JXL_ASSIGN_OR_RETURN(compressed, ReadTestData(config.fn));
   } else {
     GeneratePixels(&config.input);
-    JXL_CHECK(EncodeWithJpegli(config.input, config.jparams, &compressed));
+    JXL_RETURN_IF_ERROR(
+        EncodeWithJpegli(config.input, config.jparams, &compressed));
   }
   if (config.dparams.size_factor < 1.0f) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
@@ -267,8 +269,8 @@ void TestAPINonBuffered(const CompressParams& jparams,
   if (!jparams.icc.empty()) {
     uint8_t* icc_data = nullptr;
     unsigned int icc_len;
-    JXL_CHECK(jpegli_read_icc_profile(cinfo, &icc_data, &icc_len));
-    JXL_CHECK(icc_data);
+    ASSERT_TRUE(jpegli_read_icc_profile(cinfo, &icc_data, &icc_len));
+    ASSERT_TRUE(icc_data);
     EXPECT_EQ(0, memcmp(jparams.icc.data(), icc_data, icc_len));
     free(icc_data);
   }
@@ -289,7 +291,7 @@ void TestAPINonBuffered(const CompressParams& jparams,
   }
   if (dparams.output_mode == COEFFICIENTS) {
     jvirt_barray_ptr* coef_arrays = jpegli_read_coefficients(cinfo);
-    JXL_CHECK(coef_arrays != nullptr);
+    ASSERT_TRUE(coef_arrays != nullptr);
     CopyCoefficients(cinfo, coef_arrays, output);
   } else {
     jpegli_start_decompress(cinfo);
@@ -341,7 +343,7 @@ void TestAPIBuffered(const CompressParams& jparams,
     ++sos_marker_cnt;  // finish output reads the next SOS marker or EOI
     if (dparams.output_mode == COEFFICIENTS) {
       jvirt_barray_ptr* coef_arrays = jpegli_read_coefficients(cinfo);
-      JXL_CHECK(coef_arrays != nullptr);
+      ASSERT_TRUE(coef_arrays != nullptr);
       CopyCoefficients(cinfo, coef_arrays, &output_progression->back());
     }
   }
@@ -377,7 +379,8 @@ TEST(DecodeAPITest, ReuseCinfo) {
               "Generating input with %dx%d chroma subsampling "
               "progressive level %d\n",
               h_samp, v_samp, progr);
-          JXL_CHECK(EncodeWithJpegli(input, jparams, &compressed));
+          JPEGLI_TEST_ENSURE_TRUE(
+              EncodeWithJpegli(input, jparams, &compressed));
           for (JpegIOMode output_mode : {PIXELS, RAW_DATA, COEFFICIENTS}) {
             for (bool crop : {true, false}) {
               if (crop && output_mode != PIXELS) continue;
@@ -419,12 +422,12 @@ TEST(DecodeAPITest, ReuseCinfo) {
                 output_progression.clear();
                 src.Reset();
                 TestAPIBuffered(jparams, dparams, &cinfo, &output_progression);
-                JXL_CHECK(output_progression.size() ==
-                          expected_output_progression.size());
+                JPEGLI_TEST_ENSURE_TRUE(output_progression.size() ==
+                                        expected_output_progression.size());
                 for (size_t i = 0; i < output_progression.size(); ++i) {
-                  const TestImage& output = output_progression[i];
-                  const TestImage& expected = expected_output_progression[i];
-                  VerifyOutputImage(expected, output, max_rms);
+                  const TestImage& p_output = output_progression[i];
+                  const TestImage& p_expected = expected_output_progression[i];
+                  VerifyOutputImage(p_expected, p_output, max_rms);
                 }
               }
             }
@@ -498,7 +501,7 @@ TEST(DecodeAPITest, ReuseCinfoSameMemSource) {
 TEST(DecodeAPITest, ReuseCinfoSameStdSource) {
   std::vector<TestConfig> all_configs = GenerateBasicConfigs();
   FILE* tmpf = tmpfile();
-  JXL_CHECK(tmpf);
+  ASSERT_TRUE(tmpf);
   {
     jpeg_compress_struct cinfo;
     const auto try_catch_block = [&]() -> bool {
@@ -564,7 +567,7 @@ TEST(DecodeAPITest, AbbreviatedStreams) {
       return true;
     };
     EXPECT_TRUE(try_catch_block());
-    EXPECT_LT(data_stream_size, 50);
+    EXPECT_LT(data_stream_size, 50u);
     jpegli_destroy_compress(&cinfo);
   }
   {
@@ -576,16 +579,16 @@ TEST(DecodeAPITest, AbbreviatedStreams) {
       jpegli_read_header(&cinfo, FALSE);
       jpegli_mem_src(&cinfo, data_stream, data_stream_size);
       jpegli_read_header(&cinfo, TRUE);
-      EXPECT_EQ(1, cinfo.image_width);
-      EXPECT_EQ(1, cinfo.image_height);
+      EXPECT_EQ(1u, cinfo.image_width);
+      EXPECT_EQ(1u, cinfo.image_height);
       EXPECT_EQ(3, cinfo.num_components);
       jpegli_start_decompress(&cinfo);
       JSAMPLE image[3] = {0};
       JSAMPROW row[] = {image};
       jpegli_read_scanlines(&cinfo, row, 1);
-      EXPECT_EQ(0, image[0]);
-      EXPECT_EQ(0, image[1]);
-      EXPECT_EQ(0, image[2]);
+      EXPECT_EQ(0u, image[0]);
+      EXPECT_EQ(0u, image[1]);
+      EXPECT_EQ(0u, image[2]);
       jpegli_finish_decompress(&cinfo);
       return true;
     };
@@ -602,7 +605,8 @@ TEST_P(DecodeAPITestParam, TestAPI) {
   TestConfig config = GetParam();
   const DecompressParams& dparams = config.dparams;
   if (dparams.skip_scans) return;
-  const std::vector<uint8_t> compressed = GetTestJpegData(config);
+  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
+                     "Failed to create test data");
   SourceManager src(compressed.data(), compressed.size(), dparams.chunk_size);
 
   TestImage output1;
@@ -636,7 +640,8 @@ class DecodeAPITestParamBuffered : public ::testing::TestWithParam<TestConfig> {
 TEST_P(DecodeAPITestParamBuffered, TestAPI) {
   TestConfig config = GetParam();
   const DecompressParams& dparams = config.dparams;
-  const std::vector<uint8_t> compressed = GetTestJpegData(config);
+  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
+                     "Failed to create test data.");
   SourceManager src(compressed.data(), compressed.size(), dparams.chunk_size);
 
   std::vector<TestImage> output_progression1;
@@ -1181,6 +1186,16 @@ std::vector<TestConfig> GenerateTests(bool buffered) {
         }
       }
     }
+  }
+  {
+    TestConfig config;
+    config.input.xsize = 137;
+    config.input.ysize = 80;
+    config.jparams.progressive_mode = 0;
+    config.jparams.h_sampling = {1, 1, 1};
+    config.jparams.v_sampling = {4, 2, 1};
+    config.compare_to_orig = true;
+    all_tests.push_back(config);
   }
   for (int h0_samp : {1, 3}) {
     for (int v0_samp : {1, 3}) {

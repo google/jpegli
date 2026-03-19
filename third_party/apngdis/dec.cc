@@ -4,8 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include "lib/extras/dec/apng.h"
-
 // Parts of this code are taken from apngdis, which has the following license:
 /* APNG Disassembler 2.8
  *
@@ -37,11 +35,38 @@
  *
  */
 
+#include "lib/extras/dec/apng.h"
+
+// IWYU pragma: no_include <pngconf.h>
+
+#include "lib/base/span.h"
+#include "lib/base/status.h"
+#include "lib/extras/dec/color_hints.h"
+#include "lib/extras/packed_image.h"
+#include "lib/extras/size_constraints.h"
+
+#if !JPEGXL_ENABLE_APNG
+
+namespace jxl {
+namespace extras {
+bool CanDecodeAPNG() { return false; }
+Status DecodeImageAPNG(const Span<const uint8_t> bytes,
+                       const ColorHints& color_hints, PackedPixelFile* ppf,
+                       const SizeConstraints* constraints) {
+  return false;
+}
+}  // namespace extras
+}  // namespace jxl
+
+#else  // JPEGXL_ENABLE_APNG
+
+#include <algorithm>
 #include <array>
+#include <atomic>
+#include <csetjmp>
 #include <cstdint>
 #include <cstring>
 #include <limits>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,31 +74,16 @@
 #include "lib/base/byte_order.h"
 #include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"
-#include "lib/base/printf_macros.h"
+#include "lib/base/printf_macros.h"  // IWYU pragma: keep
 #include "lib/base/rect.h"
-#include "lib/base/span.h"
-#include "lib/base/status.h"
+#include "lib/base/sanitizers.h"
+#include "lib/base/types.h"
+#include "lib/cms/color_encoding.h"
 #include "lib/extras/codestream_header.h"
-#include "lib/extras/packed_image.h"
-#include "lib/extras/size_constraints.h"
-#if JPEGXL_ENABLE_APNG
 #include "png.h" /* original (unpatched) libpng is ok */
-#endif
 
 namespace jxl {
 namespace extras {
-
-#if !JPEGXL_ENABLE_APNG
-
-bool CanDecodeAPNG() { return false; }
-Status DecodeImageAPNG(const Span<const uint8_t> bytes,
-                       const ColorHints& color_hints, PackedPixelFile* ppf,
-                       const SizeConstraints* constraints) {
-  return false;
-}
-
-#else  // JPEGXL_ENABLE_APNG
-
 namespace {
 
 constexpr std::array<uint8_t, 8> kPngSignature = {137,  'P',  'N', 'G',
@@ -255,6 +265,17 @@ Status DecodeChrmChunk(Bytes payload, JxlColorEncoding* color_encoding) {
   return true;
 }
 
+/** Extracts information from 'cLLi' chunk. */
+Status DecodeClliChunk(Bytes payload, float* max_content_light_level) {
+  if (payload.size() != 8) return JXL_FAILURE("Wrong cLLi size");
+  const uint8_t* data = payload.data();
+  const uint32_t maxcll_png =
+      Clamp1(png_get_uint_32(data), uint32_t{0}, uint32_t{10000 * 10000});
+  // Ignore MaxFALL value.
+  *max_content_light_level = static_cast<float>(maxcll_png) / 10000.f;
+  return true;
+}
+
 /** Returns false if invalid. */
 JXL_INLINE Status DecodeHexNibble(const char c, uint32_t* JXL_RESTRICT nibble) {
   if ('a' <= c && c <= 'f') {
@@ -265,7 +286,7 @@ JXL_INLINE Status DecodeHexNibble(const char c, uint32_t* JXL_RESTRICT nibble) {
     *nibble = 0;
     return JXL_FAILURE("Invalid metadata nibble");
   }
-  JXL_ASSERT(*nibble < 16);
+  JXL_ENSURE(*nibble < 16);
   return true;
 }
 
@@ -346,7 +367,7 @@ Status MaybeDecodeBase16(const char* key, const char* encoded,
     return JXL_FAILURE("Not enough bytes to parse %d bytes in hex",
                        bytes_to_decode);
   }
-  JXL_ASSERT(bytes->empty());
+  JXL_ENSURE(bytes->empty());
   bytes->reserve(bytes_to_decode);
 
   // Encoding: base16 with newline after 72 chars.
@@ -401,7 +422,8 @@ Status DecodeBlob(const png_text_struct& info, PackedMetadata* metadata) {
       bytes.erase(bytes.begin(), bytes.begin() + kExifPrefix.size());
     }
     if (!metadata->exif.empty()) {
-      JXL_WARNING("overwriting EXIF (%" PRIuS " bytes) with base16 (%" PRIuS
+      JXL_DEBUG_V(2,
+                  "overwriting EXIF (%" PRIuS " bytes) with base16 (%" PRIuS
                   " bytes)",
                   metadata->exif.size(), bytes.size());
     }
@@ -412,15 +434,16 @@ Status DecodeBlob(const png_text_struct& info, PackedMetadata* metadata) {
     // TODO(jon): Deal with 8bim in some way
   } else if (type == "xmp") {
     if (!metadata->xmp.empty()) {
-      JXL_WARNING("overwriting XMP (%" PRIuS " bytes) with base16 (%" PRIuS
+      JXL_DEBUG_V(2,
+                  "overwriting XMP (%" PRIuS " bytes) with base16 (%" PRIuS
                   " bytes)",
                   metadata->xmp.size(), bytes.size());
     }
     metadata->xmp = std::move(bytes);
   } else {
-    JXL_WARNING("Unknown type in 'Raw format type' text chunk: %s: %" PRIuS
-                " bytes",
-                type.c_str(), bytes.size());
+    JXL_DEBUG_V(
+        2, "Unknown type in 'Raw format type' text chunk: %s: %" PRIuS " bytes",
+        type.c_str(), bytes.size());
   }
   return true;
 }
@@ -437,23 +460,21 @@ constexpr uint32_t MakeTag(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 /** Reusable image data container. */
 struct Pixels {
   // Use array instead of vector to avoid memory initialization.
-  std::unique_ptr<uint8_t[]> pixels;
+  uninitialized_vector<uint8_t> pixels_storage =
+      jxl::make_uninitialized_vector<uint8_t>(0);
   size_t pixels_size = 0;
   std::vector<uint8_t*> rows;
+  std::atomic<uint32_t> has_error{0};
 
   Status Resize(size_t row_bytes, size_t num_rows) {
     size_t new_size = row_bytes * num_rows;  // it is assumed size is sane
     if (new_size > pixels_size) {
-      pixels.reset(new uint8_t[new_size]);
-      if (!pixels) {
-        // TODO(szabadka): use specialized OOM error code
-        return JXL_FAILURE("Failed to allocate memory for image buffer");
-      }
+      pixels_storage.resize(new_size);
       pixels_size = new_size;
     }
     rows.resize(num_rows);
     for (size_t y = 0; y < num_rows; y++) {
-      rows[y] = pixels.get() + y * row_bytes;
+      rows[y] = pixels_storage.data() + y * row_bytes;
     }
     return true;
   }
@@ -480,7 +501,7 @@ struct Reader {
     return result;
   }
 
-  /* Returns empty Span on errror. */
+  /* Returns empty Span on error. */
   Bytes ReadChunk() {
     Bytes len = Peek(4);
     if (len.size() != 4) {
@@ -513,8 +534,14 @@ void ProgressiveRead_OnInfo(png_structp png_ptr, png_infop info_ptr) {
 void ProgressiveRead_OnRow(png_structp png_ptr, png_bytep new_row,
                            png_uint_32 row_num, int pass) {
   Pixels* frame = reinterpret_cast<Pixels*>(png_get_progressive_ptr(png_ptr));
-  JXL_CHECK(frame);
-  JXL_CHECK(row_num < frame->rows.size());
+  if (!frame) {
+    JXL_DEBUG_ABORT("Internal logic error");
+    return;
+  }
+  if (row_num >= frame->rows.size()) {
+    frame->has_error = 1;
+    return;
+  }
   png_progressive_combine_row(png_ptr, frame->rows[row_num], new_row);
 }
 
@@ -552,7 +579,7 @@ struct Context {
       return false;
     }
 
-    /* hIST chunk tail is not proccesed properly; skip this chunk completely;
+    /* hIST chunk tail is not processed properly; skip this chunk completely;
        see https://github.com/glennrp/libpng/pull/413 */
     constexpr std::array<uint8_t, 5> kIgnoredChunks = {'h', 'I', 'S', 'T', 0};
     png_set_keep_unknown_chunks(png_ptr, 1, kIgnoredChunks.data(),
@@ -613,13 +640,15 @@ struct Context {
     png_process_data(png_ptr, info_ptr, const_cast<uint8_t*>(kFooter.data()),
                      kFooter.size());
     // before destroying: check if we encountered any metadata chunks
-    png_textp text_ptr;
-    int num_text;
-    png_get_text(png_ptr, info_ptr, &text_ptr, &num_text);
-    for (int i = 0; i < num_text; i++) {
-      Status result = DecodeBlob(text_ptr[i], metadata);
-      // Ignore unknown / malformed blob.
-      (void)result;
+    png_textp text_ptr = nullptr;
+    int num_text = 0;
+    if (png_get_text(png_ptr, info_ptr, &text_ptr, &num_text) != 0) {
+      msan::UnpoisonMemory(text_ptr, sizeof(png_text_struct) * num_text);
+      for (int i = 0; i < num_text; i++) {
+        Status result = DecodeBlob(text_ptr[i], metadata);
+        // Ignore unknown / malformed blob.
+        (void)result;
+      }
     }
 
     return true;
@@ -675,7 +704,7 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
   bool alpha_channel_used = ((color_type & 4) != 0);
   if (palette_used) {
     if (!color_used || alpha_channel_used) {
-      JXL_WARNING("Unexpected PNG color type");
+      JXL_DEBUG_V(2, "Unexpected PNG color type");
     }
   }
 
@@ -695,11 +724,11 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
       } else {
         int maxbps =
             std::max(sig_bits->red, std::max(sig_bits->green, sig_bits->blue));
-        JXL_WARNING(
-            "sBIT chunk: bit depths for R, G, and B are not the same (%i "
-            "%i %i), while in JPEG XL they have to be the same. Setting "
-            "RGB bit depth to %i.",
-            sig_bits->red, sig_bits->green, sig_bits->blue, maxbps);
+        JXL_DEBUG_V(2,
+                    "sBIT chunk: bit depths for R, G, and B are not the same "
+                    "(%i %i %i), while in JPEG XL they have to be the same. "
+                    "Setting RGB bit depth to %i.",
+                    sig_bits->red, sig_bits->green, sig_bits->blue, maxbps);
         ppf->info.bits_per_sample = maxbps;
       }
     }
@@ -711,11 +740,11 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
   if (alpha_channel_used || has_transparency) {
     ppf->info.alpha_bits = ppf->info.bits_per_sample;
     if (sig_bits && sig_bits->alpha != ppf->info.bits_per_sample) {
-      JXL_WARNING(
-          "sBIT chunk: bit depths for RGBA are inconsistent "
-          "(%i %i %i %i). Setting A bitdepth to %i.",
-          sig_bits->red, sig_bits->green, sig_bits->blue, sig_bits->alpha,
-          ppf->info.bits_per_sample);
+      JXL_DEBUG_V(2,
+                  "sBIT chunk: bit depths for RGBA are inconsistent "
+                  "(%i %i %i %i). Setting A bitdepth to %i.",
+                  sig_bits->red, sig_bits->green, sig_bits->blue,
+                  sig_bits->alpha, ppf->info.bits_per_sample);
     }
   } else {
     ppf->info.alpha_bits = 0;
@@ -789,7 +818,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   Bytes sig = input.Read(kPngSignature.size());
   if (sig.size() != 8 ||
       memcmp(sig.data(), kPngSignature.data(), kPngSignature.size()) != 0) {
-    return JXL_FAILURE("PNG signature mismatch");
+    return false;  // Return silently if it is not a PNG
   }
 
   // Check IHDR chunk.
@@ -846,6 +875,9 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     if (!ctx.FinalizeStream(&ppf->metadata)) {
       return JXL_FAILURE("Failed to finalize PNG substream");
     }
+    if (ctx.frameRaw.has_error) {
+      return JXL_FAILURE("Internal error");
+    }
     // Allocates the frame buffer.
     const RectT<uint64_t>& vp = current_frame.viewport;
     size_t xsize = static_cast<size_t>(vp.xsize());
@@ -883,11 +915,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     switch (id) {
       case MakeTag('a', 'c', 'T', 'L'):
         if (seen_idat) {
-          JXL_WARNING("aCTL after IDAT ignored");
+          JXL_DEBUG_V(2, "aCTL after IDAT ignored");
           continue;
         }
         if (seen_actl) {
-          JXL_WARNING("Duplicate aCTL chunk ignored");
+          JXL_DEBUG_V(2, "Duplicate aCTL chunk ignored");
           continue;
         }
         seen_actl = true;
@@ -964,10 +996,10 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         if (!seen_idat) {
           // First IDAT means that all metadata is ready.
           seen_idat = true;
-          JXL_CHECK(image_rect.xsize() ==
-                    png_get_image_width(ctx.png_ptr, ctx.info_ptr));
-          JXL_CHECK(image_rect.ysize() ==
-                    png_get_image_height(ctx.png_ptr, ctx.info_ptr));
+          JXL_ENSURE(image_rect.xsize() ==
+                     png_get_image_width(ctx.png_ptr, ctx.info_ptr));
+          JXL_ENSURE(image_rect.ysize() ==
+                     png_get_image_height(ctx.png_ptr, ctx.info_ptr));
           JXL_RETURN_IF_ERROR(VerifyDimensions(constraints, image_rect.xsize(),
                                                image_rect.ysize()));
           ppf->info.xsize = image_rect.xsize();
@@ -1036,7 +1068,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('c', 'I', 'C', 'P'):
         if (color_info_type == ColorInfoType::CICP) {
-          JXL_WARNING("Excessive colorspace definition; cICP chunk ignored");
+          JXL_DEBUG_V(2, "Excessive colorspace definition; cICP chunk ignored");
           continue;
         }
         JXL_RETURN_IF_ERROR(DecodeCicpChunk(payload, &ppf->color_encoding));
@@ -1051,14 +1083,13 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
           return JXL_FAILURE("Repeated iCCP / sRGB chunk");
         }
         if (color_info_type > ColorInfoType::ICCP_OR_SRGB) {
-          JXL_WARNING("Excessive colorspace definition; iCCP chunk ignored");
+          JXL_DEBUG_V(2, "Excessive colorspace definition; iCCP chunk ignored");
           continue;
         }
         // Let PNG decoder deal with chunk processing.
         if (!ctx.FeedChunks(chunk)) {
           return JXL_FAILURE("Corrupt iCCP chunk");
         }
-        color_info_type = ColorInfoType::ICCP_OR_SRGB;
 
         // TODO(jon): catch special case of PQ and synthesize color encoding
         // in that case
@@ -1083,7 +1114,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
           return JXL_FAILURE("Repeated iCCP / sRGB chunk");
         }
         if (color_info_type > ColorInfoType::ICCP_OR_SRGB) {
-          JXL_WARNING("Excessive colorspace definition; sRGB chunk ignored");
+          JXL_DEBUG_V(2, "Excessive colorspace definition; sRGB chunk ignored");
           continue;
         }
         JXL_RETURN_IF_ERROR(DecodeSrgbChunk(payload, &ppf->color_encoding));
@@ -1092,7 +1123,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('g', 'A', 'M', 'A'):
         if (color_info_type >= ColorInfoType::GAMA_OR_CHRM) {
-          JXL_WARNING("Excessive colorspace definition; gAMA chunk ignored");
+          JXL_DEBUG_V(2, "Excessive colorspace definition; gAMA chunk ignored");
           continue;
         }
         JXL_RETURN_IF_ERROR(DecodeGamaChunk(payload, &ppf->color_encoding));
@@ -1101,11 +1132,16 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('c', 'H', 'R', 'M'):
         if (color_info_type >= ColorInfoType::GAMA_OR_CHRM) {
-          JXL_WARNING("Excessive colorspace definition; gAMA chunk ignored");
+          JXL_DEBUG_V(2, "Excessive colorspace definition; cHRM chunk ignored");
           continue;
         }
         JXL_RETURN_IF_ERROR(DecodeChrmChunk(payload, &ppf->color_encoding));
         color_info_type = ColorInfoType::GAMA_OR_CHRM;
+        continue;
+
+      case MakeTag('c', 'L', 'L', 'i'):
+        JXL_RETURN_IF_ERROR(
+            DecodeClliChunk(payload, &ppf->info.intensity_target));
         continue;
 
       case MakeTag('e', 'X', 'I', 'f'):
@@ -1133,6 +1169,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   JXL_RETURN_IF_ERROR(
       ApplyColorHints(color_hints, color_is_already_set, is_gray, ppf));
 
+  if (ppf->color_encoding.transfer_function != JXL_TRANSFER_FUNCTION_PQ) {
+    // Reset intensity target, in case we set it from cLLi but TF is not PQ.
+    ppf->info.intensity_target = 0.f;
+  }
+
   bool has_nontrivial_background = false;
   bool previous_frame_should_be_cleared = false;
   for (size_t i = 0; i < frames.size(); i++) {
@@ -1142,8 +1183,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     const auto& pixels = frame.pixels;
     size_t xsize = pixels.xsize;
     size_t ysize = pixels.ysize;
-    JXL_ASSERT(xsize == vp.xsize());
-    JXL_ASSERT(ysize == vp.ysize());
+    JXL_ENSURE(xsize == vp.xsize());
+    JXL_ENSURE(ysize == vp.ysize());
 
     // Before encountering a DISPOSE_OP_NONE frame, the canvas is filled with
     // 0, so DISPOSE_OP_BACKGROUND and DISPOSE_OP_PREVIOUS are equivalent.
@@ -1181,15 +1222,16 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
                              PackedImage::Create(pxs, pys, pixels.format));
         memset(new_data.pixels(), 0, new_data.pixels_size);
         for (size_t y = 0; y < ysize; y++) {
-          size_t bytes_per_pixel =
+          JXL_RETURN_IF_ERROR(
+              PackedImage::ValidateDataType(new_data.format.data_type));
+          size_t pixel_stride =
               PackedImage::BitsPerChannel(new_data.format.data_type) *
               new_data.format.num_channels / 8;
           memcpy(
               static_cast<uint8_t*>(new_data.pixels()) +
-                  new_data.stride * (y + y0 - py0) +
-                  bytes_per_pixel * (x0 - px0),
+                  new_data.stride * (y + y0 - py0) + pixel_stride * (x0 - px0),
               static_cast<const uint8_t*>(pixels.pixels()) + pixels.stride * y,
-              xsize * bytes_per_pixel);
+              xsize * pixel_stride);
         }
 
         x0 = px0;
@@ -1248,7 +1290,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   return true;
 }
 
-#endif  // JPEGXL_ENABLE_APNG
-
 }  // namespace extras
 }  // namespace jxl
+
+#endif  // JPEGXL_ENABLE_APNG

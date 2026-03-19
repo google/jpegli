@@ -13,10 +13,16 @@ set -eu
 
 OS=`uname -s`
 
-MYDIR=$(dirname $(realpath "$0"))
+SELF=$(realpath "$0")
+MYDIR=$(dirname "${SELF}")
+
+### Colors
+TEXT_BOLD_PURPLE="\033[1;35m"
+TEXT_RESET="\033[0m"
 
 ### Environment parameters:
-TEST_STACK_LIMIT="${TEST_STACK_LIMIT:-256}"
+# TODO(eustas): tighten; only several items need more than 48KiB
+TEST_STACK_LIMIT="${TEST_STACK_LIMIT:-128}"
 BENCHMARK_NUM_THREADS="${BENCHMARK_NUM_THREADS:-0}"
 BUILD_CONFIG=${BUILD_CONFIG:-}
 CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
@@ -31,6 +37,7 @@ TARGETS="${TARGETS:-all doc}"
 TEST_SELECTOR="${TEST_SELECTOR:-}"
 BUILD_TARGET="${BUILD_TARGET:-}"
 ENABLE_WASM_SIMD="${ENABLE_WASM_SIMD:-0}"
+CORPUS_DIR="${CORPUS_DIR:-}"
 if [[ -n "${BUILD_TARGET}" ]]; then
   BUILD_DIR="${BUILD_DIR:-${MYDIR}/build-${BUILD_TARGET%%-*}}"
 else
@@ -40,6 +47,7 @@ fi
 POST_MESSAGE_ON_ERROR="${POST_MESSAGE_ON_ERROR:-1}"
 # By default, do a lightweight debian HWY package build.
 HWY_PKG_OPTIONS="${HWY_PKG_OPTIONS:---set-envvar=HWY_EXTRA_CONFIG=-DBUILD_TESTING=OFF -DHWY_ENABLE_EXAMPLES=OFF -DHWY_ENABLE_CONTRIB=OFF}"
+EXCLUDE_DEBIAN_PACKAGES="${EXCLUDE_DEBIAN_PACKAGES:-}"
 
 # Set default compilers to clang if not already set
 export CC=${CC:-clang}
@@ -137,7 +145,24 @@ if [[ "${BUILD_TARGET%%-*}" != "arm" ]]; then
   )
 fi
 
-CLANG_TIDY_BIN=$(which clang-tidy-6.0 clang-tidy-7 clang-tidy-8 clang-tidy 2>/dev/null | head -n 1)
+CLANG_TIDY_BIN_CANDIDATES=(
+  clang-tidy
+  clang-tidy-6.0
+  clang-tidy-7
+  clang-tidy-8
+  clang-tidy-9
+  clang-tidy-10
+  clang-tidy-11
+  clang-tidy-12
+  clang-tidy-13
+  clang-tidy-14
+  clang-tidy-15
+  clang-tidy-16
+  clang-tidy-17
+  clang-tidy-18
+)
+
+CLANG_TIDY_BIN=${CLANG_TIDY_BIN:-$(which ${CLANG_TIDY_BIN_CANDIDATES[@]} 2>/dev/null | tail -n 1)}
 # Default to "cat" if "colordiff" is not installed or if stdout is not a tty.
 if [[ -t 1 ]]; then
   COLORDIFF_BIN=$(which colordiff cat 2>/dev/null | head -n 1)
@@ -280,7 +305,7 @@ export_env() {
 cmake_configure() {
   export_env
 
-  if [[ "${STACK_SIZE:-0}" == 1 ]]; then
+  if [[ "${EMIT_STACK_SIZES:-0}" == 1 ]]; then
     # Dump the stack size of each function in the .stack_sizes section for
     # analysis.
     CMAKE_C_FLAGS+=" -fstack-size-section"
@@ -468,7 +493,7 @@ strip_dead_code() {
 ### Externally visible commands
 
 cmd_debug() {
-  CMAKE_BUILD_TYPE="Debug"
+  CMAKE_BUILD_TYPE="DebugOpt"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -482,7 +507,7 @@ cmd_release() {
 
 cmd_opt() {
   CMAKE_BUILD_TYPE="RelWithDebInfo"
-  CMAKE_CXX_FLAGS+=" -DJXL_DEBUG_WARNING -DJXL_DEBUG_ON_ERROR"
+  CMAKE_CXX_FLAGS+=" -DJXL_IS_DEBUG_BUILD"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -505,6 +530,7 @@ cmd_coverage_report() {
   local gcovr_args=(
     -r "${real_build_dir}"
     --gcov-executable "${LLVM_COV} gcov"
+    --gcov-ignore-parse-errors suspicious_hits.warn_once_per_file
     # Only print coverage information for the libjxl directories. The rest
     # is not part of the code under test.
     --filter '.*jxl/.*'
@@ -562,6 +588,7 @@ cmd_msanfuzz() {
   # Install msan if needed before changing the flags.
   detect_clang_version
   local msan_prefix="${HOME}/.msan/${CLANG_VERSION}"
+  # TODO(eustas): why libc++abi.a is bad?
   if [[ ! -d "${msan_prefix}" || -e "${msan_prefix}/lib/libc++abi.a" ]]; then
     # Install msan libraries for this version if needed or if an older version
     # with libc++abi was installed.
@@ -575,9 +602,9 @@ cmd_msanfuzz() {
 
 cmd_asan() {
   SANITIZER="asan"
-  CMAKE_C_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_C_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
-  CMAKE_CXX_FLAGS+=" -DJXL_ENABLE_ASSERT=1 -g -DADDRESS_SANITIZER \
+  CMAKE_CXX_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
   strip_dead_code
   cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
@@ -587,16 +614,13 @@ cmd_asan() {
 cmd_tsan() {
   SANITIZER="tsan"
   local tsan_args=(
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DTHREAD_SANITIZER
-    ${UBSAN_FLAGS[@]}
     -fsanitize=thread
   )
   CMAKE_C_FLAGS+=" ${tsan_args[@]}"
   CMAKE_CXX_FLAGS+=" ${tsan_args[@]}"
 
-  CMAKE_BUILD_TYPE="RelWithDebInfo"
   cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
   cmake_build_and_test
 }
@@ -615,7 +639,6 @@ cmd_msan() {
     -fsanitize=memory
     -fno-omit-frame-pointer
 
-    -DJXL_ENABLE_ASSERT=1
     -g
     -DMEMORY_SANITIZER
 
@@ -648,16 +671,22 @@ cmd_msan() {
     -Wl,-rpath -Wl,"${msan_prefix}"/lib/
   )
 
-  CMAKE_C_FLAGS+=" ${msan_c_flags[@]} ${UBSAN_FLAGS[@]}"
-  CMAKE_CXX_FLAGS+=" ${msan_cxx_flags[@]} ${UBSAN_FLAGS[@]}"
+  CMAKE_C_FLAGS+=" ${msan_c_flags[@]}"
+  CMAKE_CXX_FLAGS+=" ${msan_cxx_flags[@]}"
   CMAKE_EXE_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   CMAKE_MODULE_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   CMAKE_SHARED_LINKER_FLAGS+=" ${msan_linker_flags[@]}"
   strip_dead_code
+
+  # MSAN share of stack size is non-negligible.
+  TEST_STACK_LIMIT="none"
+
+  # TODO(eustas): investigate why fuzzers do not link when MSAN libc++ is used
   cmake_configure "$@" \
     -DCMAKE_CROSSCOMPILING=1 -DRUN_HAVE_STD_REGEX=0 -DRUN_HAVE_POSIX_REGEX=0 \
     -DJPEGXL_ENABLE_TCMALLOC=OFF -DJPEGXL_WARNINGS_AS_ERRORS=OFF \
-    -DCMAKE_REQUIRED_LINK_OPTIONS="${msan_linker_flags[@]}"
+    -DCMAKE_REQUIRED_LINK_OPTIONS="${msan_linker_flags[@]}" \
+    -DJPEGXL_ENABLE_FUZZERS=OFF
   cmake_build_and_test
 }
 
@@ -666,6 +695,8 @@ cmd_msan() {
 cmd_msan_install() {
   local tmpdir=$(mktemp -d)
   CLEANUP_FILES+=("${tmpdir}")
+  local msan_root="${HOME}/.msan"
+  mkdir -p "${msan_root}"
   # Detect the llvm to install:
   export CC="${CC:-clang}"
   export CXX="${CXX:-clang++}"
@@ -673,23 +704,39 @@ cmd_msan_install() {
   # Allow overriding the LLVM checkout.
   local llvm_root="${LLVM_ROOT:-}"
   if [ -z "${llvm_root}" ]; then
-    local llvm_tag="llvmorg-${CLANG_VERSION}.0.0"
-    case "${CLANG_VERSION}" in
-      "6.0")
-        llvm_tag="llvmorg-6.0.1"
-        ;;
-      "7")
-        llvm_tag="llvmorg-7.0.1"
-        ;;
-    esac
-    local llvm_targz="${tmpdir}/${llvm_tag}.tar.gz"
-    curl -L --show-error -o "${llvm_targz}" \
-      "https://github.com/llvm/llvm-project/archive/${llvm_tag}.tar.gz"
+    declare -A llvm_tag_by_version=(
+      ["6.0"]="6.0.1"
+      ["7"]="7.1.0"
+      ["8"]="8.0.1"
+      ["9"]="9.0.2"
+      ["10"]="10.0.1"
+      ["11"]="11.1.0"
+      ["12"]="12.0.1"
+      ["13"]="13.0.1"
+      ["14"]="14.0.6"
+      ["15"]="15.0.7"
+      ["16"]="16.0.6"
+      ["17"]="17.0.6"
+      ["18"]="18.1.8"
+      ["19"]="19.1.7"
+      ["20"]="20.1.8"
+      ["21"]="21.1.5"
+    ) 
+    local llvm_tag="${CLANG_VERSION}.0.0"
+    if [[ -n "${llvm_tag_by_version["${CLANG_VERSION}"]}" ]]; then
+      llvm_tag=${llvm_tag_by_version["${CLANG_VERSION}"]}
+    fi
+    llvm_tag="llvmorg-${llvm_tag}"
+    local llvm_targz="${msan_root}/${llvm_tag}.tar.gz"
+    if [ ! -f "${llvm_targz}" ]; then
+      curl -L --show-error -o "${llvm_targz}" \
+        "https://github.com/llvm/llvm-project/archive/${llvm_tag}.tar.gz"
+    fi
     tar -C "${tmpdir}" -zxf "${llvm_targz}"
     llvm_root="${tmpdir}/llvm-project-${llvm_tag}"
   fi
 
-  local msan_prefix="${HOME}/.msan/${CLANG_VERSION}"
+  local msan_prefix="${msan_root}/${CLANG_VERSION}"
   rm -rf "${msan_prefix}"
 
   local TARGET_OPTS=""
@@ -701,32 +748,29 @@ cmd_msan_install() {
     "
   fi
 
-  declare -A CMAKE_EXTRAS
-  CMAKE_EXTRAS[libcxx]="\
-    -DLIBCXX_CXX_ABI=libstdc++ \
-    -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON"
-
-  for project in libcxx; do
-    local proj_build="${tmpdir}/build-${project}"
-    local proj_dir="${llvm_root}/${project}"
-    mkdir -p "${proj_build}"
-    cmake -B"${proj_build}" -H"${proj_dir}" \
-      -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DLLVM_USE_SANITIZER=Memory \
-      -DLLVM_PATH="${llvm_root}/llvm" \
-      -DLLVM_CONFIG_PATH="$(which llvm-config llvm-config-7 llvm-config-6.0 | \
-                            head -n1)" \
-      -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
-      -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" \
-      -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
-      -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" \
-      -DCMAKE_INSTALL_PREFIX="${msan_prefix}" \
-      ${TARGET_OPTS} \
-      ${CMAKE_EXTRAS[${project}]}
-    cmake --build "${proj_build}"
-    ninja -C "${proj_build}" install
-  done
+  local build_dir="${tmpdir}/build-llvm"
+  mkdir -p "${build_dir}"
+  cd ${llvm_root}
+  cmake -B"${build_dir}" \
+    -G Ninja \
+    -S runtimes \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_USE_SANITIZER=Memory \
+    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind;compiler-rt" \
+    -DLIBCXXABI_ENABLE_SHARED=ON \
+    -DLIBCXXABI_ENABLE_STATIC=OFF \
+    -DLIBCXX_ENABLE_SHARED=ON \
+    -DLIBCXX_ENABLE_STATIC=OFF \
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
+    -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" \
+    -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
+    -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" \
+    -DCMAKE_INSTALL_PREFIX="${msan_prefix}" \
+    -DLLVM_PATH="${llvm_root}/llvm" \
+    -DLLVM_CONFIG_PATH="$(which llvm-config-${CLANG_VERSION} llvm-config | head -n1)" \
+     ${TARGET_OPTS}
+  cmake --build "${build_dir}"
+  ninja -C "${build_dir}" install
 }
 
 # Internal build step shared between all cmd_ossfuzz_* commands.
@@ -808,11 +852,17 @@ cmd_fast_benchmark() {
     curl --show-error -o "${small_corpus_tar}" "${small_corpus_url}"
   fi
 
-  local tmpdir=$(mktemp -d)
-  CLEANUP_FILES+=("${tmpdir}")
-  tar -xf "${small_corpus_tar}" -C "${tmpdir}"
+  local corpus_dir="${CORPUS_DIR}"
+  if [[ -z "${CORPUS_DIR}" ]]; then
+    corpus_dir=$(mktemp -d)
+    CLEANUP_FILES+=("${corpus_dir}")
+  else
+    mkdir -p "${corpus_dir}"
+  fi
 
-  run_benchmark "${tmpdir}" 1048576
+  tar -xf "${small_corpus_tar}" -C "${corpus_dir}"
+
+  run_benchmark "${corpus_dir}" 1048576
 }
 
 cmd_benchmark() {
@@ -821,9 +871,15 @@ cmd_benchmark() {
   curl --show-error -o "${nikon_corpus_tar}" -z "${nikon_corpus_tar}" \
     "https://storage.googleapis.com/artifacts.jpegxl.appspot.com/corpora/nikon-subset.tar"
 
-  local tmpdir=$(mktemp -d)
-  CLEANUP_FILES+=("${tmpdir}")
-  tar -xvf "${nikon_corpus_tar}" -C "${tmpdir}"
+  local corpus_dir="${CORPUS_DIR}"
+  if [[ -z "${CORPUS_DIR}" ]]; then
+    corpus_dir=$(mktemp -d)
+    CLEANUP_FILES+=("${corpus_dir}")
+  else
+    mkdir -p "${corpus_dir}"
+  fi
+
+  tar -xvf "${nikon_corpus_tar}" -C "${corpus_dir}"
 
   local sem_id="jpegxl_benchmark-$$"
   local nprocs=$(nproc --all || echo 1)
@@ -845,13 +901,13 @@ cmd_benchmark() {
     png_filename=$(echo "${png_filename}" | tr '/' '_')
     sem --bg --id "${sem_id}" -j"${nprocs}" -- \
       "${TOOLS_DIR}/decode_and_encode" \
-        "${tmpdir}/${filename}" "${mode}" "${tmpdir}/${png_filename}"
+        "${corpus_dir}/${filename}" "${mode}" "${corpus_dir}/${png_filename}"
     images+=( "${png_filename}" )
-  done < <(cd "${tmpdir}"; ${FIND_BIN} . -name '*.ppm' -type f)
+  done < <(cd "${corpus_dir}"; ${FIND_BIN} . -name '*.ppm' -type f)
   sem --id "${sem_id}" --wait
 
   # We need about 10 GiB per thread on these images.
-  run_benchmark "${tmpdir}" 10485760
+  run_benchmark "${corpus_dir}" 10485760
 }
 
 get_mem_available() {
@@ -908,7 +964,7 @@ run_benchmark() {
     "${TOOLS_DIR}/benchmark_xl" "${benchmark_args[@]}" | \
        tee "${output_dir}/results.txt"
 
-    # Check error code for benckmark_xl command. This will exit if not.
+    # Check error code for benchmark_xl command. This will exit if not.
     return ${PIPESTATUS[0]}
   )
 }
@@ -1161,7 +1217,7 @@ cmd_fuzz() {
 cmd_lint() {
   merge_request_commits
   { set +x; } 2>/dev/null
-  local versions=(${1:-16 15 14 13 12 11 10 9 8 7 6.0})
+  local versions=(${1:-18 17 16 15 14 13 12 11 10 9 8 7 6.0})
   local clang_format_bins=("${versions[@]/#/clang-format-}" clang-format)
   local tmpdir=$(mktemp -d)
   CLEANUP_FILES+=("${tmpdir}")
@@ -1178,7 +1234,7 @@ cmd_lint() {
   # It is ok, if buildifier is not installed.
   #if which buildifier >/dev/null; then
   #  local buildifier_patch="${tmpdir}/buildifier.patch"
-  #  local bazel_files=`git -C ${MYDIR} ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`
+  #  local bazel_files=`git -C "${MYDIR}" ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`
   #  set -x
   #  buildifier -d ${bazel_files} >"${buildifier_patch}"|| true
   #  { set +x; } 2>/dev/null
@@ -1189,7 +1245,18 @@ cmd_lint() {
   #    echo 'To fix them run (from the base directory):' >&2
   #    echo '  buildifier `git ls-files | grep -E "/BUILD$|WORKSPACE|.bzl$"`' >&2
   #  fi
+  #else
+  #  echo -e "${TEXT_BOLD_PURPLE}SKIPPED:${TEXT_RESET} buildifier (not installed)"
   #fi
+
+  # It is ok, if spell-checker is not installed.
+  if which typos >/dev/null; then
+    local src_ext="bazel|bzl|c|cc|cmake|gni|h|html|in|java|js|m|md|nix|py|rst|sh|ts|txt|yaml|yml"
+    local sources=`git -C "${MYDIR}" ls-files | grep -E "\.(${src_ext})$"`
+    typos -c "${MYDIR}/tools/scripts/typos.toml" ${sources}
+  else
+    echo -e "${TEXT_BOLD_PURPLE}SKIPPED:${TEXT_RESET} typos not installed; try: cargo install typos-cli"
+  fi
 
   local installed=()
   local clang_patch
@@ -1329,6 +1396,11 @@ build_debian_pkg() {
       ln -s "${srcdir}/$f" "${builddir}/$f"
     fi
   done
+  if [[ -n "${EXCLUDE_DEBIAN_PACKAGES}" ]]; then
+    # TODO(eustas): support comma-separated list
+    rm -f "${builddir}"/debian/${EXCLUDE_DEBIAN_PACKAGES}.install
+    sed -i "/Package: ${EXCLUDE_DEBIAN_PACKAGES}/,/\n/d" "${builddir}"/debian/control
+  fi
   (
     cd "${builddir}"
     debuild "${options}" -b -uc -us
@@ -1482,7 +1554,7 @@ You can pass some optional environment variables as well:
  - STORE_IMAGES=0: Makes the benchmark discard the computed images.
  - TEST_STACK_LIMIT: Stack size limit (ulimit -s) during tests, in KiB.
  - TEST_SELECTOR: pass additional arguments to ctest, e.g. "-R .Resample.".
- - STACK_SIZE=1: Generate binaries with the .stack_sizes sections.
+ - EMIT_STACK_SIZES=1: Generate binaries with the .stack_sizes sections.
 
 These optional environment variables are forwarded to the cmake call as
 parameters:

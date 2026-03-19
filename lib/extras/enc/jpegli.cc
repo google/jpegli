@@ -7,11 +7,11 @@
 #include "lib/extras/enc/jpegli.h"
 
 #include <setjmp.h>
-#include <stdint.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <hwy/aligned_allocator.h>
@@ -29,7 +29,6 @@
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/enc/encode.h"
-#include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
 #include "lib/extras/simd_util.h"
 #include "lib/extras/xyb_transform.h"
@@ -392,11 +391,12 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
   unsigned char* output_buffer = nullptr;
   unsigned long output_size = 0;  // NOLINT
   std::vector<uint8_t> row_bytes;
-  size_t rowlen = RoundUpTo(ppf.info.xsize, MaxVectorSize());
+  const size_t max_vector_size = MaxVectorSize();
+  size_t rowlen = RoundUpTo(ppf.info.xsize, max_vector_size);
   hwy::AlignedFreeUniquePtr<float[]> xyb_tmp =
       hwy::AllocateAligned<float>(6 * rowlen);
   hwy::AlignedFreeUniquePtr<float[]> premul_absorb =
-      hwy::AllocateAligned<float>(MaxVectorSize() * 12);
+      hwy::AllocateAligned<float>(max_vector_size * 12);
   ComputePremulAbsorb(255.0f, premul_absorb.get());
 
   jpeg_compress_struct cinfo;
@@ -540,6 +540,8 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         }
       } else {
         for (size_t y = 0; y < info.ysize; ++y) {
+          JXL_RETURN_IF_ERROR(
+              PackedImage::ValidateDataType(image.format.data_type));
           int bytes_per_channel =
               PackedImage::BitsPerChannel(image.format.data_type) / 8;
           int bytes_per_pixel = cinfo.num_components * bytes_per_channel;

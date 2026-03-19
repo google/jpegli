@@ -6,10 +6,19 @@
 
 #include "lib/extras/enc/pgx.h"
 
-#include <string.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <vector>
 
 #include "lib/base/byte_order.h"
+#include "lib/base/common.h"
+#include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/extras/codestream_header.h"
+#include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 
 namespace jxl {
@@ -50,9 +59,10 @@ Status EncodeImagePGX(const PackedFrame& frame, const JxlBasicInfo& info,
   const PackedImage& color = frame.color;
   const JxlPixelFormat format = color.format;
   const uint8_t* in = reinterpret_cast<const uint8_t*>(color.pixels());
+  JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
   size_t data_bits_per_sample = PackedImage::BitsPerChannel(format.data_type);
   size_t bytes_per_sample = data_bits_per_sample / kBitsPerByte;
-  size_t num_samples = info.xsize * info.ysize;
+  size_t num_samples = static_cast<size_t>(info.xsize) * info.ysize;
 
   if (info.bits_per_sample != data_bits_per_sample) {
     return JXL_FAILURE("Bit depth does not match pixel data type");

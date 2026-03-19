@@ -49,7 +49,7 @@ load(
     "libjxl_deps_skcms",
     # "libjxl_deps_testdata",
     # "libjxl_deps_webp",
-    "libjxl_root_package",
+    "jpegli_root_package",
     "libjxl_test_shards",
     "libjxl_test_timeouts",
 )
@@ -228,7 +228,7 @@ cc_library(
     hdrs = [path for path in TESTLIB_FILES if path.endswith(".h")],
     compatible_with = DEFAULT_COMPATIBILITY,
     defines = [
-        'JPEGXL_ROOT_PACKAGE=\'"' + libjxl_root_package + '"\'',
+        'JPEGLI_ROOT_PACKAGE=\'"' + jpegli_root_package + '"\'',
     ],
     deps = [
         ":jpegli",
@@ -244,6 +244,7 @@ TESTS = [path.partition(".")[0] for path in libjxl_tests + libjxl_jpegli_tests]
         timeout = libjxl_test_timeouts.get(test, "moderate"),
         srcs = [
             test + ".cc",
+            "base/testing.h",
             "jpegli/testing.h",
         ],
         data = ["//:testdata"],

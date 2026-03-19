@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "lib/base/status.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
 
 namespace jpegli {
@@ -24,7 +24,7 @@ bool FormatString(char* buffer, const char* format, ...);
   jpegli::FormatString(cinfo->err->msg_parm.s, ("%s:%d: " format), __FILE__, \
                        __LINE__, ##__VA_ARGS__),                             \
       (*cinfo->err->error_exit)(reinterpret_cast<j_common_ptr>(cinfo)),      \
-      (void)jxl::Abort()
+      JXL_CRASH()
 
 #define JPEGLI_WARN(format, ...)                                             \
   jpegli::FormatString(cinfo->err->msg_parm.s, ("%s:%d: " format), __FILE__, \
@@ -37,5 +37,12 @@ bool FormatString(char* buffer, const char* format, ...);
                        __LINE__, ##__VA_ARGS__),                             \
       (*cinfo->err->emit_message)(reinterpret_cast<j_common_ptr>(cinfo),     \
                                   (level))
+
+#define JPEGLI_CHECK(condition)                     \
+  do {                                              \
+    if (!(condition)) {                             \
+      JPEGLI_ERROR("JPEGLI_CHECK: %s", #condition); \
+    }                                               \
+  } while (0)
 
 #endif  // LIB_JPEGLI_ERROR_H_

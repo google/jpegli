@@ -4,12 +4,20 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
+#include "lib/jpegli/common.h"
+
 #if defined(LIB_JPEGLI_DCT_INL_H_) == defined(HWY_TARGET_TOGGLE)
 #ifdef LIB_JPEGLI_DCT_INL_H_
 #undef LIB_JPEGLI_DCT_INL_H_
 #else
 #define LIB_JPEGLI_DCT_INL_H_
 #endif
+
+#include <hwy/highway.h>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/jpegli/transpose-inl.h"
@@ -24,6 +32,7 @@ using hwy::HWY_NAMESPACE::Abs;
 using hwy::HWY_NAMESPACE::Add;
 using hwy::HWY_NAMESPACE::DemoteTo;
 using hwy::HWY_NAMESPACE::Ge;
+using hwy::HWY_NAMESPACE::Half;
 using hwy::HWY_NAMESPACE::IfThenElseZero;
 using hwy::HWY_NAMESPACE::Mul;
 using hwy::HWY_NAMESPACE::MulAdd;
@@ -32,28 +41,25 @@ using hwy::HWY_NAMESPACE::Round;
 using hwy::HWY_NAMESPACE::Sub;
 using hwy::HWY_NAMESPACE::Vec;
 
-using D = HWY_FULL(float);
-using DI = HWY_FULL(int32_t);
-
 template <size_t N>
-void AddReverse(const float* JXL_RESTRICT ain1, const float* JXL_RESTRICT ain2,
-                float* JXL_RESTRICT aout) {
+void AddReverse(const float* JXL_RESTRICT a_in1,
+                const float* JXL_RESTRICT a_in2, float* JXL_RESTRICT a_out) {
   HWY_CAPPED(float, 8) d8;
   for (size_t i = 0; i < N; i++) {
-    auto in1 = Load(d8, ain1 + i * 8);
-    auto in2 = Load(d8, ain2 + (N - i - 1) * 8);
-    Store(Add(in1, in2), d8, aout + i * 8);
+    auto in1 = Load(d8, a_in1 + i * 8);
+    auto in2 = Load(d8, a_in2 + (N - i - 1) * 8);
+    Store(Add(in1, in2), d8, a_out + i * 8);
   }
 }
 
 template <size_t N>
-void SubReverse(const float* JXL_RESTRICT ain1, const float* JXL_RESTRICT ain2,
-                float* JXL_RESTRICT aout) {
+void SubReverse(const float* JXL_RESTRICT a_in1,
+                const float* JXL_RESTRICT a_in2, float* JXL_RESTRICT a_out) {
   HWY_CAPPED(float, 8) d8;
   for (size_t i = 0; i < N; i++) {
-    auto in1 = Load(d8, ain1 + i * 8);
-    auto in2 = Load(d8, ain2 + (N - i - 1) * 8);
-    Store(Sub(in1, in2), d8, aout + i * 8);
+    auto in1 = Load(d8, a_in1 + i * 8);
+    auto in2 = Load(d8, a_in2 + (N - i - 1) * 8);
+    Store(Sub(in1, in2), d8, a_out + i * 8);
   }
 }
 
@@ -62,9 +68,9 @@ void B(float* JXL_RESTRICT coeff) {
   HWY_CAPPED(float, 8) d8;
   constexpr float kSqrt2 = 1.41421356237f;
   auto sqrt2 = Set(d8, kSqrt2);
-  auto in1 = Load(d8, coeff);
-  auto in2 = Load(d8, coeff + 8);
-  Store(MulAdd(in1, sqrt2, in2), d8, coeff);
+  auto in1_0 = Load(d8, coeff);
+  auto in2_0 = Load(d8, coeff + 8);
+  Store(MulAdd(in1_0, sqrt2, in2_0), d8, coeff);
   for (size_t i = 1; i + 1 < N; i++) {
     auto in1 = Load(d8, coeff + i * 8);
     auto in2 = Load(d8, coeff + (i + 1) * 8);
@@ -74,15 +80,15 @@ void B(float* JXL_RESTRICT coeff) {
 
 // Ideally optimized away by compiler (except the multiply).
 template <size_t N>
-void InverseEvenOdd(const float* JXL_RESTRICT ain, float* JXL_RESTRICT aout) {
+void InverseEvenOdd(const float* JXL_RESTRICT a_in, float* JXL_RESTRICT a_out) {
   HWY_CAPPED(float, 8) d8;
   for (size_t i = 0; i < N / 2; i++) {
-    auto in1 = Load(d8, ain + i * 8);
-    Store(in1, d8, aout + 2 * i * 8);
+    auto in1 = Load(d8, a_in + i * 8);
+    Store(in1, d8, a_out + 2 * i * 8);
   }
   for (size_t i = N / 2; i < N; i++) {
-    auto in1 = Load(d8, ain + i * 8);
-    Store(in1, d8, aout + (2 * (i - N / 2) + 1) * 8);
+    auto in1 = Load(d8, a_in + i * 8);
+    Store(in1, d8, a_out + (2 * (i - N / 2) + 1) * 8);
   }
 }
 
@@ -110,8 +116,10 @@ struct WcMultipliers<8> {
   };
 };
 
+#if JXL_CXX_LANG < JXL_CXX_17
 constexpr float WcMultipliers<4>::kMultipliers[];
 constexpr float WcMultipliers<8>::kMultipliers[];
+#endif
 
 // Invoked on full vector.
 template <size_t N>
@@ -197,15 +205,15 @@ JXL_INLINE JXL_MAYBE_UNUSED void TransformFromPixels(
   Transpose8x8Block(scratch_space, coefficients);
 }
 
-JXL_INLINE JXL_MAYBE_UNUSED void StoreQuantizedValue(const Vec<DI>& ival,
-                                                     int16_t* out) {
-  Rebind<int16_t, DI> di16;
+JXL_INLINE JXL_MAYBE_UNUSED void StoreQuantizedValue(
+    const Vec<HWY_FULL(int32_t)>& ival, int16_t* out) {
+  Half<HWY_FULL(int16_t)> di16;
   Store(DemoteTo(di16, ival), di16, out);
 }
 
-JXL_INLINE JXL_MAYBE_UNUSED void StoreQuantizedValue(const Vec<DI>& ival,
-                                                     int32_t* out) {
-  DI di;
+JXL_INLINE JXL_MAYBE_UNUSED void StoreQuantizedValue(
+    const Vec<HWY_FULL(int32_t)>& ival, int32_t* out) {
+  const HWY_FULL(int32_t) di;
   Store(ival, di, out);
 }
 
@@ -213,8 +221,9 @@ template <typename T>
 void QuantizeBlock(const float* dct, const float* qmc, float aq_strength,
                    const float* zero_bias_offset, const float* zero_bias_mul,
                    T* block) {
-  D d;
-  DI di;
+  const HWY_FULL(float) d;
+  const HWY_FULL(int32_t) di;
+
   const auto aq_mul = Set(d, aq_strength);
   for (size_t k = 0; k < DCTSIZE2; k += Lanes(d)) {
     const auto val = Load(d, dct + k);

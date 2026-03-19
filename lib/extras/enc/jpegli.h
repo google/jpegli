@@ -9,17 +9,18 @@
 
 // Encodes JPG pixels and metadata in memory using the libjpegli library.
 
-#include <stdint.h>
-
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
-#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
+
+class PackedPixelFile;
 
 struct JpegSettings {
   bool xyb = false;

@@ -5,7 +5,7 @@
 
 # Extra build variables.
 
-libjxl_root_package = "libjxl"
+jpegli_root_package = "jpegli"
 
 libjxl_deps_brotli = ["@brotli//:brotlidec", "@brotli//:brotlienc"]
 libjxl_deps_exr = ["@openexr//:OpenEXR"]

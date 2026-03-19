@@ -6,23 +6,25 @@
 
 #include "lib/jpegli/render.h"
 
-#include <string.h>
-
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <hwy/aligned_allocator.h>
+#include <cstring>
 #include <vector>
 
 #include "lib/base/byte_order.h"
 #include "lib/base/compiler_specific.h"
-#include "lib/base/status.h"
+#include "lib/base/types.h"
 #include "lib/jpegli/color_quantize.h"
 #include "lib/jpegli/color_transform.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/idct.h"
+#include "lib/jpegli/types.h"
 #include "lib/jpegli/upsample.h"
 
 #ifdef MEMORY_SANITIZER
@@ -105,47 +107,47 @@ void DitherRow(j_decompress_ptr cinfo, float* row, int c, size_t y,
 template <typename T>
 void StoreUnsignedRow(float* JXL_RESTRICT input[], size_t x0, size_t len,
                       size_t num_channels, float multiplier, T* output) {
-  const HWY_CAPPED(float, 8) d;
-  auto zero = Zero(d);
-  auto mul = Set(d, multiplier);
-  const Rebind<T, decltype(d)> du;
+  const HWY_CAPPED(float, 8) cd;
+  auto zero = Zero(cd);
+  auto mul = Set(cd, multiplier);
+  const Rebind<T, decltype(cd)> cdu;
 #if JXL_MEMORY_SANITIZER
-  const size_t padding = hwy::RoundUpTo(len, Lanes(d)) - len;
+  const size_t padding = hwy::RoundUpTo(len, Lanes(cd)) - len;
   for (size_t c = 0; c < num_channels; ++c) {
     __msan_unpoison(input[c] + x0 + len, sizeof(input[c][0]) * padding);
   }
 #endif
   if (num_channels == 1) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      auto v0 = Clamp(zero, Mul(LoadU(d, &input[0][x0 + i]), mul), mul);
-      StoreU(DemoteTo(du, NearestInt(v0)), du, &output[i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      auto v0 = Clamp(zero, Mul(LoadU(cd, &input[0][x0 + i]), mul), mul);
+      StoreU(DemoteTo(cdu, NearestInt(v0)), cdu, &output[i]);
     }
   } else if (num_channels == 2) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      auto v0 = Clamp(zero, Mul(LoadU(d, &input[0][x0 + i]), mul), mul);
-      auto v1 = Clamp(zero, Mul(LoadU(d, &input[1][x0 + i]), mul), mul);
-      StoreInterleaved2(DemoteTo(du, NearestInt(v0)),
-                        DemoteTo(du, NearestInt(v1)), du, &output[2 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      auto v0 = Clamp(zero, Mul(LoadU(cd, &input[0][x0 + i]), mul), mul);
+      auto v1 = Clamp(zero, Mul(LoadU(cd, &input[1][x0 + i]), mul), mul);
+      StoreInterleaved2(DemoteTo(cdu, NearestInt(v0)),
+                        DemoteTo(cdu, NearestInt(v1)), cdu, &output[2 * i]);
     }
   } else if (num_channels == 3) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      auto v0 = Clamp(zero, Mul(LoadU(d, &input[0][x0 + i]), mul), mul);
-      auto v1 = Clamp(zero, Mul(LoadU(d, &input[1][x0 + i]), mul), mul);
-      auto v2 = Clamp(zero, Mul(LoadU(d, &input[2][x0 + i]), mul), mul);
-      StoreInterleaved3(DemoteTo(du, NearestInt(v0)),
-                        DemoteTo(du, NearestInt(v1)),
-                        DemoteTo(du, NearestInt(v2)), du, &output[3 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      auto v0 = Clamp(zero, Mul(LoadU(cd, &input[0][x0 + i]), mul), mul);
+      auto v1 = Clamp(zero, Mul(LoadU(cd, &input[1][x0 + i]), mul), mul);
+      auto v2 = Clamp(zero, Mul(LoadU(cd, &input[2][x0 + i]), mul), mul);
+      StoreInterleaved3(DemoteTo(cdu, NearestInt(v0)),
+                        DemoteTo(cdu, NearestInt(v1)),
+                        DemoteTo(cdu, NearestInt(v2)), cdu, &output[3 * i]);
     }
   } else if (num_channels == 4) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      auto v0 = Clamp(zero, Mul(LoadU(d, &input[0][x0 + i]), mul), mul);
-      auto v1 = Clamp(zero, Mul(LoadU(d, &input[1][x0 + i]), mul), mul);
-      auto v2 = Clamp(zero, Mul(LoadU(d, &input[2][x0 + i]), mul), mul);
-      auto v3 = Clamp(zero, Mul(LoadU(d, &input[3][x0 + i]), mul), mul);
-      StoreInterleaved4(DemoteTo(du, NearestInt(v0)),
-                        DemoteTo(du, NearestInt(v1)),
-                        DemoteTo(du, NearestInt(v2)),
-                        DemoteTo(du, NearestInt(v3)), du, &output[4 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      auto v0 = Clamp(zero, Mul(LoadU(cd, &input[0][x0 + i]), mul), mul);
+      auto v1 = Clamp(zero, Mul(LoadU(cd, &input[1][x0 + i]), mul), mul);
+      auto v2 = Clamp(zero, Mul(LoadU(cd, &input[2][x0 + i]), mul), mul);
+      auto v3 = Clamp(zero, Mul(LoadU(cd, &input[3][x0 + i]), mul), mul);
+      StoreInterleaved4(DemoteTo(cdu, NearestInt(v0)),
+                        DemoteTo(cdu, NearestInt(v1)),
+                        DemoteTo(cdu, NearestInt(v2)),
+                        DemoteTo(cdu, NearestInt(v3)), cdu, &output[4 * i]);
     }
   }
 #if JXL_MEMORY_SANITIZER
@@ -156,26 +158,26 @@ void StoreUnsignedRow(float* JXL_RESTRICT input[], size_t x0, size_t len,
 
 void StoreFloatRow(float* JXL_RESTRICT input[3], size_t x0, size_t len,
                    size_t num_channels, float* output) {
-  const HWY_CAPPED(float, 8) d;
+  const HWY_CAPPED(float, 8) cd;
   if (num_channels == 1) {
     memcpy(output, input[0] + x0, len * sizeof(output[0]));
   } else if (num_channels == 2) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      StoreInterleaved2(LoadU(d, &input[0][x0 + i]),
-                        LoadU(d, &input[1][x0 + i]), d, &output[2 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      StoreInterleaved2(LoadU(cd, &input[0][x0 + i]),
+                        LoadU(cd, &input[1][x0 + i]), cd, &output[2 * i]);
     }
   } else if (num_channels == 3) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      StoreInterleaved3(LoadU(d, &input[0][x0 + i]),
-                        LoadU(d, &input[1][x0 + i]),
-                        LoadU(d, &input[2][x0 + i]), d, &output[3 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      StoreInterleaved3(LoadU(cd, &input[0][x0 + i]),
+                        LoadU(cd, &input[1][x0 + i]),
+                        LoadU(cd, &input[2][x0 + i]), cd, &output[3 * i]);
     }
   } else if (num_channels == 4) {
-    for (size_t i = 0; i < len; i += Lanes(d)) {
-      StoreInterleaved4(LoadU(d, &input[0][x0 + i]),
-                        LoadU(d, &input[1][x0 + i]),
-                        LoadU(d, &input[2][x0 + i]),
-                        LoadU(d, &input[3][x0 + i]), d, &output[4 * i]);
+    for (size_t i = 0; i < len; i += Lanes(cd)) {
+      StoreInterleaved4(LoadU(cd, &input[0][x0 + i]),
+                        LoadU(cd, &input[1][x0 + i]),
+                        LoadU(cd, &input[2][x0 + i]),
+                        LoadU(cd, &input[3][x0 + i]), cd, &output[4 * i]);
     }
   }
 }
@@ -432,7 +434,7 @@ void PredictSmooth(j_decompress_ptr cinfo, JBLOCKARRAY blocks, int component,
     }
   }
   // Get the correct coef_bits: In case of an incomplete scan, we use the
-  // prev coeficients.
+  // prev coefficients.
   if (cinfo->output_iMCU_row + 1 > cinfo->input_iMCU_row) {
     coef_bits = cinfo->master->prev_coef_bits_latch[component];
   } else {
@@ -467,8 +469,8 @@ void PredictSmooth(j_decompress_ptr cinfo, JBLOCKARRAY blocks, int component,
     auto dc = [&](int i, int j) {
       return swap_indices ? dc_values[j][i] : dc_values[i][j];
     };
+    JPEGLI_CHECK(coef_index >= 0 && coef_index < 10);
     Al = coef_bits[coef_index];
-    JXL_ASSERT(coef_index >= 0 && coef_index < 10);
     switch (coef_index) {
       case 0:
         // set the DC
@@ -570,21 +572,21 @@ void PrepareForOutput(j_decompress_ptr cinfo) {
       m->dequant_[c * DCTSIZE2 + k] = table->quantval[k] * kDequantScale;
     }
   }
-  ChooseInverseTransform(cinfo);
+  JPEGLI_CHECK(ChooseInverseTransform(cinfo));
   ChooseColorTransform(cinfo);
 }
 
 void DecodeCurrentiMCURow(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   const size_t imcu_row = cinfo->output_iMCU_row;
-  JBLOCKARRAY ba[kMaxComponents];
+  JBLOCKARRAY blocks[kMaxComponents];
   for (int c = 0; c < cinfo->num_components; ++c) {
     const jpeg_component_info* comp = &cinfo->comp_info[c];
     int by0 = imcu_row * comp->v_samp_factor;
     int block_rows_left = comp->height_in_blocks - by0;
     int max_block_rows = std::min(comp->v_samp_factor, block_rows_left);
     int offset = m->streaming_mode_ ? 0 : by0;
-    ba[c] = (*cinfo->mem->access_virt_barray)(
+    blocks[c] = (*cinfo->mem->access_virt_barray)(
         reinterpret_cast<j_common_ptr>(cinfo), m->coef_arrays[c], offset,
         max_block_rows, FALSE);
   }
@@ -599,7 +601,7 @@ void DecodeCurrentiMCURow(j_decompress_ptr cinfo) {
         if (by >= compinfo.height_in_blocks) {
           continue;
         }
-        int16_t* JXL_RESTRICT coeffs = &ba[c][iy][0][0];
+        int16_t* JXL_RESTRICT coeffs = &blocks[c][iy][0][0];
         size_t num = compinfo.width_in_blocks * DCTSIZE2;
         GatherBlockStats(coeffs, num, &m->nonzeros_[k0], &m->sumabs_[k0]);
         m->num_processed_blocks_[c] += compinfo.width_in_blocks;
@@ -618,11 +620,11 @@ void DecodeCurrentiMCURow(j_decompress_ptr cinfo) {
         continue;
       }
       size_t dctsize = m->scaled_dct_size[c];
-      int16_t* JXL_RESTRICT row_in = &ba[c][iy][0][0];
+      int16_t* JXL_RESTRICT row_in = &blocks[c][iy][0][0];
       float* JXL_RESTRICT row_out = raw_out->Row(by * dctsize);
       for (size_t bx = 0; bx < compinfo.width_in_blocks; ++bx) {
         if (m->apply_smoothing) {
-          PredictSmooth(cinfo, ba[c], c, bx, iy);
+          PredictSmooth(cinfo, blocks[c], c, bx, iy);
           (*m->inverse_transform[c])(m->smoothing_scratch_, &m->dequant_[k0],
                                      &m->biases_[k0], m->idct_scratch_,
                                      &row_out[bx * dctsize], raw_out->stride(),
@@ -649,7 +651,8 @@ void ProcessRawOutput(j_decompress_ptr cinfo, JSAMPIMAGE data) {
     size_t comp_width = compinfo.width_in_blocks * DCTSIZE;
     size_t comp_height = compinfo.height_in_blocks * DCTSIZE;
     size_t comp_nrows = compinfo.v_samp_factor * DCTSIZE;
-    size_t y0 = cinfo->output_iMCU_row * compinfo.v_samp_factor * DCTSIZE;
+    size_t y0 = static_cast<size_t>(cinfo->output_iMCU_row) *
+                compinfo.v_samp_factor * DCTSIZE;
     size_t y1 = std::min(y0 + comp_nrows, comp_height);
     for (size_t y = y0; y < y1; ++y) {
       float* rows[1] = {m->raw_output_[c].Row(y)};
@@ -668,8 +671,8 @@ void ProcessRawOutput(j_decompress_ptr cinfo, JSAMPIMAGE data) {
 void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
                    JSAMPARRAY scanlines, size_t max_output_rows) {
   jpeg_decomp_master* m = cinfo->master;
-  const int vfactor = cinfo->max_v_samp_factor;
-  const int hfactor = cinfo->max_h_samp_factor;
+  const size_t vfactor = cinfo->max_v_samp_factor;
+  const size_t hfactor = cinfo->max_h_samp_factor;
   const size_t context = m->need_context_rows_ ? 1 : 0;
   const size_t imcu_row = cinfo->output_iMCU_row;
   const size_t imcu_height = vfactor * m->min_scaled_dct_size;
@@ -715,7 +718,8 @@ void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
             for (int yix = 0; yix < m->v_factor[c]; ++yix) {
               int row_ix = m->v_factor[c] * dy + yix;
               float* JXL_RESTRICT row = render_out->Row(row_ix);
-              float* JXL_RESTRICT tmp = m->upsample_scratch_;
+              float* JXL_RESTRICT tmp =
+                  m->upsample_scratch_ + HWY_ALIGNMENT / sizeof(float);
               if (cinfo->do_fancy_upsampling && m->h_factor[c] == 2) {
                 Upsample2Horizontal(row, tmp, output_width);
               } else {
@@ -729,7 +733,7 @@ void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
           }
         }
       }
-      for (int yix = 0; yix < vfactor; ++yix) {
+      for (size_t yix = 0; yix < vfactor; ++yix) {
         if (y + yix < ybegin || y + yix >= yend) continue;
         float* rows[kMaxComponents];
         int num_all_components =
@@ -747,7 +751,7 @@ void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
           WriteToOutput(cinfo, rows, m->xoffset_, cinfo->output_width,
                         cinfo->out_color_components, output);
         }
-        JXL_ASSERT(cinfo->output_scanline == y + yix);
+        JPEGLI_CHECK(cinfo->output_scanline == y + yix);
         ++cinfo->output_scanline;
         ++(*num_output_rows);
         if (cinfo->output_scanline == cinfo->output_height) {

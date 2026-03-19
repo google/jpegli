@@ -7,12 +7,12 @@
 #ifndef LIB_JPEGLI_DECODE_INTERNAL_H_
 #define LIB_JPEGLI_DECODE_INTERNAL_H_
 
-#include <sys/types.h>
-
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
-#include "lib/jpegli/common.h"
+#include "jpeglib.h"
+#include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/huffman.h"
 #include "lib/jpegli/types.h"
@@ -81,7 +81,7 @@ struct jpeg_decomp_master {
   int h_factor[jpegli::kMaxComponents];
   int v_factor[jpegli::kMaxComponents];
 
-  // Initialized at strat of frame.
+  // Initialized at start of frame.
   uint16_t scan_progression_[jpegli::kMaxComponents][DCTSIZE2];
 
   //

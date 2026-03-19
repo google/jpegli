@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding.h"
 

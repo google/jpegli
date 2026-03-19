@@ -6,14 +6,27 @@
 
 #include "lib/extras/dec/decode.h"
 
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <cstdint>
 #include <locale>
+#include <string>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
+#include "lib/base/span.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/extras/codestream_header.h"
 #include "lib/extras/dec/apng.h"
+#include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/exr.h"
 #include "lib/extras/dec/gif.h"
 #include "lib/extras/dec/jpg.h"
 #include "lib/extras/dec/pgx.h"
 #include "lib/extras/dec/pnm.h"
+#include "lib/extras/packed_image.h"
 
 namespace jxl {
 namespace extras {
@@ -102,7 +115,8 @@ std::string ListOfDecodeCodecs() {
 
 Status DecodeBytes(const Span<const uint8_t> bytes,
                    const ColorHints& color_hints, extras::PackedPixelFile* ppf,
-                   const SizeConstraints* constraints, Codec* orig_codec) {
+                   const SizeConstraints* constraints, Codec* orig_codec,
+                   JxlMemoryManager* memory_manager, bool coalescing) {
   if (bytes.size() < kMinBytes) return JXL_FAILURE("Too few bytes");
 
   *ppf = extras::PackedPixelFile();
@@ -111,35 +125,109 @@ Status DecodeBytes(const Span<const uint8_t> bytes,
   ppf->info.uses_original_profile = JXL_TRUE;
   ppf->info.orientation = JXL_ORIENT_IDENTITY;
 
-  const auto choose_codec = [&]() -> Codec {
-    if (DecodeImageAPNG(bytes, color_hints, ppf, constraints)) {
-      return Codec::kPNG;
-    }
-    if (DecodeImagePGX(bytes, color_hints, ppf, constraints)) {
-      return Codec::kPGX;
-    }
-    if (DecodeImagePNM(bytes, color_hints, ppf, constraints)) {
-      return Codec::kPNM;
-    }
-    if (DecodeImageGIF(bytes, color_hints, ppf, constraints)) {
-      return Codec::kGIF;
-    }
-    if (DecodeImageJPG(bytes, color_hints, ppf, constraints)) {
-      return Codec::kJPG;
-    }
-    if (DecodeImageEXR(bytes, color_hints, ppf, constraints)) {
-      return Codec::kEXR;
-    }
-    return Codec::kUnknown;
-  };
+  Codec codec = DetectCodec(bytes);
+  bool ok = false;
+  switch (codec) {
+    case Codec::kEXR:
+      ok = DecodeImageEXR(bytes, color_hints, ppf, constraints);
+      break;
 
-  Codec codec = choose_codec();
-  if (codec == Codec::kUnknown) {
+    case Codec::kGIF:
+      ok = DecodeImageGIF(bytes, color_hints, ppf, constraints);
+      break;
+
+    case Codec::kJPG:
+      ok = DecodeImageJPG(bytes, color_hints, ppf, constraints);
+      break;
+
+    case Codec::kJXL:
+      return JXL_FAILURE("Unsupported codec JXL");
+
+    case Codec::kPGX:
+      ok = DecodeImagePGX(bytes, color_hints, ppf, constraints);
+      break;
+
+    case Codec::kPNG:
+      ok = DecodeImageAPNG(bytes, color_hints, ppf, constraints);
+      break;
+
+    case Codec::kPNM:
+      ok = DecodeImagePNM(bytes, color_hints, ppf, constraints);
+      break;
+
+    case Codec::kUnknown:
+      return JXL_FAILURE("Unrecognized codec");
+  }
+
+  if (!ok) {
     return JXL_FAILURE("Codecs failed to decode");
   }
   if (orig_codec) *orig_codec = codec;
 
   return true;
+}
+
+template <size_t N, size_t L>
+bool CheckSignatures(const Span<const uint8_t>& bytes,
+                     const std::array<std::array<uint8_t, L>, N>& signatures) {
+  static_assert(L <= kMinBytes, "Signature too long");
+  if (bytes.size() < L) return false;
+  for (auto signature : signatures) {
+    if (memcmp(bytes.data(), signature.data(), signature.size()) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Codec DetectCodec(const Span<const uint8_t>& bytes) {
+  constexpr std::array<std::array<uint8_t, 4>, 1> kExrSignatures = {{
+      {'v', '/', '1', 0x01},
+  }};
+  constexpr std::array<std::array<uint8_t, 6>, 2> kGifSignatures = {{
+      {'G', 'I', 'F', '8', '7', 'a'},
+      {'G', 'I', 'F', '8', '9', 'a'},
+  }};
+  constexpr std::array<std::array<uint8_t, 7>, 4> kPgxSignatures = {
+      {{'P', 'G', ' ', 'L', 'M', ' ', '+'},
+       {'P', 'G', ' ', 'L', 'M', ' ', '-'},
+       {'P', 'G', ' ', 'M', 'L', ' ', '+'},
+       {'P', 'G', ' ', 'M', 'L', ' ', '-'}}};
+  constexpr std::array<std::array<uint8_t, 8>, 1> kPngSignatures = {
+      {{137, 'P', 'N', 'G', '\r', '\n', 26, '\n'}}};
+  static const std::array<std::array<uint8_t, 2>, 9> kPnmSignatures = {
+      {{'P', '1'},
+       {'P', '2'},
+       {'P', '3'},
+       {'P', '4'},
+       {'P', '5'},
+       {'P', '6'},
+       {'P', '7'},
+       {'P', 'F'},
+       {'P', 'f'}}};
+  static const std::array<std::array<uint8_t, 4>, 5> kJpgSignatures = {{
+      {0xFF, 0xD8, 0xFF, 0xDB},
+      {0xFF, 0xD8, 0xFF, 0xE0},
+      {0xFF, 0xD8, 0xFF, 0xE1},
+      {0xFF, 0xD8, 0xFF, 0xE2},
+      {0xFF, 0xD8, 0xFF, 0xEE},
+  }};
+  static const std::array<std::array<uint8_t, 9>, 1> kJxlBoxSignatures = {{
+      {0x00, 0x00, 0x00, 0x0C, 'J', 'X', 'L', ' ', 0x0D},
+  }};
+  static const std::array<std::array<uint8_t, 2>, 1> kJxlSignatures = {{
+      {0xFF, 0x0A},
+  }};
+
+  if (CheckSignatures(bytes, kExrSignatures)) return Codec::kEXR;
+  if (CheckSignatures(bytes, kGifSignatures)) return Codec::kGIF;
+  if (CheckSignatures(bytes, kJpgSignatures)) return Codec::kJPG;
+  if (CheckSignatures(bytes, kJxlBoxSignatures)) return Codec::kJXL;
+  if (CheckSignatures(bytes, kJxlSignatures)) return Codec::kJXL;
+  if (CheckSignatures(bytes, kPgxSignatures)) return Codec::kPGX;
+  if (CheckSignatures(bytes, kPngSignatures)) return Codec::kPNG;
+  if (CheckSignatures(bytes, kPnmSignatures)) return Codec::kPNM;
+  return Codec::kUnknown;
 }
 
 }  // namespace extras

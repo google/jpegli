@@ -6,10 +6,17 @@
 
 #include "lib/jpegli/huffman.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/status.h"
 #include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/error.h"
 
 namespace jpegli {
@@ -123,9 +130,12 @@ void SetDepth(const HuffmanTree& p, HuffmanTree* pool, uint8_t* depth,
   }
 }
 
-// Sort the root nodes, least popular first.
+// Compare the root nodes, least popular first; indices are in decreasing order
+// before sorting is applied.
 static JXL_INLINE bool Compare(const HuffmanTree& v0, const HuffmanTree& v1) {
-  return v0.total_count < v1.total_count;
+  return v0.total_count != v1.total_count
+             ? v0.total_count < v1.total_count
+             : v0.index_right_or_value > v1.index_right_or_value;
 }
 
 // This function will create a Huffman tree.
@@ -168,7 +178,7 @@ void CreateHuffmanTree(const uint32_t* data, const size_t length,
       break;
     }
 
-    std::stable_sort(tree.begin(), tree.end(), Compare);
+    std::sort(tree.begin(), tree.end(), Compare);
 
     // The nodes are:
     // [0, n): the sorted leaf nodes that we start with.

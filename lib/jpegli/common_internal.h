@@ -7,15 +7,13 @@
 #ifndef LIB_JPEGLI_COMMON_INTERNAL_H_
 #define LIB_JPEGLI_COMMON_INTERNAL_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <hwy/aligned_allocator.h>
 
 #include "lib/base/compiler_specific.h"  // for ssize_t
-#include "lib/base/status.h"             // for JXL_CHECK
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/simd.h"
 
@@ -95,8 +93,8 @@ class RowBuffer {
  public:
   template <typename CInfoType>
   void Allocate(CInfoType cinfo, size_t num_rows, size_t rowsize) {
+    static_assert(sizeof(T) == 4, "4-byte T is assumed");
     size_t vec_size = std::max(VectorSize(), sizeof(T));
-    JXL_CHECK(vec_size % sizeof(T) == 0);
     size_t alignment = std::max<size_t>(HWY_ALIGNMENT, vec_size);
     size_t min_memstride = alignment + rowsize * sizeof(T) + vec_size;
     size_t memstride = RoundUpTo(min_memstride, alignment);
@@ -107,7 +105,7 @@ class RowBuffer {
     data_ = ::jpegli::Allocate<T>(cinfo, ysize_ * stride_, JPOOL_IMAGE_ALIGNED);
   }
 
-  T* Row(ssize_t y) const {
+  T* Row(ptrdiff_t y) const {
     return &data_[((ysize_ + y) % ysize_) * stride_ + offset_];
   }
 
@@ -126,12 +124,12 @@ class RowBuffer {
     }
   }
 
-  void CopyRow(ssize_t dst_row, ssize_t src_row, int border) {
+  void CopyRow(ptrdiff_t dst_row, ptrdiff_t src_row, int border) {
     memcpy(Row(dst_row) - border, Row(src_row) - border,
            (xsize_ + 2 * border) * sizeof(T));
   }
 
-  void FillRow(ssize_t y, T val, size_t len) {
+  void FillRow(ptrdiff_t y, T val, size_t len) {
     T* row = Row(y);
     for (size_t x = 0; x < len; ++x) {
       row[x] = val;

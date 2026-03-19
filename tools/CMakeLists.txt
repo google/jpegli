@@ -12,12 +12,16 @@ set(FUZZER_CORPUS_BINARIES)
 
 add_library(jxl_tool STATIC EXCLUDE_FROM_ALL
   cmdline.cc
+  no_memory_manager.cc
   speed_stats.cc
   tool_version.cc
+  tracking_memory_manager.cc
 )
-target_compile_options(jxl_tool PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
+# JPEGXL_INTERNAL_FLAGS is set inside lib/
+# target_compile_options(jxl_tool PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
+target_compile_options(jxl_tool PRIVATE -DJPEGXL_COMPILER_ID="${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 target_include_directories(jxl_tool PUBLIC "${PROJECT_SOURCE_DIR}")
-target_link_libraries(jxl_tool PUBLIC hwy)
+target_link_libraries(jxl_tool PUBLIC jxl_base hwy)
 
 # The JPEGXL_VERSION is set from the builders.
 if(NOT DEFINED JPEGXL_VERSION OR JPEGXL_VERSION STREQUAL "")
@@ -78,7 +82,9 @@ if(JPEGXL_ENABLE_TOOLS)
   # Depends on parts of jxl_extras that are only built if libjpeg is found and
   # jpegli is enabled.
   add_executable(cjpegli cjpegli.cc)
+  target_link_libraries(cjpegli jpegli-static)
   add_executable(djpegli djpegli.cc)
+  target_link_libraries(djpegli jpegli-static)
   list(APPEND INTERNAL_TOOL_BINARIES cjpegli djpegli)
 endif()  # JPEGXL_ENABLE_TOOLS
 
@@ -154,6 +160,21 @@ foreach(BINARY IN LISTS TOOL_BINARIES)
     endif()
     set_target_properties(${BINARY} PROPERTIES LINK_FLAGS "${JXL_WASM_TOOLS_LINK_FLAGS}")
   endif()
+
+  # Tools are CLI.
+  set_target_properties(${BINARY} PROPERTIES MACOSX_BUNDLE OFF)
+
+  # Attach manifest that tells Windows to use UTF-8 for eg. fopen
+  if(WIN32)
+    # Accommodate cl, clang-cl and clang with GNU-like command
+    if(NOT MINGW)
+      target_sources(${BINARY} PRIVATE utf8.manifest)
+    # Since CMake in MINGW doesn't support linking
+    # .manifest file, do it with .rc file
+    elseif(MINGW)
+      target_sources(${BINARY} PRIVATE utf8.rc)
+    endif()
+  endif()
 endforeach()
 
 install(TARGETS ${TOOL_BINARIES} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
@@ -185,7 +206,42 @@ find_package(Java QUIET)
 
 if (JNI_FOUND AND Java_FOUND)
   include(UseJava)
+  # NB: *_jni_onload.cc might be necessary for Android; not used yet.
 
+  # jpegli wrapper
+
+  add_library(jpegli_jni SHARED jni/org/jpeg/jpegli/wrapper/encoder_jni.cc)
+  target_include_directories(jpegli_jni PRIVATE "${JNI_INCLUDE_DIRS}" "${PROJECT_SOURCE_DIR}")
+  target_include_directories(jpegli_jni PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/include/jpegli"
+  )
+  target_link_libraries(jpegli_jni PUBLIC jpegli-static)
+
+  add_jar(jpegli_jni_wrapper SOURCES
+    jni/org/jpeg/jpegli/wrapper/Encoder.java
+    jni/org/jpeg/jpegli/wrapper/JniHelper.java
+    OUTPUT_NAME org.jpeg.jpegli
+  )
+  get_target_property(JPEGLI_JNI_WRAPPER_JAR jpegli_jni_wrapper JAR_FILE)
+
+  add_jar(jpegli_jni_wrapper_test
+    SOURCES jni/org/jpeg/jpegli/wrapper/EncoderTest.java
+    INCLUDE_JARS jpegli_jni_wrapper
+  )
+  get_target_property(JPEGLI_JNI_WRAPPER_TEST_JAR jpegli_jni_wrapper_test JAR_FILE)
+
+  if(NOT SANITIZER MATCHES ".san")
+    # NB: Vanilla OpenJDK 8 / 11 are known to work well (i.e. either
+    #     "which java" or JAVA_HOME environment variable point to the path like
+    #     "/usr/lib/jvm/java-xx-openjdk-yyy" on Debian Linux).
+    add_test(
+      NAME test_jpegli_jni_wrapper
+      COMMAND ${Java_JAVA_EXECUTABLE}
+              -cp "${JPEGLI_JNI_WRAPPER_JAR}:${JPEGLI_JNI_WRAPPER_TEST_JAR}"
+              -Dorg.jpeg.jpegli.wrapper.lib=$<TARGET_FILE:jpegli_jni>
+              org.jpeg.jpegli.wrapper.EncoderTest
+    )
+  endif()  # JPEGXL_ENABLE_FUZZERS
 endif()  # JNI_FOUND & Java_FOUND
 endif()  # JPEGXL_ENABLE_JNI
 

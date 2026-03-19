@@ -9,7 +9,7 @@
 
 // GTest specific macros / wrappers.
 
-#include "gtest/gtest.h"
+#include "gtest/gtest.h"  // IWYU pragma: export
 
 #ifdef JXL_DISABLE_SLOW_TESTS
 #define JXL_SLOW_TEST(T, C) TEST(T, DISABLED_##C)
@@ -22,14 +22,6 @@
 #else
 #define JXL_TSAN_SLOW_TEST(T, C) TEST(T, C)
 #endif  // THREAD_SANITIZER
-
-#if defined(__x86_64__)
-#define JXL_X86_64_TEST(T, C) TEST(T, C)
-#define JXL_X86_64_TEST_P(T, C) TEST_P(T, C)
-#else
-#define JXL_X86_64_TEST(T, C) TEST(T, DISABLED_##C)
-#define JXL_X86_64_TEST_P(T, C) TEST_P(T, C)
-#endif  // defined(__x86_64__)
 
 // googletest before 1.10 didn't define INSTANTIATE_TEST_SUITE_P() but instead
 // used INSTANTIATE_TEST_CASE_P which is now deprecated.
@@ -68,10 +60,12 @@
     EXPECT_TRUE(F) << _.str(); \
   }
 
-#define JXL_ASSERT_OK(F)       \
+#define JXL_TEST_ASSERT_OK(F)  \
   {                            \
     std::stringstream _;       \
     ASSERT_TRUE(F) << _.str(); \
   }
+
+#define QUIT(M) FAIL() << (M);
 
 #endif  // LIB_JXL_BASE_TESTING_H_

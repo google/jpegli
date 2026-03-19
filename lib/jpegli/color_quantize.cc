@@ -6,13 +6,22 @@
 
 #include "lib/jpegli/color_quantize.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <limits>
+#include <memory>
 #include <unordered_map>
+#include <vector>
 
-#include "lib/base/status.h"
+#include "lib/base/common.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/decode_internal.h"
 #include "lib/jpegli/error.h"
+#include "lib/jpegli/memory_manager.h"
 
 namespace jpegli {
 
@@ -258,16 +267,20 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
     JPEGLI_ERROR("Two-pass quantizer must use RGB output color space.");
   }
   jpeg_decomp_master* m = cinfo->master;
-  const size_t num_pixels = cinfo->output_width * cinfo->output_height;
+  const size_t num_pixels =
+      static_cast<size_t>(cinfo->output_width) * cinfo->output_height;
   const int max_color_count = std::max<size_t>(num_pixels, 1u << 18);
   const int max_palette_size = cinfo->desired_number_of_colors;
-  std::unique_ptr<uint8_t[]> red(new uint8_t[max_color_count]);
-  std::unique_ptr<uint8_t[]> green(new uint8_t[max_color_count]);
-  std::unique_ptr<uint8_t[]> blue(new uint8_t[max_color_count]);
+  auto red_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
+  auto green_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
+  auto blue_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
+  uint8_t* red = red_storage.data();
+  uint8_t* green = green_storage.data();
+  uint8_t* blue = blue_storage.data();
   std::vector<int> count(max_color_count, 0);
   // number of colors
-  int n = BuildRGBColorIndex(m->pixels_, num_pixels, count.data(), &red[0],
-                             &green[0], &blue[0]);
+  int n = BuildRGBColorIndex(m->pixels_, num_pixels, count.data(), red, green,
+                             blue);
 
   std::vector<int> dist(n, std::numeric_limits<int>::max());
   std::vector<int> cluster(n);
@@ -287,14 +300,14 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
       winner = i;
     }
     if (!in_palette[i] && count[i] > count_threshold) {
-      AddToRGBPalette(&red[0], &green[0], &blue[0], count.data(), i, k++, n,
-                      dist.data(), cluster.data(), &center[0], &error);
+      AddToRGBPalette(red, green, blue, count.data(), i, k++, n, dist.data(),
+                      cluster.data(), &center[0], &error);
       in_palette[i] = true;
     }
   }
   if (k == 0) {
-    AddToRGBPalette(&red[0], &green[0], &blue[0], count.data(), winner, k++, n,
-                    dist.data(), cluster.data(), &center[0], &error);
+    AddToRGBPalette(red, green, blue, count.data(), winner, k++, n, dist.data(),
+                    cluster.data(), &center[0], &error);
     in_palette[winner] = true;
   }
 
@@ -367,8 +380,8 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
     if (priority < top_priority) {
       bucket_array[priority].push_back(i);
     } else {
-      AddToRGBPalette(&red[0], &green[0], &blue[0], count.data(), i, k++, n,
-                      dist.data(), cluster.data(), &center[0], &error);
+      AddToRGBPalette(red, green, blue, count.data(), i, k++, n, dist.data(),
+                      cluster.data(), &center[0], &error);
     }
     bucket_array[top_priority].pop_back();
     while (top_priority >= 0 && bucket_array[top_priority].empty()) {
@@ -439,8 +452,8 @@ void FindCandidatesForCell(j_decompress_ptr cinfo, int ncomp, const int cell[],
 void CreateInverseColorMap(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   int ncomp = cinfo->out_color_components;
-  JXL_ASSERT(ncomp > 0);
-  JXL_ASSERT(ncomp <= kMaxComponents);
+  JPEGLI_CHECK(ncomp > 0);
+  JPEGLI_CHECK(ncomp <= kMaxComponents);
   int num_cells = 1;
   for (int c = 0; c < ncomp; ++c) {
     num_cells *= (1 << kNumColorCellBits[c]);
@@ -475,7 +488,7 @@ int LookupColorIndex(j_decompress_ptr cinfo, const JSAMPLE* pixel) {
       cell_idx += (pixel[c] >> (8 - kNumColorCellBits[c])) * stride;
       stride <<= kNumColorCellBits[c];
     }
-    JXL_ASSERT(cell_idx < m->candidate_lists_.size());
+    JPEGLI_CHECK(cell_idx < m->candidate_lists_.size());
     int mindist = std::numeric_limits<int>::max();
     const auto& candidates = m->candidate_lists_[cell_idx];
     for (uint8_t i : candidates) {
@@ -490,7 +503,7 @@ int LookupColorIndex(j_decompress_ptr cinfo, const JSAMPLE* pixel) {
       }
     }
   }
-  JXL_ASSERT(index < cinfo->actual_number_of_colors);
+  JPEGLI_CHECK(index < cinfo->actual_number_of_colors);
   return index;
 }
 

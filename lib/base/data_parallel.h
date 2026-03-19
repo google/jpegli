@@ -10,8 +10,9 @@
 // Portable, low-overhead C++11 ThreadPool alternative to OpenMP for
 // data-parallel computations.
 
-#include <stddef.h>
-#include <stdint.h>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
 
 #include "lib/base/compiler_specific.h"
 #include "lib/base/parallel_runner.h"
@@ -22,6 +23,8 @@
 #endif
 
 namespace jxl {
+
+struct ThreadPoolNoInit {};
 
 class ThreadPool {
  public:
@@ -45,29 +48,38 @@ class ThreadPool {
   // Precondition: begin <= end.
   template <class InitFunc, class DataFunc>
   Status Run(uint32_t begin, uint32_t end, const InitFunc& init_func,
-             const DataFunc& data_func, const char* caller = "") {
-    JXL_ASSERT(begin <= end);
+             const DataFunc& data_func, const char* caller) {
+    JXL_ENSURE(begin <= end);
     if (begin == end) return true;
     RunCallState<InitFunc, DataFunc> call_state(init_func, data_func);
     // The runner_ uses the C convention and returns 0 in case of error, so we
     // convert it to a Status.
     if (!runner_) {
       void* jpegxl_opaque = static_cast<void*>(&call_state);
-      if (call_state.CallInitFunc(jpegxl_opaque, 1) != 0) {
+      if (call_state.CallInitFunc(jpegxl_opaque, 1) !=
+          JXL_PARALLEL_RET_SUCCESS) {
         return JXL_FAILURE("Failed to initialize thread");
       }
       for (uint32_t i = begin; i < end; i++) {
         call_state.CallDataFunc(jpegxl_opaque, i, 0);
       }
+      if (call_state.HasError()) {
+        return JXL_FAILURE("[%s] failed", caller);
+      }
       return true;
     }
-    return (*runner_)(runner_opaque_, static_cast<void*>(&call_state),
-                      &call_state.CallInitFunc, &call_state.CallDataFunc, begin,
-                      end) == 0;
+    JxlParallelRetCode ret = (*runner_)(
+        runner_opaque_, static_cast<void*>(&call_state),
+        &call_state.CallInitFunc, &call_state.CallDataFunc, begin, end);
+
+    if (ret != JXL_PARALLEL_RET_SUCCESS || call_state.HasError()) {
+      return JXL_FAILURE("[%s] failed", caller);
+    }
+    return true;
   }
 
   // Use this as init_func when no initialization is needed.
-  static Status NoInit(size_t num_threads) { return true; }
+  static constexpr ThreadPoolNoInit NoInit{};
 
  private:
   // class holding the state of a Run() call to pass to the runner_ as an
@@ -80,24 +92,34 @@ class ThreadPool {
 
     // JxlParallelRunInit interface.
     static int CallInitFunc(void* jpegxl_opaque, size_t num_threads) {
-      const auto* self =
+      auto* self =
           static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
       // Returns -1 when the internal init function returns false Status to
       // indicate an error.
-      return self->init_func_(num_threads) ? 0 : -1;
+      if (!self->init_func_(num_threads)) {
+        self->has_error_ = 1;
+        return JXL_PARALLEL_RET_RUNNER_ERROR;
+      }
+      return JXL_PARALLEL_RET_SUCCESS;
     }
 
     // JxlParallelRunFunction interface.
     static void CallDataFunc(void* jpegxl_opaque, uint32_t value,
                              size_t thread_id) {
-      const auto* self =
+      auto* self =
           static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
-      return self->data_func_(value, thread_id);
+      if (self->has_error_) return;
+      if (!self->data_func_(value, thread_id)) {
+        self->has_error_ = 1;
+      }
     }
+
+    bool HasError() const { return has_error_ != 0; }
 
    private:
     const InitFunc& init_func_;
     const DataFunc& data_func_;
+    std::atomic<uint32_t> has_error_{0};
   };
 
   // The caller supplied runner function and its opaque void*.
@@ -115,6 +137,14 @@ Status RunOnPool(ThreadPool* pool, const uint32_t begin, const uint32_t end,
   } else {
     return pool->Run(begin, end, init_func, data_func, caller);
   }
+}
+
+template <class DataFunc>
+Status RunOnPool(ThreadPool* pool, const uint32_t begin, const uint32_t end,
+                 const ThreadPoolNoInit& no_init_func,
+                 const DataFunc& data_func, const char* caller) {
+  const auto init_func = [](size_t num_threads) -> Status { return true; };
+  return RunOnPool(pool, begin, end, init_func, data_func, caller);
 }
 
 }  // namespace jxl

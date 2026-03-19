@@ -1,7 +1,8 @@
-# Copyright (c) the JPEG XL Project Authors. All rights reserved.
+# Copyright (c) the JPEG XL Project Authors.
 #
 # Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 """
 This file is generated, do not modify by manually.
@@ -31,7 +32,6 @@ libjxl_base_sources = [
     "base/sanitizers.h",
     "base/span.h",
     "base/status.h",
-    "base/testing.h",
     "base/types.h",
 ]
 
@@ -101,33 +101,22 @@ libjxl_codec_pnm_sources = [
 ]
 
 libjxl_extras_for_tools_sources = [
-    "extras/cache_aligned.cc",
-    "extras/cache_aligned.h",
-    "extras/butteraugli.cc",
-    "extras/butteraugli.h",
-    "extras/convolve-inl.h",
-    "extras/convolve.h",
-    "extras/convolve_separable5.cc",
-    "extras/convolve_slow.cc",
-    "extras/image.cc",
-    "extras/image.h",
-    "extras/image_color_transform.cc",
-    "extras/image_color_transform.h",
-    "extras/image_ops.h",
     "extras/metrics.cc",
     "extras/metrics.h",
     "extras/packed_image_convert.cc",
     "extras/packed_image_convert.h",
-    "extras/simd_util.cc",
-    "extras/simd_util.h",
-    "extras/xyb_transform.cc",
-    "extras/xyb_transform.h",
 ]
 
 libjxl_extras_sources = [
     "extras/alpha_blend.cc",
     "extras/alpha_blend.h",
+    "extras/butteraugli.cc",
+    "extras/butteraugli.h",
     "extras/codestream_header.h",
+    "extras/convolve-inl.h",
+    "extras/convolve.h",
+    "extras/convolve_separable5.cc",
+    "extras/convolve_slow.cc",
     "extras/dec/color_description.cc",
     "extras/dec/color_description.h",
     "extras/dec/color_hints.cc",
@@ -138,20 +127,24 @@ libjxl_extras_sources = [
     "extras/enc/encode.h",
     "extras/exif.cc",
     "extras/exif.h",
+    "extras/image.cc",
+    "extras/image.h",
+    "extras/image_color_transform.cc",
+    "extras/image_color_transform.h",
+    "extras/image_ops.h",
+    "extras/memory_manager_internal.cc",
+    "extras/memory_manager_internal.h",
     "extras/mmap.cc",
     "extras/mmap.h",
+    "extras/packed_image.cc",
     "extras/packed_image.h",
+    "extras/simd_util.cc",
+    "extras/simd_util.h",
     "extras/size_constraints.h",
     "extras/time.cc",
     "extras/time.h",
-]
-
-libjxl_gbench_sources = [
-    "extras/tone_mapping_gbench.cc",
-    "jxl/dec_external_image_gbench.cc",
-    "jxl/enc_external_image_gbench.cc",
-    "jxl/splines_gbench.cc",
-    "jxl/tf_gbench.cc",
+    "extras/xyb_transform.cc",
+    "extras/xyb_transform.h",
 ]
 
 libjxl_jpegli_lib_version = 62
@@ -220,6 +213,7 @@ libjxl_jpegli_sources = [
 ]
 
 libjxl_jpegli_testlib_files = [
+    "jpegli/fuzztest.h",
     "jpegli/test_params.h",
     "jpegli/test_utils-inl.h",
     "jpegli/test_utils.cc",
@@ -243,34 +237,23 @@ libjxl_jpegli_wrapper_sources = [
 
 libjxl_major_version = 0
 
-libjxl_minor_version = 10
+libjxl_minor_version = 12
 
-libjxl_patch_version = 2
-
-libjxl_public_headers = [
-    "include/jxl/cms.h",
-    "include/jxl/cms_interface.h",
-    "include/jxl/codestream_header.h",
-    "include/jxl/color_encoding.h",
-    "include/jxl/decode.h",
-    "include/jxl/decode_cxx.h",
-    "include/jxl/encode.h",
-    "include/jxl/encode_cxx.h",
-    "include/jxl/memory_manager.h",
-    "include/jxl/parallel_runner.h",
-    "include/jxl/stats.h",
-    "include/jxl/types.h",
-]
+libjxl_patch_version = 0
 
 libjxl_testlib_files = [
     "extras/test_image.cc",
     "extras/test_image.h",
+    "extras/test_memory_manager.cc",
+    "extras/test_memory_manager.h",
     "extras/test_utils.cc",
     "extras/test_utils.h",
     "threads/test_utils.h",
 ]
 
 libjxl_tests = [
+    "cms/tone_mapping_test.cc",
+    "cms/transfer_functions_test.cc",
     "extras/butteraugli_test.cc",
     "extras/codec_test.cc",
     "extras/dec/color_description_test.cc",
@@ -280,8 +263,8 @@ libjxl_tests = [
 
 libjxl_threads_sources = [
     "threads/thread_parallel_runner.cc",
-    "threads/thread_parallel_runner_internal.cc",
-    "threads/thread_parallel_runner_internal.h",
     "threads/thread_parallel_runner.h",
     "threads/thread_parallel_runner_cxx.h",
+    "threads/thread_parallel_runner_internal.cc",
+    "threads/thread_parallel_runner_internal.h",
 ]

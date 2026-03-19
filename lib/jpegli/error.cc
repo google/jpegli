@@ -6,10 +6,10 @@
 
 #include "lib/jpegli/error.h"
 
-#include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 
 #include "lib/jpegli/common.h"
@@ -23,7 +23,7 @@ const char* const kErrorMessageTable[] = {
 bool FormatString(char* buffer, const char* format, ...) {
   va_list args;
   va_start(args, format);
-  vsnprintf(buffer, JMSG_STR_PARM_MAX, format, args);
+  vsnprintf(buffer, JMSG_STR_PARM_MAX, format, args);  // notypo
   va_end(args);
   return false;
 }

@@ -20,10 +20,11 @@ import sys
 import tempfile
 
 COPYRIGHT = [
-  "Copyright (c) the JPEG XL Project Authors. All rights reserved.",
+  "Copyright (c) the JPEG XL Project Authors.",
   "",
   "Use of this source code is governed by a BSD-style",
-  "license that can be found in the LICENSE file."
+  "license that can be found in the LICENSE file or at",
+  "https://developers.google.com/open-source/licenses/bsd"
 ]
 
 DOC = [
@@ -92,22 +93,18 @@ def SplitLibFiles(repo_files):
     jpegli_testlib_files, ContainsFn('libjpeg_test_util'))
 
   extras_sources, srcs = Filter(srcs, HasPrefixFn('extras/'))
-  lib_srcs, srcs = Filter(srcs, HasPrefixFn('jxl/'))
-  public_headers, srcs = Filter(srcs, HasPrefixFn('include/jxl/'))
   threads_sources, srcs = Filter(srcs, HasPrefixFn('threads/'))
 
-  Check(len(srcs) == 0, 'Orphan source files: ' + str(srcs))
+  base_sources, srcs = Filter(srcs, HasPrefixFn('base/'))
+  cms_sources, srcs = Filter(srcs, HasPrefixFn('cms/'))
 
-  base_sources, lib_srcs = Filter(lib_srcs, HasPrefixFn('jxl/base/'))
+  Check(len(srcs) == 0, 'Orphan source files: ' + str(srcs))
 
   jpegli_wrapper_sources, jpegli_srcs = Filter(
       jpegli_srcs, HasSuffixFn('libjpeg_wrapper.cc'))
   jpegli_sources = jpegli_srcs
 
-  threads_public_headers, public_headers = Filter(
-      public_headers, ContainsFn('_parallel_runner'))
-
-  codec_names = ['apng', 'exr', 'gif', 'jpegli', 'jpg', 'jxl', 'npy', 'pgx',
+  codec_names = ['apng', 'exr', 'gif', 'jpegli', 'jpg', 'npy', 'pgx',
     'pnm']
   codecs = {}
   for codec in codec_names:
@@ -120,31 +117,9 @@ def SplitLibFiles(repo_files):
     '/codec', '/hlg', '/metrics', '/packed_image_convert', '/render_hdr',
     '/tone_mapping'))
 
-  # Source files only needed by the encoder or by tools (including decoding
-  # tools), but not by the decoder library.
-  # TODO(eustas): investigate the status of codec_in_out.h
-  # TODO(eustas): rename butteraugli_wrapper.cc to butteraugli.cc?
-  # TODO(eustas): is it possible to make butteraugli more standalone?
-  enc_sources, lib_srcs = Filter(lib_srcs, ContainsFn('/enc_', '/butteraugli',
-    'jxl/encode.cc', 'jxl/encode_internal.h'
-  ))
-
-  # The remaining of the files are in the dec_library.
-  dec_jpeg_sources, dec_sources = Filter(lib_srcs, HasPrefixFn('jxl/jpeg/',
-    'jxl/decode_to_jpeg.cc', 'jxl/decode_to_jpeg.h'))
-  dec_box_sources, dec_sources = Filter(dec_sources, HasPrefixFn(
-    'jxl/box_content_decoder.cc', 'jxl/box_content_decoder.h'))
-  cms_sources, dec_sources = Filter(dec_sources, HasPrefixFn('jxl/cms/'))
-
-  # TODO(lode): further prune dec_srcs: only those files that the decoder
-  # absolutely needs, and or not only for encoding, should be listed here.
 
   return codecs | {'base_sources': base_sources,
     'cms_sources': cms_sources,
-    'dec_box_sources': dec_box_sources,
-    'dec_jpeg_sources': dec_jpeg_sources,
-    'dec_sources': dec_sources,
-    'enc_sources': enc_sources,
     'extras_for_tools_sources': extras_for_tools_sources,
     'extras_sources': extras_sources,
     'jpegli_sources': jpegli_sources,
@@ -152,10 +127,8 @@ def SplitLibFiles(repo_files):
     'jpegli_libjpeg_helper_files': jpegli_libjpeg_helper_files,
     'jpegli_tests': jpegli_tests,
     'jpegli_wrapper_sources' : jpegli_wrapper_sources,
-    'public_headers': public_headers,
     'testlib_files': testlib_files,
     'tests': tests,
-    'threads_public_headers': threads_public_headers,
     'threads_sources': threads_sources,
   }
 

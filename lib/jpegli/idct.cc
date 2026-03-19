@@ -6,9 +6,13 @@
 
 #include "lib/jpegli/idct.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
+#include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/decode_internal.h"
 
 #undef HWY_TARGET_INCLUDE
@@ -57,21 +61,21 @@ void DequantBlock(const int16_t* JXL_RESTRICT qblock,
     const auto not_0 = Gt(abs_quant, Zero(df));
     const auto sign_quant = Xor(quant, abs_quant);
     const auto biased_quant = Sub(quant, Xor(bias, sign_quant));
-    const auto dequant = IfThenElseZero(not_0, Mul(biased_quant, mul));
-    Store(dequant, d, block + k);
+    const auto deq = IfThenElseZero(not_0, Mul(biased_quant, mul));
+    Store(deq, d, block + k);
   }
 }
 
 template <size_t N>
-void ForwardEvenOdd(const float* JXL_RESTRICT ain, size_t ain_stride,
-                    float* JXL_RESTRICT aout) {
+void ForwardEvenOdd(const float* JXL_RESTRICT a_in, size_t a_in_stride,
+                    float* JXL_RESTRICT a_out) {
   for (size_t i = 0; i < N / 2; i++) {
-    auto in1 = LoadU(d8, ain + 2 * i * ain_stride);
-    Store(in1, d8, aout + i * 8);
+    auto in1 = LoadU(d8, a_in + 2 * i * a_in_stride);
+    Store(in1, d8, a_out + i * 8);
   }
   for (size_t i = N / 2; i < N; i++) {
-    auto in1 = LoadU(d8, ain + (2 * (i - N / 2) + 1) * ain_stride);
-    Store(in1, d8, aout + i * 8);
+    auto in1 = LoadU(d8, a_in + (2 * (i - N / 2) + 1) * a_in_stride);
+    Store(in1, d8, a_out + i * 8);
   }
 }
 
@@ -112,8 +116,10 @@ struct WcMultipliers<8> {
   };
 };
 
+#if JXL_CXX_LANG < JXL_CXX_17
 constexpr float WcMultipliers<4>::kMultipliers[];
 constexpr float WcMultipliers<8>::kMultipliers[];
+#endif
 
 template <size_t N>
 void MultiplyAndAdd(const float* JXL_RESTRICT coeff, float* JXL_RESTRICT out,
@@ -610,7 +616,7 @@ void Compute1dIDCT(const float* in, float* out, size_t N) {
       break;
     }
     default:
-      JXL_ABORT("Compute1dIDCT does not support N=%d", static_cast<int>(N));
+      JXL_DEBUG_ABORT("Unreachable");
       break;
   }
 }
@@ -680,16 +686,21 @@ namespace jpegli {
 HWY_EXPORT(InverseTransformBlock8x8);
 HWY_EXPORT(InverseTransformBlockGeneric);
 
-void ChooseInverseTransform(j_decompress_ptr cinfo) {
+jxl::Status ChooseInverseTransform(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   for (int c = 0; c < cinfo->num_components; ++c) {
-    if (m->scaled_dct_size[c] == DCTSIZE) {
+    int dct_size = m->scaled_dct_size[c];
+    if (dct_size < 1 || dct_size > 16) {
+      return JXL_FAILURE("Compute1dIDCT does not support N=%d", dct_size);
+    }
+    if (dct_size == DCTSIZE) {
       m->inverse_transform[c] = HWY_DYNAMIC_DISPATCH(InverseTransformBlock8x8);
     } else {
       m->inverse_transform[c] =
           HWY_DYNAMIC_DISPATCH(InverseTransformBlockGeneric);
     }
   }
+  return true;
 }
 
 }  // namespace jpegli

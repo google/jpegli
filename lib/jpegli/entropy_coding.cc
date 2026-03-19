@@ -6,12 +6,22 @@
 
 #include "lib/jpegli/entropy_coding.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <limits>
 #include <vector>
 
 #include "lib/base/bits.h"
+#include "lib/base/status.h"
+#include "lib/base/types.h"
+#include "lib/jpegli/common.h"
+#include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
 #include "lib/jpegli/huffman.h"
+#include "lib/jpegli/memory_manager.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/entropy_coding.cc"
@@ -43,7 +53,8 @@ size_t MaxNumTokensPerMCURow(j_compress_ptr cinfo) {
   size_t blocks_per_mcu = 0;
   for (int c = 0; c < cinfo->num_components; ++c) {
     jpeg_component_info* comp = &cinfo->comp_info[c];
-    blocks_per_mcu += comp->h_samp_factor * comp->v_samp_factor;
+    blocks_per_mcu +=
+        static_cast<size_t>(comp->h_samp_factor) * comp->v_samp_factor;
   }
   return kDCTBlockSize * blocks_per_mcu * MCUs_per_row;
 }
@@ -92,7 +103,8 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
   const int Se = scan_info->Se;
   const size_t restart_interval = sti->restart_interval;
   int restarts_to_go = restart_interval;
-  size_t num_blocks = comp->height_in_blocks * comp->width_in_blocks;
+  size_t num_blocks =
+      static_cast<size_t>(comp->height_in_blocks) * comp->width_in_blocks;
   size_t num_restarts =
       restart_interval > 0 ? DivCeil(num_blocks, restart_interval) : 1;
   size_t restart_idx = 0;
@@ -107,7 +119,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
     eob_run = 0;
   };
   for (JDIMENSION by = 0; by < comp->height_in_blocks; ++by) {
-    JBLOCKARRAY ba = (*cinfo->mem->access_virt_barray)(
+    JBLOCKARRAY blocks = (*cinfo->mem->access_virt_barray)(
         reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx], by,
         1, FALSE);
     // Each coefficient can appear in at most one token, but we have to reserve
@@ -133,7 +145,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
         sti->restarts[restart_idx++] = m->total_num_tokens + ta->num_tokens;
         restarts_to_go = restart_interval;
       }
-      const coeff_t* block = &ba[0][bx][0];
+      const coeff_t* block = &blocks[0][bx][0];
       coeff_t temp2;
       coeff_t temp;
       int r = 0;
@@ -201,7 +213,8 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
   RefToken token;
   int eob_run = 0;
   int eob_refbits = 0;
-  size_t num_blocks = comp->height_in_blocks * comp->width_in_blocks;
+  size_t num_blocks =
+      static_cast<size_t>(comp->height_in_blocks) * comp->width_in_blocks;
   size_t num_restarts =
       restart_interval > 0 ? DivCeil(num_blocks, restart_interval) : 1;
   sti->tokens = m->next_refinement_token;
@@ -214,7 +227,7 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
   uint16_t* next_eobrun = sti->eobruns;
   size_t restart_idx = 0;
   for (JDIMENSION by = 0; by < comp->height_in_blocks; ++by) {
-    JBLOCKARRAY ba = (*cinfo->mem->access_virt_barray)(
+    JBLOCKARRAY blocks = (*cinfo->mem->access_virt_barray)(
         reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx], by,
         1, FALSE);
     for (JDIMENSION bx = 0; bx < comp->width_in_blocks; ++bx) {
@@ -224,7 +237,7 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
         next_eob_token = next_token;
         eob_run = eob_refbits = 0;
       }
-      const coeff_t* block = &ba[0][bx][0];
+      const coeff_t* block = &blocks[0][bx][0];
       int num_eob_refinement_bits = 0;
       int num_refinement_bits = 0;
       int num_nzeros = 0;
@@ -348,7 +361,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
     }
   }
 
-  JBLOCKARRAY ba[MAX_COMPS_IN_SCAN];
+  JBLOCKARRAY blocks[MAX_COMPS_IN_SCAN];
   size_t block_idx = 0;
   for (size_t mcu_y = 0; mcu_y < sti->MCU_rows_in_scan; ++mcu_y) {
     for (int i = 0; i < scan_info->comps_in_scan; ++i) {
@@ -358,7 +371,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
       int by0 = mcu_y * n_blocks_y;
       int block_rows_left = comp->height_in_blocks - by0;
       int max_block_rows = std::min(n_blocks_y, block_rows_left);
-      ba[i] = (*cinfo->mem->access_virt_barray)(
+      blocks[i] = (*cinfo->mem->access_virt_barray)(
           reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx],
           by0, max_block_rows, FALSE);
     }
@@ -401,7 +414,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
                 block_y >= comp->height_in_blocks) {
               block = kSinkBlock;
             } else {
-              block = &ba[i][iy][block_x][0];
+              block = &blocks[i][iy][block_x][0];
             }
             if (!is_progressive) {
               HWY_DYNAMIC_DISPATCH(ComputeTokensSequential)
@@ -462,7 +475,8 @@ void TokenizeJpeg(j_compress_ptr cinfo) {
     if (si->Ss > 0 && si->Ah > 0) {
       int comp_idx = si->component_index[0];
       const jpeg_component_info* comp = &cinfo->comp_info[comp_idx];
-      size_t num_blocks = comp->width_in_blocks * comp->height_in_blocks;
+      size_t num_blocks =
+          static_cast<size_t>(comp->width_in_blocks) * comp->height_in_blocks;
       max_refinement_tokens += (1 + (si->Se - si->Ss) / 16) * num_blocks;
     }
   }
@@ -552,7 +566,7 @@ float HistogramCost(const Histogram& histo) {
   for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
     if (depths[i] > 0) {
       header_bits += 8;
-      data_bits += counts[i] * depths[i];
+      data_bits += static_cast<size_t>(counts[i]) * depths[i];
     }
   }
   return header_bits + data_bits;
@@ -571,18 +585,27 @@ bool IsEmptyHistogram(const Histogram& histo) {
   return true;
 }
 
-void ClusterJpegHistograms(const Histogram* histograms, size_t num,
-                           JpegClusteredHistograms* clusters) {
+void ClusterJpegHistograms(j_compress_ptr cinfo, const Histogram* histograms,
+                           size_t num, JpegClusteredHistograms* clusters) {
   clusters->histogram_indexes.resize(num);
   std::vector<uint32_t> slot_histograms;
   std::vector<float> slot_costs;
+  // Since not all jpeg decoders support the extended sequential mode, i.e. the
+  // 0xff 0xc1 SOF marker, we will limit the number of clusters to 2 in
+  // sequential mode, unless the quantization tables already require the
+  // extended sequential mode.
+  const bool force_baseline =
+      !cinfo->progressive_mode && cinfo->master->force_baseline;
+
   for (size_t i = 0; i < num; ++i) {
     const Histogram& cur = histograms[i];
     if (IsEmptyHistogram(cur)) {
       continue;
     }
-    float best_cost = HistogramCost(cur);
     size_t best_slot = slot_histograms.size();
+    float best_cost = force_baseline && best_slot > 1
+                          ? std::numeric_limits<float>::max()
+                          : HistogramCost(cur);
     for (size_t j = 0; j < slot_histograms.size(); ++j) {
       size_t prev_idx = slot_histograms[j];
       const Histogram& prev = clusters->histograms[prev_idx];
@@ -605,7 +628,7 @@ void ClusterJpegHistograms(const Histogram* histograms, size_t num,
         slot_histograms.push_back(histogram_index);
         slot_costs.push_back(best_cost);
       } else {
-        // TODO(szabadka) Find the best histogram to replce.
+        // TODO(szabadka) Find the best histogram to replace.
         best_slot = (clusters->slot_ids.back() + 1) % 4;
       }
       slot_histograms[best_slot] = histogram_index;
@@ -617,7 +640,7 @@ void ClusterJpegHistograms(const Histogram* histograms, size_t num,
       const Histogram& prev = clusters->histograms[histogram_index];
       AddHistograms(prev, cur, &clusters->histograms[histogram_index]);
       clusters->histogram_indexes[i] = histogram_index;
-      JXL_ASSERT(clusters->slot_ids[histogram_index] == best_slot);
+      JPEGLI_CHECK(clusters->slot_ids[histogram_index] == best_slot);
       slot_costs[best_slot] += best_cost;
     }
   }
@@ -719,11 +742,12 @@ void OptimizeHuffmanCodes(j_compress_ptr cinfo) {
 
   // Cluster DC histograms.
   JpegClusteredHistograms dc_clusters;
-  ClusterJpegHistograms(histograms.data(), cinfo->num_components, &dc_clusters);
+  ClusterJpegHistograms(cinfo, histograms.data(), cinfo->num_components,
+                        &dc_clusters);
 
   // Cluster AC histograms.
   JpegClusteredHistograms ac_clusters;
-  ClusterJpegHistograms(histograms.data() + 4, m->num_contexts - 4,
+  ClusterJpegHistograms(cinfo, histograms.data() + 4, m->num_contexts - 4,
                         &ac_clusters);
 
   // Create Huffman tables and slot ids clusters.

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "lib/base/status.h"
+#include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/libjpeg_test_util.h"
 #include "lib/jpegli/test_params.h"
@@ -155,7 +155,7 @@ TEST(EncodeAPITest, ReuseCinfoSameMemOutput) {
 TEST(EncodeAPITest, ReuseCinfoSameStdOutput) {
   std::vector<TestConfig> all_configs = GenerateBasicConfigs();
   FILE* tmpf = tmpfile();
-  JXL_CHECK(tmpf);
+  ASSERT_TRUE(tmpf);
   {
     jpeg_compress_struct cinfo;
     const auto try_catch_block = [&]() -> bool {
@@ -173,7 +173,7 @@ TEST(EncodeAPITest, ReuseCinfoSameStdOutput) {
   size_t total_size = ftell(tmpf);
   fseek(tmpf, 0, SEEK_SET);
   std::vector<uint8_t> compressed(total_size);
-  JXL_CHECK(total_size == fread(compressed.data(), 1, total_size, tmpf));
+  ASSERT_TRUE(total_size == fread(compressed.data(), 1, total_size, tmpf));
   fclose(tmpf);
   size_t pos = 0;
   for (auto& config : all_configs) {
@@ -282,18 +282,18 @@ TEST(EncodeAPITest, AbbreviatedStreams) {
       return true;
     };
     EXPECT_TRUE(try_catch_block());
-    EXPECT_LT(data_stream_size, 50);
+    EXPECT_LT(data_stream_size, 50u);
     jpegli_destroy_compress(&cinfo);
   }
   TestImage output;
   DecodeWithLibjpeg(CompressParams(), DecompressParams(), table_stream,
                     table_stream_size, data_stream, data_stream_size, &output);
-  EXPECT_EQ(1, output.xsize);
-  EXPECT_EQ(1, output.ysize);
-  EXPECT_EQ(3, output.components);
-  EXPECT_EQ(0, output.pixels[0]);
-  EXPECT_EQ(0, output.pixels[1]);
-  EXPECT_EQ(0, output.pixels[2]);
+  EXPECT_EQ(1u, output.xsize);
+  EXPECT_EQ(1u, output.ysize);
+  EXPECT_EQ(3u, output.components);
+  EXPECT_EQ(0u, output.pixels[0]);
+  EXPECT_EQ(0u, output.pixels[1]);
+  EXPECT_EQ(0u, output.pixels[2]);
   if (table_stream) free(table_stream);
   if (data_stream) free(data_stream);
 }

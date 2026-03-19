@@ -33,7 +33,7 @@
 #include "lib/base/memory_manager.h"
 #include "lib/base/parallel_runner.h"
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -58,7 +58,7 @@ JXL_THREADS_EXPORT void JxlThreadParallelRunnerDestroy(void* runner_opaque);
  */
 JXL_THREADS_EXPORT size_t JxlThreadParallelRunnerDefaultNumWorkerThreads(void);
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#ifdef __cplusplus
 }
 #endif
 

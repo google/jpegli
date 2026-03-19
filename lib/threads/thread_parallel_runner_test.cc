@@ -6,14 +6,16 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
 #include "lib/base/data_parallel.h"
+#include "lib/base/status.h"
 #include "lib/base/testing.h"
 #include "lib/threads/test_utils.h"
 
-using jxl::test::ThreadPoolForTests;
+using ::jxl::test::ThreadPoolForTests;
 
 namespace jpegxl {
 namespace {
@@ -37,17 +39,19 @@ TEST(ThreadParallelRunnerTest, TestPool) {
       std::vector<int> mementos(num_tasks);
       for (int begin = 0; begin < 32; ++begin) {
         std::fill(mementos.begin(), mementos.end(), 0);
-        EXPECT_TRUE(RunOnPool(
-            pool.get(), begin, begin + num_tasks, jxl::ThreadPool::NoInit,
-            [begin, num_tasks, &mementos](const int task, const int thread) {
-              // Parameter is in the given range
-              EXPECT_GE(task, begin);
-              EXPECT_LT(task, begin + num_tasks);
+        const auto do_task = [begin, num_tasks, &mementos](
+                                 const int task,
+                                 const int thread) -> jxl::Status {
+          // Parameter is in the given range
+          EXPECT_GE(task, begin);
+          EXPECT_LT(task, begin + num_tasks);
 
-              // Store mementos to be sure we visited each task.
-              mementos.at(task - begin) = 1000 + task;
-            },
-            "TestPool"));
+          // Store mementos to be sure we visited each task.
+          mementos.at(task - begin) = 1000 + task;
+          return true;
+        };
+        EXPECT_TRUE(RunOnPool(pool.get(), begin, begin + num_tasks,
+                              jxl::ThreadPool::NoInit, do_task, "TestPool"));
         for (int task = begin; task < begin + num_tasks; ++task) {
           EXPECT_EQ(1000 + task, mementos.at(task - begin));
         }
@@ -58,31 +62,31 @@ TEST(ThreadParallelRunnerTest, TestPool) {
 
 // Verify "thread" parameter when processing few tasks.
 TEST(ThreadParallelRunnerTest, TestSmallAssignments) {
-  const int kMaxThreads = 8;
-  for (int num_threads = 1; num_threads <= kMaxThreads; ++num_threads) {
+  const size_t kMaxThreads = 8u;
+  for (size_t num_threads = 1; num_threads <= kMaxThreads; ++num_threads) {
     ThreadPoolForTests pool(num_threads);
 
     // (Avoid mutex because it may perturb the worker thread scheduling)
     std::atomic<uint64_t> id_bits{0};
-    std::atomic<int> num_calls{0};
+    std::atomic<uint32_t> num_calls{0};
+    const auto do_task = [&num_calls, num_threads, &id_bits](
+                             const int task, const int thread) -> jxl::Status {
+      num_calls.fetch_add(1, std::memory_order_relaxed);
 
-    EXPECT_TRUE(RunOnPool(
-        pool.get(), 0, num_threads, jxl::ThreadPool::NoInit,
-        [&num_calls, num_threads, &id_bits](const int task, const int thread) {
-          num_calls.fetch_add(1, std::memory_order_relaxed);
-
-          EXPECT_LT(thread, num_threads);
-          uint64_t bits = id_bits.load(std::memory_order_relaxed);
-          while (
-              !id_bits.compare_exchange_weak(bits, bits | (1ULL << thread))) {
-          }
-        },
-        "TestSmallAssignments"));
+      EXPECT_LT(static_cast<size_t>(thread), num_threads);
+      uint64_t bits = id_bits.load(std::memory_order_relaxed);
+      while (!id_bits.compare_exchange_weak(bits, bits | (1ULL << thread))) {
+        // lock-free retry-loop
+      }
+      return true;
+    };
+    EXPECT_TRUE(RunOnPool(pool.get(), 0, num_threads, jxl::ThreadPool::NoInit,
+                          do_task, "TestSmallAssignments"));
 
     // Correct number of tasks.
     EXPECT_EQ(num_threads, num_calls.load());
 
-    const int num_participants = PopulationCount(id_bits.load());
+    const size_t num_participants = PopulationCount(id_bits.load());
     // Can't expect equality because other workers may have woken up too late.
     EXPECT_LE(num_participants, num_threads);
   }
@@ -104,12 +108,13 @@ TEST(ThreadParallelRunnerTest, TestCounter) {
   alignas(128) Counter counters[kNumThreads];
 
   const int kNumTasks = kNumThreads * 19;
-  EXPECT_TRUE(RunOnPool(
-      pool.get(), 0, kNumTasks, jxl::ThreadPool::NoInit,
-      [&counters](const int task, const int thread) {
-        counters[thread].counter += task;
-      },
-      "TestCounter"));
+  const auto count = [&counters](const int task,
+                                 const int thread) -> jxl::Status {
+    counters[thread].counter += task;
+    return true;
+  };
+  EXPECT_TRUE(RunOnPool(pool.get(), 0, kNumTasks, jxl::ThreadPool::NoInit,
+                        count, "TestCounter"));
 
   int expected = 0;
   for (int i = 0; i < kNumTasks; ++i) {

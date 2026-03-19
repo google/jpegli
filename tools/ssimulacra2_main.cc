@@ -4,51 +4,74 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#include <algorithm>
 #include <cstdint>
 #include <cstdio>
-#include <utility>
+#include <cstdlib>
 #include <vector>
 
 #include "lib/base/span.h"
 #include "lib/base/status.h"
+#include "lib/extras/dec/color_hints.h"
 #include "lib/extras/dec/decode.h"
 #include "lib/extras/packed_image.h"
 #include "tools/file_io.h"
 #include "tools/ssimulacra2.h"
 
+#define QUIT(M)               \
+  fprintf(stderr, "%s\n", M); \
+  return EXIT_FAILURE;
+
 int PrintUsage(char** argv) {
-  fprintf(stderr, "Usage: %s orig.png distorted.png\n", argv[0]);
+  fprintf(stderr, "Usage: %s original.png distorted.png\n", argv[0]);
   fprintf(stderr,
           "Returns a score in range -inf..100, which correlates to subjective "
           "visual quality:\n");
+  fprintf(
+      stderr,
+      "     negative scores: extremely low quality, very strong distortion\n");
   fprintf(stderr,
-          "     30 = low quality (p10 worst output of mozjpeg -quality 30)\n");
+          "     10 = very low quality (average output of cjxl -d 14 / -q 12 or "
+          "libjpeg-turbo quality 14)\n");
   fprintf(stderr,
-          "     50 = medium quality (average output of cjxl -q 40 or mozjpeg "
-          "-quality 40,\n");
+          "     30 = low quality (average output of cjxl -d 9 / -q 20 or "
+          "libjpeg-turbo quality 20)\n");
   fprintf(stderr,
-          "                          p10 output of cjxl -q 50 or mozjpeg "
-          "-quality 60)\n");
+          "     50 = medium quality (average output of cjxl -d 5 / -q 45 or "
+          "libjpeg-turbo quality 35)\n");
   fprintf(stderr,
-          "     70 = high quality (average output of cjxl -q 70 or mozjpeg "
-          "-quality 70,\n");
+          "     70 = high quality (hard to notice artifacts without comparison "
+          "to the original,\n");
   fprintf(stderr,
-          "                        p10 output of cjxl -q 75 or mozjpeg "
-          "-quality 80)\n");
+          "                        average output of cjxl -d 2.5 / -q 73 or "
+          "libjpeg-turbo quality 70)\n");
   fprintf(stderr,
-          "     90 = very high quality (impossible to distinguish from "
-          "original at 1:1,\n");
+          "     80 = very high quality (impossible to distinguish from the "
+          "original in a side-by-side comparison at 1:1,\n");
   fprintf(stderr,
-          "                             average output of cjxl -q 90 or "
-          "mozjpeg -quality 90)\n");
+          "                             average output of cjxl -d 1.5 / -q 85 "
+          "or libjpeg-turbo quality 85 (4:2:2))\n");
+  fprintf(stderr,
+          "     85 = excellent quality (impossible to distinguish from the "
+          "original in a flip test at 1:1,\n");
+  fprintf(stderr,
+          "                             average output of cjxl -d 1 / -q 90 or "
+          "libjpeg-turbo quality 90 (4:4:4))\n");
+  fprintf(stderr,
+          "     90 = visually lossless (impossible to distinguish from the "
+          "original in a flicker test at 1:1,\n");
+
+  fprintf(stderr,
+          "                             average output of cjxl -d 0.5 / -q 95 "
+          "or libjpeg-turbo quality 95 (4:4:4)\n");
+  fprintf(stderr, "     100 = mathematically lossless\n");
+
   return 1;
 }
 
 int main(int argc, char** argv) {
   if (argc != 3) return PrintUsage(argv);
 
-  jxl::extras::PackedPixelFile ppf[2];
+  std::vector<jxl::extras::PackedPixelFile> ppf(2);
   const char* purpose[] = {"original", "distorted"};
   for (size_t i = 0; i < 2; ++i) {
     std::vector<uint8_t> encoded;
@@ -63,24 +86,18 @@ int main(int argc, char** argv) {
       return 1;
     }
     if (ppf[i].xsize() < 8 || ppf[i].ysize() < 8) {
-      fprintf(stderr, "Minimum image size is 8x8 pixels\n");
-      return 1;
+      QUIT("Minimum image size is 8x8 pixels\n");
     }
   }
   jxl::extras::PackedPixelFile& ppf1 = ppf[0];
   jxl::extras::PackedPixelFile& ppf2 = ppf[1];
 
   if (ppf1.xsize() != ppf2.xsize() || ppf1.ysize() != ppf2.ysize()) {
-    fprintf(stderr, "Image size mismatch\n");
-    return 1;
+    QUIT("Image size mismatch\n");
   }
 
-  jxl::StatusOr<Msssim> msssim_or = ComputeSSIMULACRA2(ppf1, ppf2);
-  if (!msssim_or.ok()) {
-    fprintf(stderr, "ComputeSSIMULACRA2 failed\n");
-    return 1;
-  }
-  Msssim msssim = std::move(msssim_or).value();
+  JXL_ASSIGN_OR_QUIT(Msssim msssim, ComputeSSIMULACRA2(ppf1, ppf2),
+                     "ComputeSSIMULACRA2 failed.");
   printf("%.8f\n", msssim.Score());
-  return 0;
+  return EXIT_SUCCESS;
 }

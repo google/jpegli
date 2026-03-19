@@ -11,10 +11,31 @@
 #include <string>
 #include <vector>
 
+#include "lib/base/memory_manager.h"
+#include "lib/extras/image.h"
+#include "lib/extras/packed_image.h"
+
 namespace jxl {
 namespace test {
 
+void Check(bool ok);
+
+#define JXL_TEST_ASSIGN_OR_DIE(lhs, statusor) \
+  PRIVATE_JXL_TEST_ASSIGN_OR_DIE_IMPL(        \
+      JXL_JOIN(assign_or_die_temporary_variable, __LINE__), lhs, statusor)
+
+// NOLINTBEGIN(bugprone-macro-parentheses)
+#define PRIVATE_JXL_TEST_ASSIGN_OR_DIE_IMPL(name, lhs, statusor) \
+  auto name = statusor;                                          \
+  ::jxl::test::Check(name.ok());                                 \
+  lhs = std::move(name).value_();
+// NOLINTEND(bugprone-macro-parentheses)
+
 std::vector<uint8_t> ReadTestData(const std::string& filename);
+
+StatusOr<Image3F> GetColorImage(const extras::PackedPixelFile& ppf);
+
+JxlMemoryManager* MemoryManager();
 
 }  // namespace test
 }  // namespace jxl

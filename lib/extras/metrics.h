@@ -7,9 +7,9 @@
 #ifndef LIB_EXTRAS_METRICS_H_
 #define LIB_EXTRAS_METRICS_H_
 
-#include <stdint.h>
-
 #include "lib/base/data_parallel.h"
+#include "lib/base/memory_manager.h"
+#include "lib/base/status.h"
 #include "lib/cms/cms_interface.h"
 #include "lib/extras/butteraugli.h"
 #include "lib/extras/image.h"
@@ -19,21 +19,24 @@ namespace jxl {
 
 // Computes the butteraugli distance and optionally the distmap of images in any
 // RGB color model, optionally with alpha channel.
-float ButteraugliDistance(const extras::PackedPixelFile& a,
+float ButteraugliDistance(JxlMemoryManager* memory_manager,
+                          const extras::PackedPixelFile& a,
                           const extras::PackedPixelFile& b,
                           ButteraugliParams params = ButteraugliParams(),
                           ImageF* distmap = nullptr, ThreadPool* pool = nullptr,
                           bool ignore_alpha = false);
 
 // Computes p-norm given the butteraugli distmap.
-double ComputeDistanceP(const ImageF& distmap, const ButteraugliParams& params,
-                        double p);
+StatusOr<double> ComputeDistanceP(const ImageF& distmap,
+                                  const ButteraugliParams& params, double p);
 
-float Butteraugli3Norm(const extras::PackedPixelFile& a,
-                       const extras::PackedPixelFile& b,
-                       ThreadPool* pool = nullptr);
+StatusOr<double> Butteraugli3Norm(JxlMemoryManager* memory_manager,
+                                  const extras::PackedPixelFile& a,
+                                  const extras::PackedPixelFile& b,
+                                  ThreadPool* pool = nullptr);
 
-double ComputePSNR(const extras::PackedPixelFile& a,
+double ComputePSNR(JxlMemoryManager* memory_manager,
+                   const extras::PackedPixelFile& a,
                    const extras::PackedPixelFile& b,
                    const JxlCmsInterface& cms);
 

@@ -13,8 +13,8 @@
 // NOLINTBEGIN
 /* clang-format off */
 #include <stdio.h>  // IWYU pragma: keep
-#include <jpeglib.h>  // IWYU pragma: keep
-#include <setjmp.h>  // IWYU pragma: keep
+#include <jpeglib.h>  // IWYU pragma: export
+#include <setjmp.h>  // IWYU pragma: export
 /* clang-format on */
 // NOLINTEND
 

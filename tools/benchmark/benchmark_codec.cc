@@ -6,39 +6,34 @@
 
 #include "tools/benchmark/benchmark_codec.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
-#include <utility>
 #include <vector>
 
+#include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
-#include "lib/base/types.h"
 #include "lib/extras/image.h"
-#include "lib/extras/image_ops.h"
-#include "lib/extras/packed_image_convert.h"
-#include "lib/extras/time.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"
-#include "tools/benchmark/benchmark_stats.h"
-#include "tools/speed_stats.h"
-#include "tools/thread_pool_internal.h"
+#include "tools/cmdline.h"
 
 namespace jpegxl {
 namespace tools {
 
 using ::jxl::Image3F;
+using ::jxl::Status;
 
-void ImageCodec::ParseParameters(const std::string& parameters) {
+Status ImageCodec::ParseParameters(const std::string& parameters) {
   params_ = parameters;
   std::vector<std::string> parts = SplitString(parameters, ':');
   for (const auto& part : parts) {
     if (!ParseParam(part)) {
-      JXL_ABORT("Invalid parameter %s", part.c_str());
+      return JXL_FAILURE("Invalid parameter %s", part.c_str());
     }
   }
+  return true;
 }
 
 Status ImageCodec::ParseParam(const std::string& param) {
@@ -70,7 +65,8 @@ Status ImageCodec::ParseParam(const std::string& param) {
   return false;
 }
 
-ImageCodecPtr CreateImageCodec(const std::string& description) {
+ImageCodecPtr CreateImageCodec(const std::string& description,
+                               JxlMemoryManager* memory_manager) {
   std::string name = description;
   std::string parameters;
   size_t colon = description.find(':');
@@ -83,10 +79,13 @@ ImageCodecPtr CreateImageCodec(const std::string& description) {
     result.reset(CreateNewJPEGCodec(*Args()));
   }
   if (!result.get()) {
-    JXL_ABORT("Unknown image codec: %s", name.c_str());
+    fprintf(stderr, "Unknown image codec: %s", name.c_str());
+    JPEGXL_TOOLS_CHECK(false);
   }
   result->set_description(description);
-  if (!parameters.empty()) result->ParseParameters(parameters);
+  if (!parameters.empty()) {
+    JPEGXL_TOOLS_CHECK(result->ParseParameters(parameters));
+  }
   return result;
 }
 

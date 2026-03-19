@@ -6,14 +6,26 @@
 
 #include "tools/gauss_blur.h"
 
+#include <algorithm>
 #include <cmath>
-#include <hwy/targets.h>
+#include <cstdio>
+#include <cstring>
+#include <hwy/base.h>  // HWY_ALIGN_MAX
+#include <limits>
+#include <sstream>
+#include <type_traits>
 #include <vector>
 
+#include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/printf_macros.h"
 #include "lib/base/random.h"
+#include "lib/base/status.h"
 #include "lib/base/testing.h"
+#include "lib/extras/image.h"
 #include "lib/extras/image_ops.h"
+#include "lib/extras/test_memory_manager.h"
+#include "lib/extras/test_utils.h"
 
 namespace jxl {
 
@@ -25,7 +37,7 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
                          const double threshold_relative,
                          std::stringstream& failures, const intptr_t border = 0,
                          const int c = 0) {
-  JXL_CHECK(SameSize(expected, actual));
+  JXL_ENSURE(SameSize(expected, actual));
   const intptr_t xsize = expected.xsize();
   const intptr_t ysize = expected.ysize();
 
@@ -226,8 +238,10 @@ void ExtrapolateBorders(const float* const JXL_RESTRICT row_in,
 
 ImageF ConvolveXAndTranspose(const ImageF& in,
                              const std::vector<float>& kernel) {
-  JXL_ASSERT(kernel.size() % 2 == 1);
-  JXL_ASSIGN_OR_DIE(ImageF out, ImageF::Create(in.ysize(), in.xsize()));
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  EXPECT_TRUE(kernel.size() % 2 == 1);
+  JXL_TEST_ASSIGN_OR_DIE(
+      ImageF out, ImageF::Create(memory_manager, in.ysize(), in.xsize()));
   const int r = kernel.size() / 2;
   std::vector<float> row_tmp(in.xsize() + 2 * r);
   float* const JXL_RESTRICT rowp = &row_tmp[r];
@@ -301,21 +315,21 @@ void TestImpulseResponse(size_t width, size_t peak) {
   const auto rg4 = CreateRecursiveGaussian(4.0);
   const auto rg5 = CreateRecursiveGaussian(5.0);
 
+  HWY_ALIGN_MAX float in[36];
   // Extra padding for 4x unrolling
-  auto in = hwy::AllocateAligned<float>(width + 3);
-  memset(in.get(), 0, sizeof(float) * (width + 3));
+  memset(in, 0, sizeof(float) * (width + 3));
   in[peak] = 1.0f;
 
-  auto out3 = hwy::AllocateAligned<float>(width + 3);
-  auto out4 = hwy::AllocateAligned<float>(width + 3);
-  auto out5 = hwy::AllocateAligned<float>(width + 3);
-  FastGaussian1D(rg3, width, in.get(), out3.get());
-  FastGaussian1D(rg4, width, out3.get(), out4.get());
-  FastGaussian1D(rg5, width, in.get(), out5.get());
+  HWY_ALIGN_MAX float out3[36];
+  HWY_ALIGN_MAX float out4[36];
+  HWY_ALIGN_MAX float out5[36];
+  FastGaussian1D(rg3, width, in, out3);
+  FastGaussian1D(rg4, width, out3, out4);
+  FastGaussian1D(rg5, width, in, out5);
 
-  VerifySymmetric(width, peak, out3.get());
-  VerifySymmetric(width, peak, out4.get());
-  VerifySymmetric(width, peak, out5.get());
+  VerifySymmetric(width, peak, out3);
+  VerifySymmetric(width, peak, out4);
+  VerifySymmetric(width, peak, out5);
 
   // Wider kernel has flatter peak
   EXPECT_LT(out5[peak] + 0.05, out3[peak]);
@@ -344,8 +358,10 @@ TEST(GaussBlurTest, ImpulseResponse) {
 // Higher-precision version for accuracy test.
 ImageF ConvolveAndTransposeF64(const ImageF& in,
                                const std::vector<double>& kernel) {
-  JXL_ASSERT(kernel.size() % 2 == 1);
-  JXL_ASSIGN_OR_DIE(ImageF out, ImageF::Create(in.ysize(), in.xsize()));
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  EXPECT_TRUE(kernel.size() % 2 == 1);
+  JXL_TEST_ASSIGN_OR_DIE(
+      ImageF out, ImageF::Create(memory_manager, in.ysize(), in.xsize()));
   const int r = kernel.size() / 2;
   std::vector<float> row_tmp(in.xsize() + 2 * r);
   float* const JXL_RESTRICT rowp = &row_tmp[r];
@@ -372,7 +388,7 @@ ImageF ConvolveF64(const ImageF& in, const std::vector<double>& kernel) {
 
 template <typename T>
 std::vector<T> GaussianKernel(int radius, T sigma) {
-  JXL_ASSERT(sigma > 0.0);
+  EXPECT_TRUE(sigma > 0.0);
   std::vector<T> kernel(2 * radius + 1);
   const T scaler = -1.0 / (2 * sigma * sigma);
   double sum = 0.0;
@@ -388,18 +404,23 @@ std::vector<T> GaussianKernel(int radius, T sigma) {
 }
 
 void TestDirac2D(size_t xsize, size_t ysize, double sigma) {
-  JXL_ASSIGN_OR_DIE(ImageF in, ImageF::Create(xsize, ysize));
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
+                         ImageF::Create(memory_manager, xsize, ysize));
   ZeroFillImage(&in);
   // We anyway ignore the border below, so might as well choose the middle.
   in.Row(ysize / 2)[xsize / 2] = 1.0f;
 
-  JXL_ASSIGN_OR_DIE(ImageF temp, ImageF::Create(xsize, ysize));
-  JXL_ASSIGN_OR_DIE(ImageF out, ImageF::Create(xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
+                         ImageF::Create(memory_manager, xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF out,
+                         ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
-  FastGaussian(
-      rg, xsize, ysize, [&](size_t y) { return in.ConstRow(y); },
+  ASSERT_TRUE(FastGaussian(
+      memory_manager, rg, xsize, ysize,
+      [&](size_t y) { return in.ConstRow(y); },
       [&](size_t y) { return temp.Row(y); },
-      [&](size_t y) { return out.Row(y); });
+      [&](size_t y) { return out.Row(y); }));
 
   const std::vector<float> kernel =
       GaussianKernel(static_cast<int>(4 * sigma), static_cast<float>(sigma));
@@ -408,7 +429,8 @@ void TestDirac2D(size_t xsize, size_t ysize, double sigma) {
   const double max_l1 = sigma < 1.5 ? 5E-3 : 6E-4;
   const size_t border = 2 * sigma;
 
-  JXL_ASSERT_OK(VerifyRelativeError(expected, out, max_l1, 1E-8, _, border));
+  JXL_TEST_ASSERT_OK(
+      VerifyRelativeError(expected, out, max_l1, 1E-8, _, border));
 }
 
 TEST(GaussBlurTest, Test2D) {
@@ -425,6 +447,7 @@ TEST(GaussBlurTest, Test2D) {
 
 // Slow (44 sec). To run, remove the disabled prefix.
 TEST(GaussBlurTest, DISABLED_SlowTestDirac1D) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   const double sigma = 7.0;
   const auto rg = CreateRecursiveGaussian(sigma);
 
@@ -433,19 +456,26 @@ TEST(GaussBlurTest, DISABLED_SlowTestDirac1D) {
   const std::vector<double> kernel = GaussianKernel(radius, sigma);
 
   const size_t length = 16384;
-  JXL_ASSIGN_OR_DIE(ImageF inputs, ImageF::Create(length, 1));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF inputs,
+                         ImageF::Create(memory_manager, length, 1));
   ZeroFillImage(&inputs);
 
-  auto outputs = hwy::AllocateAligned<float>(length);
+  JXL_TEST_ASSIGN_OR_DIE(
+      AlignedMemory outputs_mem,
+      AlignedMemory::Create(memory_manager, length * sizeof(float)));
+  float* outputs = outputs_mem.address<float>();
 
   // One per center position
-  auto sum_abs_err = hwy::AllocateAligned<double>(length);
-  std::fill(sum_abs_err.get(), sum_abs_err.get() + length, 0.0);
+  JXL_TEST_ASSIGN_OR_DIE(
+      AlignedMemory sum_abs_err_mem,
+      AlignedMemory::Create(memory_manager, length * sizeof(double)));
+  double* sum_abs_err = sum_abs_err_mem.address<double>();
+  std::fill(sum_abs_err, sum_abs_err + length, 0.0);
 
   for (size_t center = radius; center < length - radius; ++center) {
     inputs.Row(0)[center - 1] = 0.0f;  // reset last peak, entire array now 0
     inputs.Row(0)[center] = 1.0f;
-    FastGaussian1D(rg, length, inputs.Row(0), outputs.get());
+    FastGaussian1D(rg, length, inputs.Row(0), outputs);
 
     const ImageF outputs_fir = ConvolveF64(inputs, kernel);
 
@@ -456,7 +486,7 @@ TEST(GaussBlurTest, DISABLED_SlowTestDirac1D) {
   }
 
   const double max_abs_err =
-      *std::max_element(sum_abs_err.get(), sum_abs_err.get() + length);
+      *std::max_element(sum_abs_err, sum_abs_err + length);
   printf("Max abs err: %.8e\n", max_abs_err);
 }
 
@@ -491,27 +521,34 @@ void SetBorder(const size_t thickness, const T value, Plane<T>* image) {
 
 void TestRandom(size_t xsize, size_t ysize, float min, float max, double sigma,
                 double max_l1, double max_rel) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   printf("%4" PRIuS " x %4" PRIuS " %4.1f %4.1f sigma %.1f\n", xsize, ysize,
          min, max, sigma);
-  JXL_ASSIGN_OR_DIE(ImageF in, ImageF::Create(xsize, ysize));
-  RandomFillImage(&in, min, max, 65537 + xsize * 129 + ysize);
+  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
+                         ImageF::Create(memory_manager, xsize, ysize));
+  RandomFillImage(&in, min, max,
+                  static_cast<uint64_t>(65537) + xsize * 129 + ysize);
   // FastGaussian/Convolve handle borders differently, so keep those pixels 0.
   const size_t border = 4 * sigma;
   SetBorder(border, 0.0f, &in);
 
-  JXL_ASSIGN_OR_DIE(ImageF temp, ImageF::Create(xsize, ysize));
-  JXL_ASSIGN_OR_DIE(ImageF out, ImageF::Create(xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
+                         ImageF::Create(memory_manager, xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF out,
+                         ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
-  FastGaussian(
-      rg, in.xsize(), in.ysize(), [&](size_t y) { return in.ConstRow(y); },
+  ASSERT_TRUE(FastGaussian(
+      memory_manager, rg, in.xsize(), in.ysize(),
+      [&](size_t y) { return in.ConstRow(y); },
       [&](size_t y) { return temp.Row(y); },
-      [&](size_t y) { return out.Row(y); });
+      [&](size_t y) { return out.Row(y); }));
 
   const std::vector<float> kernel =
       GaussianKernel(static_cast<int>(4 * sigma), static_cast<float>(sigma));
   const ImageF expected = Convolve(in, kernel);
 
-  JXL_ASSERT_OK(VerifyRelativeError(expected, out, max_l1, max_rel, _, border));
+  JXL_TEST_ASSERT_OK(
+      VerifyRelativeError(expected, out, max_l1, max_rel, _, border));
 }
 
 void TestRandomForSizes(float min, float max, double sigma) {
@@ -539,9 +576,11 @@ TEST(GaussBlurTest, TestRandom) {
 }
 
 TEST(GaussBlurTest, TestSign) {
+  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
   const size_t xsize = 500;
   const size_t ysize = 606;
-  JXL_ASSIGN_OR_DIE(ImageF in, ImageF::Create(xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
+                         ImageF::Create(memory_manager, xsize, ysize));
 
   ZeroFillImage(&in);
   const float center[33 * 33] = {
@@ -730,21 +769,24 @@ TEST(GaussBlurTest, TestSign) {
   const size_t xtest = xsize / 2;
   const size_t ytest = ysize / 2;
 
-  for (intptr_t dy = -16; dy <= 16; ++dy) {
+  for (ptrdiff_t dy = -16; dy <= 16; ++dy) {
     float* row = in.Row(ytest + dy);
-    for (intptr_t dx = -16; dx <= 16; ++dx)
+    for (ptrdiff_t dx = -16; dx <= 16; ++dx)
       row[xtest + dx] = center[(dy + 16) * 33 + (dx + 16)];
   }
 
   const double sigma = 7.155933;
 
-  JXL_ASSIGN_OR_DIE(ImageF temp, ImageF::Create(xsize, ysize));
-  JXL_ASSIGN_OR_DIE(ImageF out_rg, ImageF::Create(xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
+                         ImageF::Create(memory_manager, xsize, ysize));
+  JXL_TEST_ASSIGN_OR_DIE(ImageF out_rg,
+                         ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
-  FastGaussian(
-      rg, in.xsize(), in.ysize(), [&](size_t y) { return in.ConstRow(y); },
+  ASSERT_TRUE(FastGaussian(
+      memory_manager, rg, in.xsize(), in.ysize(),
+      [&](size_t y) { return in.ConstRow(y); },
       [&](size_t y) { return temp.Row(y); },
-      [&](size_t y) { return out_rg.Row(y); });
+      [&](size_t y) { return out_rg.Row(y); }));
 
   ImageF out_old;
   {
