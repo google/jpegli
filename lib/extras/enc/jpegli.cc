@@ -461,6 +461,9 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     }
     jpegli_enable_adaptive_quantization(
         &cinfo, TO_JXL_BOOL(jpeg_settings.use_adaptive_quantization));
+    if (jpeg_settings.use_sharpyuv) {
+      jpegli_set_sharp_yuv(&cinfo, TRUE);
+    }
     if (jpeg_settings.psnr_target > 0.0) {
       jpegli_set_psnr(&cinfo, jpeg_settings.psnr_target,
                       jpeg_settings.search_tolerance,

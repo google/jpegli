@@ -77,6 +77,10 @@ struct Args {
     cmdline->AddOptionFlag('\0', "xyb", "Convert to XYB colorspace",
                            &settings.xyb, &SetBooleanTrue, 1);
 
+    cmdline->AddOptionFlag('\0', "sharpyuv",
+                           "Use true linear-light sharp YUV downsampling for 4:2:0",
+                           &settings.use_sharpyuv, &SetBooleanTrue, 1);
+
     cmdline->AddOptionFlag(
         '\0', "std_quant",
         "Use quantization tables based on Annex K of the JPEG standard.",
