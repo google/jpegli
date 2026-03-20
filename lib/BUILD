@@ -4,7 +4,8 @@
 # license that can be found in the LICENSE file.
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 # Load sources/headers/tests lists.
 load(
@@ -27,16 +28,15 @@ load(
     "libjxl_jpegli_sources",
     "libjxl_jpegli_testlib_files",
     "libjxl_jpegli_tests",
-    "libjxl_major_version",
-    "libjxl_minor_version",
-    "libjxl_patch_version",
     "libjxl_testlib_files",
     "libjxl_tests",
     "libjxl_threads_sources",
 )
 load(
     "jxl_vars.bzl",
-    "libjxl_deps_brotli",
+    # "libjxl_deps_testdata",
+    # "libjxl_deps_webp",
+    "jpegli_root_package",
     "libjxl_deps_exr",
     "libjxl_deps_gif",
     "libjxl_deps_gtest",
@@ -47,9 +47,6 @@ load(
     "libjxl_deps_png",
     "libjxl_deps_runfiles",
     "libjxl_deps_skcms",
-    # "libjxl_deps_testdata",
-    # "libjxl_deps_webp",
-    "jpegli_root_package",
     "libjxl_test_shards",
     "libjxl_test_timeouts",
 )

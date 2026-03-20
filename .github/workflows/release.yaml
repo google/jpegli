@@ -12,7 +12,7 @@
 # In the GitHub release case, in addition to build the release binaries it also
 # uploads the binaries to the given release automatically.
 
-name: Release build / deploy
+name: Release build / upload
 on:
   merge_group:
   push:
@@ -37,12 +37,12 @@ concurrency:
 
 jobs:
   ubuntu_static_x86_64:
-    name: Release linux x86_64 static
+    name: linux x86_64 static
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
     runs-on: [ubuntu-latest]
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
       with:
         egress-policy: audit
 
@@ -112,7 +112,7 @@ jobs:
 
   # Build .deb packages Ubuntu/Debian
   release_ubuntu_pkg:
-    name: .deb packages / ${{ matrix.os }}
+    name: .deb / ${{ matrix.os }}
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
     runs-on: ubuntu-latest
     strategy:
@@ -132,7 +132,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
       with:
         egress-policy: audit
 
@@ -238,7 +238,7 @@ jobs:
 
 
   windows_build:
-    name: Windows Build (vcpkg / ${{ matrix.triplet }})
+    name: vcpkg / ${{ matrix.triplet }} ${{ matrix.build_type || 'Release'}}
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'CI:none') }}
     runs-on: [windows-2022]
     strategy:
@@ -250,6 +250,10 @@ jobs:
           - triplet: x64-windows-static
             arch: '-A x64'
             run_benchmark: true
+          - triplet: x64-windows-static
+            arch: '-A x64'
+            build_type: Debug
+            upload: 'OFF'
           - triplet: x86-windows
             arch: '-A Win32'
             static: 'OFF'
@@ -263,10 +267,12 @@ jobs:
       VCPKG_VERSION: '2025.10.17'
       VCPKG_ROOT: vcpkg
       VCPKG_DISABLE_METRICS: 1
+      BUILD_TYPE: ${{ matrix.build_type || 'Release' }}
+      PREFIX: ${{matrix.triplet}}
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
       with:
         egress-policy: audit
 
@@ -276,7 +282,7 @@ jobs:
         submodules: true
         fetch-depth: 2
 
-    - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       id: cache-vcpkg
       with:
         path: vcpkg
@@ -321,8 +327,8 @@ jobs:
           -DJPEGXL_STATIC=${{ matrix.static || 'ON'}} \
           -DJPEGXL_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
           -DBUILD_TESTING=OFF \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=`pwd`/prefix \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_INSTALL_PREFIX=`pwd`/${PREFIX} \
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
           -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
           -DJPEGXL_ENABLE_OPENEXR=OFF \
@@ -336,20 +342,20 @@ jobs:
       shell: 'bash'
       run: |
         set -x
-        cmake --build build --config Release
+        cmake --build build --config ${{ env.BUILD_TYPE }}
     - name: Install
       shell: 'bash'
       run: |
         set -x
-        cmake --build build --config Release --target install
+        cmake --build build --config ${{ env.BUILD_TYPE }} --target install
         for pkg in giflib libjpeg-turbo libpng libwebp zlib; do
           cp vcpkg/installed/${{matrix.triplet}}/share/${pkg}/copyright \
-            prefix/bin/LICENSE.${pkg}
+            ${PREFIX}/bin/LICENSE.${pkg}
         done
-        cp third_party/sjpeg/COPYING prefix/bin/LICENSE.sjpeg
-        cp third_party/skcms/LICENSE prefix/bin/LICENSE.skcms
-        cp third_party/highway/LICENSE prefix/bin/LICENSE.highway
-        cp LICENSE prefix/bin/LICENSE.jpegli
+        cp third_party/sjpeg/COPYING ${PREFIX}/bin/LICENSE.sjpeg
+        cp third_party/skcms/LICENSE ${PREFIX}/bin/LICENSE.skcms
+        cp third_party/highway/LICENSE ${PREFIX}/bin/LICENSE.highway
+        cp LICENSE ${PREFIX}/bin/LICENSE.jpegli
 
     - name: Fast benchmark ${{ matrix.triplet }}
       shell: 'bash'
@@ -362,24 +368,47 @@ jobs:
         export PATH=$PATH:`pwd`/build/lib
         BUILD_CONFIG=Release/ BENCHMARK_NUM_THREADS=2 STORE_IMAGES=0 ./ci.sh fast_benchmark
 
-    - name: Upload artifacts
+    - name: Package release
+      shell: 'bash'
+      if: matrix.upload != 'OFF'
+      run: |
+        7z -mx a jpegli-${{matrix.triplet}}.7z ${PREFIX}/bin/* ${PREFIX}/lib/*
+        7z -mx a jpegli-${{matrix.triplet}}.zip ${PREFIX}/bin/* ${PREFIX}/lib/*
+
+    - name: Upload release
+      if: matrix.upload != 'OFF'
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: jpegli-${{matrix.triplet}}
         path: |
-          prefix/bin/*
-          prefix/lib/*
+          jpegli-${{matrix.triplet}}.7z
+          jpegli-${{matrix.triplet}}.zip
+        compression-level: 0
 
-    - name: Package release zip
-      if: github.event_name == 'release'
-      shell: 'powershell'
-      run: |
-        Compress-Archive -Path prefix\bin\*, prefix\lib\* `
-          -DestinationPath jpegli-${{matrix.triplet}}.zip
 
-    - name: Upload binaries to release
-      if: github.event_name == 'release'
-      uses: AButler/upload-release-assets@3d6774fae0ed91407dc5ae29d576b166536d1777 # v3.0
+  publish_release_assets:
+    name: Publish release assets
+    needs: [ubuntu_static_x86_64, release_ubuntu_pkg, windows_build]
+    if: github.event_name == 'release'
+    runs-on: [ubuntu-latest]
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout the source
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        files: jpegli-${{matrix.triplet}}.zip
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        submodules: true
+        fetch-depth: 1
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        path: release_assets
+        merge-multiple: true
+
+    - name: Publish assets
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} ./release_assets/*
