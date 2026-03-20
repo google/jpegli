@@ -23,7 +23,7 @@ If applicable, add screenshots or example input/output images to help explain yo
  - OS: [e.g. Windows]
  - Compiler version: [e.g. clang 11.0.1]
  - CPU type: [e.g. x86_64]
- - cjxl/djxl version string: [e.g. cjxl [v0.3.7 | SIMD supported: SSE4,Scalar]]
+ - cjpegli/djpegli version string: [e.g. cjpegli [v0.3.7 | SIMD supported: SSE4,Scalar]]
 
 **Additional context**
 Add any other context about the problem here.

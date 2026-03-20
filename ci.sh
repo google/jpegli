@@ -1441,8 +1441,8 @@ cmd_bump_version() {
   fi
 
   if [[ -z "${newver}" ]]; then
-    local major=$(get_version JPEGXL_MAJOR_VERSION)
-    local minor=$(get_version JPEGXL_MINOR_VERSION)
+    local major=$(get_version JPEGLI_MAJOR_VERSION)
+    local minor=$(get_version JPEGLI_MINOR_VERSION)
     local patch=0
     minor=$(( ${minor}  + 1))
   else
@@ -1460,9 +1460,9 @@ cmd_bump_version() {
 
   echo "Bumping version to ${newver} (${major}.${minor}.${patch})"
   sed -E \
-    -e "s/(set\\(JPEGXL_MAJOR_VERSION) [0-9]+\\)/\\1 ${major})/" \
-    -e "s/(set\\(JPEGXL_MINOR_VERSION) [0-9]+\\)/\\1 ${minor})/" \
-    -e "s/(set\\(JPEGXL_PATCH_VERSION) [0-9]+\\)/\\1 ${patch})/" \
+    -e "s/(set\\(JPEGLI_MAJOR_VERSION) [0-9]+\\)/\\1 ${major})/" \
+    -e "s/(set\\(JPEGLI_MINOR_VERSION) [0-9]+\\)/\\1 ${minor})/" \
+    -e "s/(set\\(JPEGLI_PATCH_VERSION) [0-9]+\\)/\\1 ${patch})/" \
     -i lib/CMakeLists.txt
   sed -E \
     -e "s/(LIBJXL_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}.${patch}\"/" \

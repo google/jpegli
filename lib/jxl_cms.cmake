@@ -43,8 +43,8 @@ endif()
 target_link_libraries(jxl_cms PRIVATE hwy)
 
 set_target_properties(jxl_cms PROPERTIES
-        VERSION ${JPEGXL_LIBRARY_VERSION}
-        SOVERSION ${JPEGXL_LIBRARY_SOVERSION})
+        VERSION ${JPEGLI_LIBRARY_VERSION}
+        SOVERSION ${JPEGLI_LIBRARY_SOVERSION})
 
 # Check whether the linker support excluding libs
 if (MSVC)

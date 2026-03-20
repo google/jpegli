@@ -1,4 +1,4 @@
-Source: jpeg-xl
+Source: jpegli
 Maintainer: JPEG XL Maintainers <jpegxl@google.com>
 Section: misc
 Priority: optional
@@ -19,47 +19,113 @@ Build-Depends:
  pkg-config,
  xdg-utils,
  xmlto,
-Homepage: https://github.com/libjxl/libjxl
+Homepage: https://github.com/google/jpegli
 Rules-Requires-Root: no
 
-Package: jxl
+Package: jpegli
 Architecture: any
 Section: utils
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Description: JPEG XL Image Coding System - "JXL" (command line utility)
- The JPEG XL Image Coding System (ISO/IEC 18181) is a lossy and
- lossless image compression format. It has a rich feature set and is
- particularly optimized for responsive web environments, so that
- content renders well on a wide range of devices. Moreover, it includes
- several features that help transition from the legacy JPEG format.
+Description: Jpegli JPEG codec (command line utility)
+ Jpegli is a new JPEG coding library that is designed to be faster, more
+ efficient, and more visually pleasing than traditional JPEG. It uses a number
+ of new techniques to achieve these goals, including:
+ .
+ 1) It provides both a fully interoperable encoder and decoder complying with
+ the original JPEG standard and its most conventional 8-bit formalism, and
+ API/ABI compatibility with libjpeg-turbo and MozJPEG.
+ .
+ 2) High quality results. When images are compressed or decompressed through
+ Jpegli, more precise and psychovisually effective computations are performed
+ and images will look clearer and have fewer observable artifacts.
+ .
+ 3) Fast. While improving on image quality/compression density ratio, Jpegli's
+ coding speed is comparable to traditional approaches, such as libjpeg-turbo and
+ MozJPEG. This means that web developers can effortlessly integrate Jpegli into
+ their existing workflows without sacrificing coding speed performance or memory
+ use.
+ .
+ 4) 10+ bits. Jpegli can be encoded with 10+ bits per component. Traditional
+ JPEG coding solutions offer only 8 bit per component dynamics causing visible
+ banding artifacts in slow gradients. Jpegli's 10+ bits coding happens in the
+ original 8-bit formalism and the resulting images are fully interoperable with
+ 8-bit viewers. 10+ bit dynamics are available as an API extension and
+ application code changes are needed to benefit from it.
+ .
+ 5) More dense: Jpegli compresses images more efficiently than traditional JPEG
+ codecs, which can save bandwidth and storage space, and speed up web pages.
  .
  This package installs the command line utilities.
 
-Package: libjxl-dev
+Package: libjpegli-dev
 Architecture: any
 Section: libdevel
-Depends: libjxl (= ${binary:Version}), ${misc:Depends}
+Depends: jpegli (= ${binary:Version}), ${misc:Depends}
  libhwy-dev,
-Description: JPEG XL Image Coding System - "JXL" (development files)
- The JPEG XL Image Coding System (ISO/IEC 18181) is a lossy and
- lossless image compression format. It has a rich feature set and is
- particularly optimized for responsive web environments, so that
- content renders well on a wide range of devices. Moreover, it includes
- several features that help transition from the legacy JPEG format.
+Description: Jpegli JPEG codec (development files)
+ Jpegli is a new JPEG coding library that is designed to be faster, more
+ efficient, and more visually pleasing than traditional JPEG. It uses a number
+ of new techniques to achieve these goals, including:
+ .
+ 1) It provides both a fully interoperable encoder and decoder complying with
+ the original JPEG standard and its most conventional 8-bit formalism, and
+ API/ABI compatibility with libjpeg-turbo and MozJPEG.
+ .
+ 2) High quality results. When images are compressed or decompressed through
+ Jpegli, more precise and psychovisually effective computations are performed
+ and images will look clearer and have fewer observable artifacts.
+ .
+ 3) Fast. While improving on image quality/compression density ratio, Jpegli's
+ coding speed is comparable to traditional approaches, such as libjpeg-turbo and
+ MozJPEG. This means that web developers can effortlessly integrate Jpegli into
+ their existing workflows without sacrificing coding speed performance or memory
+ use.
+ .
+ 4) 10+ bits. Jpegli can be encoded with 10+ bits per component. Traditional
+ JPEG coding solutions offer only 8 bit per component dynamics causing visible
+ banding artifacts in slow gradients. Jpegli's 10+ bits coding happens in the
+ original 8-bit formalism and the resulting images are fully interoperable with
+ 8-bit viewers. 10+ bit dynamics are available as an API extension and
+ application code changes are needed to benefit from it.
+ .
+ 5) More dense: Jpegli compresses images more efficiently than traditional JPEG
+ codecs, which can save bandwidth and storage space, and speed up web pages.
  .
  This package installs development files.
 
-Package: libjxl
+Package: libjpegli
 Architecture: any
 Multi-Arch: same
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Pre-Depends: ${misc:Pre-Depends}
-Description: JPEG XL Image Coding System - "JXL" (shared libraries)
- The JPEG XL Image Coding System (ISO/IEC 18181) is a lossy and
- lossless image compression format. It has a rich feature set and is
- particularly optimized for responsive web environments, so that
- content renders well on a wide range of devices. Moreover, it includes
- several features that help transition from the legacy JPEG format.
+Description: Jpegli JPEG codec (shared libraries)
+ Jpegli is a new JPEG coding library that is designed to be faster, more
+ efficient, and more visually pleasing than traditional JPEG. It uses a number
+ of new techniques to achieve these goals, including:
+ .
+ 1) It provides both a fully interoperable encoder and decoder complying with
+ the original JPEG standard and its most conventional 8-bit formalism, and
+ API/ABI compatibility with libjpeg-turbo and MozJPEG.
+ .
+ 2) High quality results. When images are compressed or decompressed through
+ Jpegli, more precise and psychovisually effective computations are performed
+ and images will look clearer and have fewer observable artifacts.
+ .
+ 3) Fast. While improving on image quality/compression density ratio, Jpegli's
+ coding speed is comparable to traditional approaches, such as libjpeg-turbo and
+ MozJPEG. This means that web developers can effortlessly integrate Jpegli into
+ their existing workflows without sacrificing coding speed performance or memory
+ use.
+ .
+ 4) 10+ bits. Jpegli can be encoded with 10+ bits per component. Traditional
+ JPEG coding solutions offer only 8 bit per component dynamics causing visible
+ banding artifacts in slow gradients. Jpegli's 10+ bits coding happens in the
+ original 8-bit formalism and the resulting images are fully interoperable with
+ 8-bit viewers. 10+ bit dynamics are available as an API extension and
+ application code changes are needed to benefit from it.
+ .
+ 5) More dense: Jpegli compresses images more efficiently than traditional JPEG
+ codecs, which can save bandwidth and storage space, and speed up web pages.
  .
  This package installs shared libraries.

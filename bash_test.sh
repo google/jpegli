@@ -196,17 +196,17 @@ get_version() {
 }
 
 test_version() {
-  local major=$(get_version JPEGXL_MAJOR_VERSION)
-  local minor=$(get_version JPEGXL_MINOR_VERSION)
-  local patch=$(get_version JPEGXL_PATCH_VERSION)
+  local major=$(get_version JPEGLI_MAJOR_VERSION)
+  local minor=$(get_version JPEGLI_MINOR_VERSION)
+  local patch=$(get_version JPEGLI_PATCH_VERSION)
   # Check that the version is not empty
   if [[ -z "${major}${minor}${patch}" ]]; then
     echo "Couldn't parse version from CMakeLists.txt" >&2
     return 1
   fi
   local pkg_version=$(head -n 1 debian/changelog)
-  # Get only the part between the first "jpeg-xl (" and the following ")".
-  pkg_version="${pkg_version#jpeg-xl (}"
+  # Get only the part between the first "jpegli (" and the following ")".
+  pkg_version="${pkg_version#jpegli (}"
   pkg_version="${pkg_version%%)*}"
   if [[ -z "${pkg_version}" ]]; then
     echo "Couldn't parse version from debian package" >&2
