@@ -160,8 +160,8 @@ target_link_libraries(jxl_extras_codec PRIVATE
 )
 target_link_libraries(jxl_extras_codec PUBLIC jxl)
 set_target_properties(jxl_extras_codec PROPERTIES
-  VERSION ${JPEGXL_LIBRARY_VERSION}
-  SOVERSION ${JPEGXL_LIBRARY_SOVERSION}
+  VERSION ${JPEGLI_LIBRARY_VERSION}
+  SOVERSION ${JPEGLI_LIBRARY_SOVERSION}
 )
 install(TARGETS jxl_extras_codec
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -131,7 +131,7 @@ set(JPEGXL_ENABLE_FUZZERS ${ENABLE_FUZZERS_DEFAULT} CACHE BOOL
 set(JPEGXL_ENABLE_DEVTOOLS false CACHE BOOL
     "Build JPEGXL developer tools.")
 set(JPEGXL_ENABLE_TOOLS true CACHE BOOL
-    "Build JPEGXL user tools: cjxl and djxl.")
+    "Build JPEGXL user tools: cjpegli and djpegli.")
 set(JPEGXL_ENABLE_JPEGLI_LIBJPEG true CACHE BOOL
     "Build libjpeg.so shared library based on jpegli.")
 set(JPEGXL_INSTALL_JPEGLI_LIBJPEG false CACHE BOOL
@@ -461,7 +461,7 @@ if(JPEGXL_ENABLE_MANPAGES)
     if (ASCIIDOC_PY_FOUND)
       set(MANPAGE_FILES "")
       set(MANPAGES "")
-      foreach(PAGE IN ITEMS cjxl djxl)
+      foreach(PAGE IN ITEMS cjpegli djpegli)
         # Invoking the Python interpreter ourselves instead of running the a2x binary
         # directly is necessary on MSYS2, otherwise it is run through cmd.exe which
         # does not recognize it.
