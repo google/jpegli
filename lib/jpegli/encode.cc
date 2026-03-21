@@ -31,6 +31,7 @@
 #include "lib/jpegli/quant.h"
 #include "lib/jpegli/simd.h"
 #include "lib/jpegli/types.h"
+#include "lib/jpegli/sharp_yuv.h"
 
 namespace jpegli {
 
@@ -600,7 +601,11 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
   JPEGLI_CHECK(cinfo->master->next_iMCU_row < cinfo->total_iMCU_rows);
   if (!cinfo->raw_data_in) {
     ApplyInputSmoothing(cinfo);
-    DownsampleInputBuffer(cinfo);
+    if (cinfo->master->use_sharpyuv && cinfo->jpeg_color_space == JCS_YCbCr) {
+      ApplySharpYuvDownsample(cinfo);
+    } else {
+      DownsampleInputBuffer(cinfo);
+    }
   }
   ComputeAdaptiveQuantField(cinfo);
   if (IsStreamingSupported(cinfo)) {
@@ -693,6 +698,7 @@ void jpegli_CreateCompress(j_compress_ptr cinfo, int version,
   cinfo->master->cicp_transfer_function = 2;  // unknown transfer function code
   cinfo->master->use_std_tables = false;
   cinfo->master->use_adaptive_quantization = true;
+  cinfo->master->use_sharpyuv = false;
   cinfo->master->progressive_level = jpegli::kDefaultProgressiveLevel;
   cinfo->master->data_type = JPEGLI_TYPE_UINT8;
   cinfo->master->endianness = JPEGLI_NATIVE_ENDIAN;
@@ -925,6 +931,11 @@ void jpegli_add_quant_table(j_compress_ptr cinfo, int which_tbl,
 void jpegli_enable_adaptive_quantization(j_compress_ptr cinfo, boolean value) {
   CheckState(cinfo, jpegli::kEncStart);
   cinfo->master->use_adaptive_quantization = FROM_JXL_BOOL(value);
+}
+
+void jpegli_set_sharp_yuv(j_compress_ptr cinfo, boolean enable) {
+  CheckState(cinfo, jpegli::kEncStart);
+  cinfo->master->use_sharpyuv = FROM_JXL_BOOL(enable);
 }
 
 void jpegli_simple_progression(j_compress_ptr cinfo) {
