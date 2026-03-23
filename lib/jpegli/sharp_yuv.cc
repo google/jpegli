@@ -496,7 +496,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
 
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
 
-  // 1. Decode input YCbCr -> linear RGB, compute per-pixel target luma (SIMD)
+  // Decode input YCbCr to linear RGB and compute target luma.
   for (size_t y = 0; y < iMCU_height; ++y) {
     const float* row_y = m->smooth_input[0]->Row(y0 + y);
     const float* row_cb = m->smooth_input[1]->Row(y0 + y);
@@ -543,7 +543,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     }
   }
 
-  // 2. Box-average downsample of linear RGB -> target Cb/Cr (SIMD)
+  // Box-average downsample of linear RGB to target Cb/Cr.
   for (size_t y = 0; y < down_height; ++y) {
     const float* r0 = &tmp_lin_r[(y * 2 + 0) * xsize_padded];
     const float* g0 = &tmp_lin_g[(y * 2 + 0) * xsize_padded];
@@ -577,8 +577,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     memset(err_cr.data(), 0, low_size * sizeof(float));
     float diff_y_sum = 0.0f;
 
-    // 3a. Upsample best_cb/cr to full-res using a 2D tent (9/3/3/1) filter
-    //     (SIMD inner loop with scalar boundary handling)
+    // Upsample best_cb/cr to full-res using a 2D tent filter.
     for (size_t y = 0; y < down_height; ++y) {
       size_t y_prev = (y == 0) ? 0 : y - 1;
       size_t y_next = (y + 1 == down_height) ? y : y + 1;
@@ -596,7 +595,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
                       up_cr.data());
     }
 
-    // 3b. Evaluate YCbCr reconstruction error at full resolution (SIMD)
+    // Evaluate YCbCr reconstruction error at full resolution.
     for (size_t y = 0; y < iMCU_height; ++y) {
       size_t x = 0;
       for (; x + N <= xsize_padded; x += N) {
@@ -650,8 +649,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       diff_y_sum += std::abs(err_y[i_y]);
     }
 
-    // 3c. Box-average downsample of reconstructed RGB -> compute Cb/Cr error
-    //     (SIMD via BoxAverageDownsampleRow)
+    // Box-average downsample reconstructed RGB to compute Cb/Cr error.
     for (size_t y = 0; y < down_height; ++y) {
       const float* r0 = &tmp_lin_r[(y * 2 + 0) * xsize_padded];
       const float* g0 = &tmp_lin_g[(y * 2 + 0) * xsize_padded];
@@ -687,7 +685,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       }
     }
 
-    // 3d. Apply Y error correction with clamping (SIMD + scalar tail)
+    // Apply Y error correction with clamping.
     const auto vmin = Set(d, 0.0f);
     const auto vmax = Set(d, 255.0f);
     size_t i_y_corr = 0;
@@ -701,8 +699,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       best_y[i_y_corr] = std::max(0.0f, std::min(255.0f, best_y[i_y_corr] + err_y[i_y_corr]));
     }
 
-    // 3e. Apply Cb/Cr error correction (SIMD + scalar tail)
-    //     Unlike Y, Cb/Cr are NOT clamped during iterations to allow error diffusion.
+    // Apply Cb/Cr error correction.
     size_t i_c_corr = 0;
     for (; i_c_corr + N <= low_size; i_c_corr += N) {
       auto cb_vec = Add(LoadU(d, &best_cb[i_c_corr]), LoadU(d, &err_cb[i_c_corr]));
@@ -721,7 +718,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     prev_diff_y_sum = diff_y_sum;
   }
 
-  // 4. Write best_y and best_cb/cr to raw_data output buffers (memcpy)
+  // Write best_y and best_cb/cr to raw_data output buffers.
   for (size_t y = 0; y < iMCU_height; ++y) {
     float* row_out_y = m->raw_data[0]->Row(y0 + y);
     memcpy(row_out_y, &best_y[y * xsize_padded],
