@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <vector>
+
 
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode_internal.h"
@@ -35,7 +35,9 @@ using hwy::HWY_NAMESPACE::Div;
 using hwy::HWY_NAMESPACE::Floor;
 using hwy::HWY_NAMESPACE::IfThenElse;
 using hwy::HWY_NAMESPACE::Le;
+using hwy::HWY_NAMESPACE::Lanes;
 using hwy::HWY_NAMESPACE::LoadDup128;
+using hwy::HWY_NAMESPACE::LoadInterleaved2;
 using hwy::HWY_NAMESPACE::LoadU;
 using hwy::HWY_NAMESPACE::Max;
 using hwy::HWY_NAMESPACE::Min;
@@ -47,8 +49,10 @@ using hwy::HWY_NAMESPACE::ReduceSum;
 using hwy::HWY_NAMESPACE::Set;
 using hwy::HWY_NAMESPACE::ShiftLeft;
 using hwy::HWY_NAMESPACE::ShiftRight;
+using hwy::HWY_NAMESPACE::StoreInterleaved2;
 using hwy::HWY_NAMESPACE::StoreU;
 using hwy::HWY_NAMESPACE::Sub;
+using hwy::HWY_NAMESPACE::Vec;
 using hwy::HWY_NAMESPACE::Zero;
 
 using D = HWY_CAPPED(float, 8);
@@ -257,47 +261,25 @@ HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
   const auto quarter = Set(d, 0.25f);
   size_t x = 0;
 
-  // SIMD path: process N output pixels at a time.
-  // Each output pixel needs 2 input pixels horizontally, so we need 2*N inputs.
   for (; x + N <= down_width; x += N) {
-    // Gather even and odd columns from two rows.
-    // Row 0: indices 2*x, 2*x+1, 2*x+2, 2*x+3, ...
-    // Row 1: same pattern.
-    // We accumulate the 4 samples for each output pixel.
-    auto sum_r = Zero(d);
-    auto sum_g = Zero(d);
-    auto sum_b = Zero(d);
+    Vec<D> r0e, r0o, g0e, g0o, b0e, b0o;
+    Vec<D> r1e, r1o, g1e, g1o, b1e, b1o;
+    LoadInterleaved2(d, lin_r0 + 2 * x, r0e, r0o);
+    LoadInterleaved2(d, lin_g0 + 2 * x, g0e, g0o);
+    LoadInterleaved2(d, lin_b0 + 2 * x, b0e, b0o);
+    LoadInterleaved2(d, lin_r1 + 2 * x, r1e, r1o);
+    LoadInterleaved2(d, lin_g1 + 2 * x, g1e, g1o);
+    LoadInterleaved2(d, lin_b1 + 2 * x, b1e, b1o);
 
-    for (int iy = 0; iy < 2; ++iy) {
-      const float* src_r = (iy == 0) ? lin_r0 : lin_r1;
-      const float* src_g = (iy == 0) ? lin_g0 : lin_g1;
-      const float* src_b = (iy == 0) ? lin_b0 : lin_b1;
-      for (int ix = 0; ix < 2; ++ix) {
-        // Load non-contiguous: elements at positions 2*x+ix, 2*(x+1)+ix, ...
-        // Unfortunately these are strided, so we load pairs and deinterleave
-        // is cleaner. For simplicity and correctness, use scalar gather here
-        // since the inner 2x2 loop is just 4 iterations.
-        // Actually, let's use a temporary buffer approach for the gather.
-        HWY_ALIGN float tmp_r[HWY_MAX_LANES_D(D)];
-        HWY_ALIGN float tmp_g[HWY_MAX_LANES_D(D)];
-        HWY_ALIGN float tmp_b[HWY_MAX_LANES_D(D)];
-        for (size_t k = 0; k < N; ++k) {
-          size_t si = (x + k) * 2 + ix;
-          tmp_r[k] = src_r[si];
-          tmp_g[k] = src_g[si];
-          tmp_b[k] = src_b[si];
-        }
-        sum_r = Add(sum_r, LoadU(d, tmp_r));
-        sum_g = Add(sum_g, LoadU(d, tmp_g));
-        sum_b = Add(sum_b, LoadU(d, tmp_b));
-      }
-    }
+    auto sum_r = Add(Add(r0e, r0o), Add(r1e, r1o));
+    auto sum_g = Add(Add(g0e, g0o), Add(g1e, g1o));
+    auto sum_b = Add(Add(b0e, b0o), Add(b1e, b1o));
 
     auto avg_r = LinearToGamma_SIMD(d, Mul(sum_r, quarter));
     auto avg_g = LinearToGamma_SIMD(d, Mul(sum_g, quarter));
     auto avg_b = LinearToGamma_SIMD(d, Mul(sum_b, quarter));
 
-    decltype(avg_r) vy, vcb, vcr;
+    Vec<D> vy, vcb, vcr;
     RGBToYCbCr_SIMD(d, avg_r, avg_g, avg_b, &vy, &vcb, &vcr);
 
     StoreU(vcb, d, out_cb + x);
@@ -336,8 +318,7 @@ HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
 // ---------------------------------------------------------------------------
 HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
                                 const float* next_row, size_t down_width,
-                                size_t xsize_padded, size_t y,
-                                float* out_full) {
+                                float* out0, float* out1) {
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
   const auto k9 = Set(d, 9.0f);
   const auto k3 = Set(d, 3.0f);
@@ -346,68 +327,26 @@ HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
 
   for (; x + N <= down_width; x += N) {
     auto vc = LoadU(d, cur_row + x);
-
-    // Load left neighbors (clamp at boundary)
-    HWY_ALIGN float tmp_l[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float tmp_tl[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float tmp_bl[HWY_MAX_LANES_D(D)];
-    for (size_t k = 0; k < N; ++k) {
-      size_t xi = x + k;
-      size_t xl = (xi == 0) ? 0 : xi - 1;
-      tmp_l[k] = cur_row[xl];
-      tmp_tl[k] = prev_row[xl];
-      tmp_bl[k] = next_row[xl];
-    }
-    auto vl = LoadU(d, tmp_l);
-    auto vtl = LoadU(d, tmp_tl);
-    auto vbl = LoadU(d, tmp_bl);
-
-    // Load right neighbors (clamp at boundary)
-    HWY_ALIGN float tmp_r[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float tmp_tr[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float tmp_br[HWY_MAX_LANES_D(D)];
-    for (size_t k = 0; k < N; ++k) {
-      size_t xi = x + k;
-      size_t xr = (xi + 1 == down_width) ? xi : xi + 1;
-      tmp_r[k] = cur_row[xr];
-      tmp_tr[k] = prev_row[xr];
-      tmp_br[k] = next_row[xr];
-    }
-    auto vr = LoadU(d, tmp_r);
-    auto vtr = LoadU(d, tmp_tr);
-    auto vbr = LoadU(d, tmp_br);
-
     auto vt = LoadU(d, prev_row + x);
     auto vb = LoadU(d, next_row + x);
 
-    // c9 = c * 9
+    auto vl = LoadU(d, cur_row + x - 1);
+    auto vtl = LoadU(d, prev_row + x - 1);
+    auto vbl = LoadU(d, next_row + x - 1);
+
+    auto vr = LoadU(d, cur_row + x + 1);
+    auto vtr = LoadU(d, prev_row + x + 1);
+    auto vbr = LoadU(d, next_row + x + 1);
+
     auto c9 = Mul(vc, k9);
 
-    // Top-left quadrant: (c*9 + t*3 + l*3 + tl) / 16
     auto val_tl = Mul(MulAdd(k3, Add(vt, vl), Add(c9, vtl)), kInv16);
-    // Top-right quadrant: (c*9 + t*3 + r*3 + tr) / 16
     auto val_tr = Mul(MulAdd(k3, Add(vt, vr), Add(c9, vtr)), kInv16);
-    // Bottom-left quadrant: (c*9 + b*3 + l*3 + bl) / 16
     auto val_bl = Mul(MulAdd(k3, Add(vb, vl), Add(c9, vbl)), kInv16);
-    // Bottom-right quadrant: (c*9 + b*3 + r*3 + br) / 16
     auto val_br = Mul(MulAdd(k3, Add(vb, vr), Add(c9, vbr)), kInv16);
 
-    // Scatter to full-res positions
-    HWY_ALIGN float res_tl[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float res_tr[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float res_bl[HWY_MAX_LANES_D(D)];
-    HWY_ALIGN float res_br[HWY_MAX_LANES_D(D)];
-    StoreU(val_tl, d, res_tl);
-    StoreU(val_tr, d, res_tr);
-    StoreU(val_bl, d, res_bl);
-    StoreU(val_br, d, res_br);
-    for (size_t k = 0; k < N; ++k) {
-      size_t xi = x + k;
-      out_full[(y * 2 + 0) * xsize_padded + (xi * 2 + 0)] = res_tl[k];
-      out_full[(y * 2 + 0) * xsize_padded + (xi * 2 + 1)] = res_tr[k];
-      out_full[(y * 2 + 1) * xsize_padded + (xi * 2 + 0)] = res_bl[k];
-      out_full[(y * 2 + 1) * xsize_padded + (xi * 2 + 1)] = res_br[k];
-    }
+    StoreInterleaved2(val_tl, val_tr, d, out0 + 2 * x);
+    StoreInterleaved2(val_bl, val_br, d, out1 + 2 * x);
   }
 
   // Scalar tail
@@ -427,14 +366,10 @@ HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
 
     float c9 = cc * 9.0f;
     float inv16 = 1.0f / 16.0f;
-    out_full[(y * 2 + 0) * xsize_padded + (x * 2 + 0)] =
-        (c9 + ct * 3.0f + cl * 3.0f + ctl) * inv16;
-    out_full[(y * 2 + 0) * xsize_padded + (x * 2 + 1)] =
-        (c9 + ct * 3.0f + cr * 3.0f + ctr) * inv16;
-    out_full[(y * 2 + 1) * xsize_padded + (x * 2 + 0)] =
-        (c9 + cb * 3.0f + cl * 3.0f + cbl) * inv16;
-    out_full[(y * 2 + 1) * xsize_padded + (x * 2 + 1)] =
-        (c9 + cb * 3.0f + cr * 3.0f + cbr) * inv16;
+    out0[x * 2 + 0] = (c9 + ct * 3.0f + cl * 3.0f + ctl) * inv16;
+    out0[(x * 2 + 1)] = (c9 + ct * 3.0f + cr * 3.0f + ctr) * inv16;
+    out1[x * 2 + 0] = (c9 + cb * 3.0f + cl * 3.0f + cbl) * inv16;
+    out1[(x * 2 + 1)] = (c9 + cb * 3.0f + cr * 3.0f + cbr) * inv16;
   }
 }
 
@@ -478,37 +413,53 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   const size_t down_width = xsize_padded / 2;
   const size_t down_height = iMCU_height / 2;
   const size_t high_size = xsize_padded * iMCU_height;
-  const size_t low_size = down_width * down_height;
 
-  std::vector<float> target_y(high_size);
-  std::vector<float> best_y(high_size);
-  std::vector<float> tmp_lin_r(high_size);
-  std::vector<float> tmp_lin_g(high_size);
-  std::vector<float> tmp_lin_b(high_size);
-
-  std::vector<float> target_cb(low_size);
-  std::vector<float> target_cr(low_size);
-  std::vector<float> best_cb(low_size);
-  std::vector<float> best_cr(low_size);
-
-  std::vector<float> up_cb(high_size);
-  std::vector<float> up_cr(high_size);
+  // Hoisted workspace buffers from master struct.
+  jpegli::RowBuffer<float>* ws = m->sharpyuv_workspace;
+  auto target_y_ws = &ws[0];
+  auto best_y_ws = &ws[1];
+  auto tmp_lin_r_ws = &ws[2];
+  auto tmp_lin_g_ws = &ws[3];
+  auto tmp_lin_b_ws = &ws[4];
+  auto up_cb_ws = &ws[5];
+  auto up_cr_ws = &ws[6];
+  auto target_cb_ws = &ws[7];
+  auto target_cr_ws = &ws[8];
+  auto best_cb_ws = &ws[9];
+  auto best_cr_ws = &ws[10];
+  auto err_cb_ws = &ws[11];
+  auto err_cr_ws = &ws[12];
 
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
 
-  // Decode input YCbCr to linear RGB and compute target luma.
+  const bool have_rgb_input = m->input_rgb[0].HasData();
+  // Read pre-transform sRGB directly (if available) or convert from YCbCr.
   for (size_t y = 0; y < iMCU_height; ++y) {
     const float* row_y = m->smooth_input[0]->Row(y0 + y);
-    const float* row_cb = m->smooth_input[1]->Row(y0 + y);
-    const float* row_cr = m->smooth_input[2]->Row(y0 + y);
+    const float* row_cb = have_rgb_input ? nullptr : m->smooth_input[1]->Row(y0 + y);
+    const float* row_cr = have_rgb_input ? nullptr : m->smooth_input[2]->Row(y0 + y);
+    const float* row_r = have_rgb_input ? m->input_rgb[0].Row(y0 + y) : nullptr;
+    const float* row_g = have_rgb_input ? m->input_rgb[1].Row(y0 + y) : nullptr;
+    const float* row_b = have_rgb_input ? m->input_rgb[2].Row(y0 + y) : nullptr;
+    float* ty_out = target_y_ws->Row(y);
+    float* by_out = best_y_ws->Row(y);
+    float* lr_out = tmp_lin_r_ws->Row(y);
+    float* lg_out = tmp_lin_g_ws->Row(y);
+    float* lb_out = tmp_lin_b_ws->Row(y);
+
     size_t x = 0;
     for (; x + N <= xsize_padded; x += N) {
       auto py = LoadU(d, row_y + x);
-      auto pcb = LoadU(d, row_cb + x);
-      auto pcr = LoadU(d, row_cr + x);
-
       decltype(py) r, g, b;
-      YCbCrToRGB_SIMD(d, py, pcb, pcr, &r, &g, &b);
+      if (have_rgb_input) {
+        r = LoadU(d, row_r + x);
+        g = LoadU(d, row_g + x);
+        b = LoadU(d, row_b + x);
+      } else {
+        auto pcb = LoadU(d, row_cb + x);
+        auto pcr = LoadU(d, row_cr + x);
+        YCbCrToRGB_SIMD(d, py, pcb, pcr, &r, &g, &b);
+      }
 
       auto lin_r = GammaToLinear_SIMD(d, r);
       auto lin_g = GammaToLinear_SIMD(d, g);
@@ -517,200 +468,166 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       auto lin_y = TempLuma_SIMD(d, lin_r, lin_g, lin_b);
       auto t_y = LinearToGamma_SIMD(d, lin_y);
 
-      size_t idx = y * xsize_padded + x;
-      StoreU(t_y, d, &target_y[idx]);
-      StoreU(py, d, &best_y[idx]);
-      StoreU(lin_r, d, &tmp_lin_r[idx]);
-      StoreU(lin_g, d, &tmp_lin_g[idx]);
-      StoreU(lin_b, d, &tmp_lin_b[idx]);
+      StoreU(t_y, d, ty_out + x);
+      StoreU(py, d, by_out + x);
+      StoreU(lin_r, d, lr_out + x);
+      StoreU(lin_g, d, lg_out + x);
+      StoreU(lin_b, d, lb_out + x);
     }
     for (; x < xsize_padded; ++x) {
       float py = row_y[x];
-      float pcb = row_cb[x];
-      float pcr = row_cr[x];
       float r, g, b;
-      YCbCrToRGB_Scalar(py, pcb, pcr, &r, &g, &b);
+      if (have_rgb_input) {
+        r = row_r[x];
+        g = row_g[x];
+        b = row_b[x];
+      } else {
+        float pcb = row_cb[x];
+        float pcr = row_cr[x];
+        YCbCrToRGB_Scalar(py, pcb, pcr, &r, &g, &b);
+      }
       float lr = GammaToLinear(r);
       float lg = GammaToLinear(g);
       float lb = GammaToLinear(b);
       float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
-      size_t idx = y * xsize_padded + x;
-      target_y[idx] = LinearToGamma(ly);
-      best_y[idx] = py;
-      tmp_lin_r[idx] = lr;
-      tmp_lin_g[idx] = lg;
-      tmp_lin_b[idx] = lb;
+      ty_out[x] = LinearToGamma(ly);
+      by_out[x] = py;
+      lr_out[x] = lr;
+      lg_out[x] = lg;
+      lb_out[x] = lb;
     }
   }
 
   // Box-average downsample of linear RGB to target Cb/Cr.
   for (size_t y = 0; y < down_height; ++y) {
-    const float* r0 = &tmp_lin_r[(y * 2 + 0) * xsize_padded];
-    const float* g0 = &tmp_lin_g[(y * 2 + 0) * xsize_padded];
-    const float* b0 = &tmp_lin_b[(y * 2 + 0) * xsize_padded];
-    const float* r1 = &tmp_lin_r[(y * 2 + 1) * xsize_padded];
-    const float* g1 = &tmp_lin_g[(y * 2 + 1) * xsize_padded];
-    const float* b1 = &tmp_lin_b[(y * 2 + 1) * xsize_padded];
-    float* dcb = &target_cb[y * down_width];
-    float* dcr = &target_cr[y * down_width];
+    const float* r0 = tmp_lin_r_ws->Row(y * 2 + 0);
+    const float* g0 = tmp_lin_g_ws->Row(y * 2 + 0);
+    const float* b0 = tmp_lin_b_ws->Row(y * 2 + 0);
+    const float* r1 = tmp_lin_r_ws->Row(y * 2 + 1);
+    const float* g1 = tmp_lin_g_ws->Row(y * 2 + 1);
+    const float* b1 = tmp_lin_b_ws->Row(y * 2 + 1);
+    float* dcb = target_cb_ws->Row(y);
+    float* dcr = target_cr_ws->Row(y);
 
     BoxAverageDownsampleRow(r0, g0, b0, r1, g1, b1, down_width, xsize_padded,
                             dcb, dcr);
 
     // Also initialize best_cb/cr = target_cb/cr
-    memcpy(&best_cb[y * down_width], dcb, down_width * sizeof(float));
-    memcpy(&best_cr[y * down_width], dcr, down_width * sizeof(float));
+    memcpy(best_cb_ws->Row(y), dcb, down_width * sizeof(float));
+    memcpy(best_cr_ws->Row(y), dcr, down_width * sizeof(float));
   }
 
+  for (size_t y = 0; y < down_height; ++y) {
+    best_cb_ws->PadRow(y, down_width, 1);
+    best_cr_ws->PadRow(y, down_width, 1);
+  }
+
+  const auto vmin = Set(d, 0.0f);
+  const auto vmax = Set(d, 255.0f);
   float prev_diff_y_sum = 1e30f;
   const float diff_y_threshold = 3.0f * high_size;
 
-  // Pre-allocate error buffers outside the iteration loop to avoid repeated
-  // heap allocation/deallocation.
-  std::vector<float> err_y(high_size);
-  std::vector<float> err_cb(low_size);
-  std::vector<float> err_cr(low_size);
-
   for (int iter = 0; iter < 4; ++iter) {
-    memset(err_y.data(), 0, high_size * sizeof(float));
-    memset(err_cb.data(), 0, low_size * sizeof(float));
-    memset(err_cr.data(), 0, low_size * sizeof(float));
     float diff_y_sum = 0.0f;
+    auto acc_y = Zero(d);
 
-    // Upsample best_cb/cr to full-res using a 2D tent filter.
+    // Padding for upsampling (all rows for this iteration)
+    for (size_t y = 0; y < down_height; ++y) {
+      best_cb_ws->PadRow(y, down_width, 1);
+      best_cr_ws->PadRow(y, down_width, 1);
+    }
+
+    // Pass 1: Upsample current best_cb/cr
     for (size_t y = 0; y < down_height; ++y) {
       size_t y_prev = (y == 0) ? 0 : y - 1;
       size_t y_next = (y + 1 == down_height) ? y : y + 1;
-
-      const float* cb_prev = &best_cb[y_prev * down_width];
-      const float* cb_cur = &best_cb[y * down_width];
-      const float* cb_next = &best_cb[y_next * down_width];
-      TentUpsampleRow(cb_prev, cb_cur, cb_next, down_width, xsize_padded, y,
-                      up_cb.data());
-
-      const float* cr_prev = &best_cr[y_prev * down_width];
-      const float* cr_cur = &best_cr[y * down_width];
-      const float* cr_next = &best_cr[y_next * down_width];
-      TentUpsampleRow(cr_prev, cr_cur, cr_next, down_width, xsize_padded, y,
-                      up_cr.data());
+      TentUpsampleRow(best_cb_ws->Row(y_prev), best_cb_ws->Row(y),
+                      best_cb_ws->Row(y_next), down_width,
+                      up_cb_ws->Row(y * 2), up_cb_ws->Row(y * 2 + 1));
+      TentUpsampleRow(best_cr_ws->Row(y_prev), best_cr_ws->Row(y),
+                      best_cr_ws->Row(y_next), down_width,
+                      up_cr_ws->Row(y * 2), up_cr_ws->Row(y * 2 + 1));
     }
 
-    // Evaluate YCbCr reconstruction error at full resolution.
-    for (size_t y = 0; y < iMCU_height; ++y) {
-      size_t x = 0;
-      for (; x + N <= xsize_padded; x += N) {
-        size_t idx = y * xsize_padded + x;
-        auto py = LoadU(d, &best_y[idx]);
-        auto ucb = LoadU(d, &up_cb[idx]);
-        auto ucr = LoadU(d, &up_cr[idx]);
-
-        decltype(py) r, g, b;
-        YCbCrToRGB_SIMD(d, py, ucb, ucr, &r, &g, &b);
-
-        auto lin_r = GammaToLinear_SIMD(d, r);
-        auto lin_g = GammaToLinear_SIMD(d, g);
-        auto lin_b = GammaToLinear_SIMD(d, b);
-
-        auto lin_y = TempLuma_SIMD(d, lin_r, lin_g, lin_b);
-        auto dec_y = LinearToGamma_SIMD(d, lin_y);
-
-        auto e_y = Sub(LoadU(d, &target_y[idx]), dec_y);
-        StoreU(e_y, d, &err_y[idx]);
-        StoreU(lin_r, d, &tmp_lin_r[idx]);
-        StoreU(lin_g, d, &tmp_lin_g[idx]);
-        StoreU(lin_b, d, &tmp_lin_b[idx]);
-      }
-      for (; x < xsize_padded; ++x) {
-        size_t idx = y * xsize_padded + x;
-        float py = best_y[idx];
-        float ucb = up_cb[idx];
-        float ucr = up_cr[idx];
-        float r, g, b;
-        YCbCrToRGB_Scalar(py, ucb, ucr, &r, &g, &b);
-        float lr = GammaToLinear(r);
-        float lg = GammaToLinear(g);
-        float lb = GammaToLinear(b);
-        float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
-        err_y[idx] = target_y[idx] - LinearToGamma(ly);
-        tmp_lin_r[idx] = lr;
-        tmp_lin_g[idx] = lg;
-        tmp_lin_b[idx] = lb;
-      }
-    }
-
-    // Accumulate |err_y|
-    auto acc_y = Zero(d);
-    size_t i_y = 0;
-    for (; i_y + N <= high_size; i_y += N) {
-      acc_y = Add(acc_y, Abs(LoadU(d, &err_y[i_y])));
-    }
-    diff_y_sum = ReduceSum(d, acc_y);
-    for (; i_y < high_size; ++i_y) {
-      diff_y_sum += std::abs(err_y[i_y]);
-    }
-
-    // Box-average downsample reconstructed RGB to compute Cb/Cr error.
+    // Pass 2: Evaluate Y and Prepare for Chroma update
     for (size_t y = 0; y < down_height; ++y) {
-      const float* r0 = &tmp_lin_r[(y * 2 + 0) * xsize_padded];
-      const float* g0 = &tmp_lin_g[(y * 2 + 0) * xsize_padded];
-      const float* b0 = &tmp_lin_b[(y * 2 + 0) * xsize_padded];
-      const float* r1 = &tmp_lin_r[(y * 2 + 1) * xsize_padded];
-      const float* g1 = &tmp_lin_g[(y * 2 + 1) * xsize_padded];
-      const float* b1 = &tmp_lin_b[(y * 2 + 1) * xsize_padded];
+      for (int iy = 0; iy < 2; ++iy) {
+        size_t yy = y * 2 + iy;
+        float* row_best_y = best_y_ws->Row(yy);
+        const float* row_up_cb = up_cb_ws->Row(yy);
+        const float* row_up_cr = up_cr_ws->Row(yy);
+        const float* row_target_y = target_y_ws->Row(yy);
+        float* row_lin_r = tmp_lin_r_ws->Row(yy);
+        float* row_lin_g = tmp_lin_g_ws->Row(yy);
+        float* row_lin_b = tmp_lin_b_ws->Row(yy);
 
-      float* row_err_cb = &err_cb[y * down_width];
-      float* row_err_cr = &err_cr[y * down_width];
-      float* row_tgt_cb = &target_cb[y * down_width];
-      float* row_tgt_cr = &target_cr[y * down_width];
+        size_t x = 0;
+        for (; x + N <= xsize_padded; x += N) {
+          auto py = LoadU(d, row_best_y + x);
+          auto ucb = LoadU(d, row_up_cb + x);
+          auto ucr = LoadU(d, row_up_cr + x);
+          Vec<D> r, g, b;
+          YCbCrToRGB_SIMD(d, py, ucb, ucr, &r, &g, &b);
+          auto lin_r = GammaToLinear_SIMD(d, r);
+          auto lin_g = GammaToLinear_SIMD(d, g);
+          auto lin_b = GammaToLinear_SIMD(d, b);
+          auto lin_y = TempLuma_SIMD(d, lin_r, lin_g, lin_b);
+          auto dec_y = LinearToGamma_SIMD(d, lin_y);
+          auto ey = Sub(LoadU(d, row_target_y + x), dec_y);
+          acc_y = Add(acc_y, Abs(ey));
 
-      // BoxAverageDownsampleRow outputs Cb/Cr directly, so we use err
-      // buffers as temp storage for the reconstructed Cb/Cr.
-      BoxAverageDownsampleRow(r0, g0, b0, r1, g1, b1, down_width,
-                              xsize_padded, row_err_cb, row_err_cr);
+          StoreU(Min(Max(Add(py, ey), vmin), vmax), d, row_best_y + x);
+          StoreU(lin_r, d, row_lin_r + x);
+          StoreU(lin_g, d, row_lin_g + x);
+          StoreU(lin_b, d, row_lin_b + x);
+        }
+        for (; x < xsize_padded; ++x) {
+          float py = row_best_y[x];
+          float r, g, b;
+          YCbCrToRGB_Scalar(py, row_up_cb[x], row_up_cr[x], &r, &g, &b);
+          float lr = GammaToLinear(r);
+          float lg = GammaToLinear(g);
+          float lb = GammaToLinear(b);
+          float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
+          float ey = row_target_y[x] - LinearToGamma(ly);
+          diff_y_sum += std::abs(ey);
+          row_best_y[x] = std::max(0.0f, std::min(255.0f, py + ey));
+          row_lin_r[x] = lr;
+          row_lin_g[x] = lg;
+          row_lin_b[x] = lb;
+        }
+      }
 
-      // Compute error = target - reconstructed
+      float* row_best_cb = best_cb_ws->Row(y);
+      float* row_best_cr = best_cr_ws->Row(y);
+      float* row_err_cb = err_cb_ws->Row(y);
+      float* row_err_cr = err_cr_ws->Row(y);
+      float* row_tgt_cb = target_cb_ws->Row(y);
+      float* row_tgt_cr = target_cr_ws->Row(y);
+
+      BoxAverageDownsampleRow(
+          tmp_lin_r_ws->Row(y * 2 + 0), tmp_lin_g_ws->Row(y * 2 + 0),
+          tmp_lin_b_ws->Row(y * 2 + 0), tmp_lin_r_ws->Row(y * 2 + 1),
+          tmp_lin_g_ws->Row(y * 2 + 1), tmp_lin_b_ws->Row(y * 2 + 1), down_width,
+          xsize_padded, row_err_cb, row_err_cr);
+
       size_t x = 0;
       for (; x + N <= down_width; x += N) {
-        auto tgt_cb = LoadU(d, row_tgt_cb + x);
-        auto rec_cb = LoadU(d, row_err_cb + x);
-        StoreU(Sub(tgt_cb, rec_cb), d, row_err_cb + x);
-
-        auto tgt_cr = LoadU(d, row_tgt_cr + x);
-        auto rec_cr = LoadU(d, row_err_cr + x);
-        StoreU(Sub(tgt_cr, rec_cr), d, row_err_cr + x);
+        auto bcb = LoadU(d, row_best_cb + x);
+        auto bcr = LoadU(d, row_best_cr + x);
+        auto tcb = LoadU(d, row_tgt_cb + x);
+        auto tcr = LoadU(d, row_tgt_cr + x);
+        auto dcb = LoadU(d, row_err_cb + x);
+        auto dcr = LoadU(d, row_err_cr + x);
+        StoreU(Add(bcb, Sub(tcb, dcb)), d, row_best_cb + x);
+        StoreU(Add(bcr, Sub(tcr, dcr)), d, row_best_cr + x);
       }
       for (; x < down_width; ++x) {
-        row_err_cb[x] = row_tgt_cb[x] - row_err_cb[x];
-        row_err_cr[x] = row_tgt_cr[x] - row_err_cr[x];
+        row_best_cb[x] += row_tgt_cb[x] - row_err_cb[x];
+        row_best_cr[x] += row_tgt_cr[x] - row_err_cr[x];
       }
     }
-
-    // Apply Y error correction with clamping.
-    const auto vmin = Set(d, 0.0f);
-    const auto vmax = Set(d, 255.0f);
-    size_t i_y_corr = 0;
-    for (; i_y_corr + N <= high_size; i_y_corr += N) {
-      auto y_vec = LoadU(d, &best_y[i_y_corr]);
-      auto e_y_vec = LoadU(d, &err_y[i_y_corr]);
-      auto res = Min(Max(Add(y_vec, e_y_vec), vmin), vmax);
-      StoreU(res, d, &best_y[i_y_corr]);
-    }
-    for (; i_y_corr < high_size; ++i_y_corr) {
-      best_y[i_y_corr] = std::max(0.0f, std::min(255.0f, best_y[i_y_corr] + err_y[i_y_corr]));
-    }
-
-    // Apply Cb/Cr error correction.
-    size_t i_c_corr = 0;
-    for (; i_c_corr + N <= low_size; i_c_corr += N) {
-      auto cb_vec = Add(LoadU(d, &best_cb[i_c_corr]), LoadU(d, &err_cb[i_c_corr]));
-      auto cr_vec = Add(LoadU(d, &best_cr[i_c_corr]), LoadU(d, &err_cr[i_c_corr]));
-      StoreU(cb_vec, d, &best_cb[i_c_corr]);
-      StoreU(cr_vec, d, &best_cr[i_c_corr]);
-    }
-    for (; i_c_corr < low_size; ++i_c_corr) {
-      best_cb[i_c_corr] += err_cb[i_c_corr];
-      best_cr[i_c_corr] += err_cr[i_c_corr];
-    }
+    diff_y_sum += ReduceSum(d, acc_y);
 
     if (iter > 0 &&
         (diff_y_sum < diff_y_threshold || diff_y_sum > prev_diff_y_sum))
@@ -721,18 +638,15 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   // Write best_y and best_cb/cr to raw_data output buffers.
   for (size_t y = 0; y < iMCU_height; ++y) {
     float* row_out_y = m->raw_data[0]->Row(y0 + y);
-    memcpy(row_out_y, &best_y[y * xsize_padded],
-           xsize_padded * sizeof(float));
+    memcpy(row_out_y, best_y_ws->Row(y), xsize_padded * sizeof(float));
   }
 
   const size_t y_out0 = y0 / 2;
   for (size_t y_out = 0; y_out < down_height; ++y_out) {
     float* row_out_cb = m->raw_data[1]->Row(y_out0 + y_out);
     float* row_out_cr = m->raw_data[2]->Row(y_out0 + y_out);
-    memcpy(row_out_cb, &best_cb[y_out * down_width],
-           down_width * sizeof(float));
-    memcpy(row_out_cr, &best_cr[y_out * down_width],
-           down_width * sizeof(float));
+    memcpy(row_out_cb, best_cb_ws->Row(y_out), down_width * sizeof(float));
+    memcpy(row_out_cr, best_cr_ws->Row(y_out), down_width * sizeof(float));
   }
 }
 
