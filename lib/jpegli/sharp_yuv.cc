@@ -12,10 +12,8 @@
 #include <cstdint>
 #include <cstring>
 
-
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode_internal.h"
-#include "lib/jpegli/simd.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "lib/jpegli/sharp_yuv.cc"
@@ -34,8 +32,8 @@ using hwy::HWY_NAMESPACE::ConvertTo;
 using hwy::HWY_NAMESPACE::Div;
 using hwy::HWY_NAMESPACE::Floor;
 using hwy::HWY_NAMESPACE::IfThenElse;
-using hwy::HWY_NAMESPACE::Le;
 using hwy::HWY_NAMESPACE::Lanes;
+using hwy::HWY_NAMESPACE::Le;
 using hwy::HWY_NAMESPACE::LoadDup128;
 using hwy::HWY_NAMESPACE::LoadInterleaved2;
 using hwy::HWY_NAMESPACE::LoadU;
@@ -85,8 +83,7 @@ inline void YCbCrToRGB_Scalar(float y, float cb, float cr, float* r, float* g,
   cb -= 128.0f;
   cr -= 128.0f;
   *r = y + cr * 1.402f;
-  *g = y + cb * (-0.114f * 1.772f / 0.587f) +
-       cr * (-0.299f * 1.402f / 0.587f);
+  *g = y + cb * (-0.114f * 1.772f / 0.587f) + cr * (-0.299f * 1.402f / 0.587f);
   *b = y + cb * 1.772f;
 }
 
@@ -139,11 +136,11 @@ HWY_INLINE V EvalRationalPoly(const DF df, const V x, const T (&p)[NP],
 template <class DF, class V>
 HWY_INLINE V FastLog2f(const DF df, V x) {
   HWY_ALIGN const float p[4 * 3] = {HWY_REP4(-1.8503833400518310E-06f),
-                                     HWY_REP4(1.4287160470083755E+00f),
-                                     HWY_REP4(7.4245873327820566E-01f)};
+                                    HWY_REP4(1.4287160470083755E+00f),
+                                    HWY_REP4(7.4245873327820566E-01f)};
   HWY_ALIGN const float q[4 * 3] = {HWY_REP4(9.9032814277590719E-01f),
-                                     HWY_REP4(1.0096718572241148E+00f),
-                                     HWY_REP4(1.7409343003366853E-01f)};
+                                    HWY_REP4(1.0096718572241148E+00f),
+                                    HWY_REP4(1.7409343003366853E-01f)};
   const Rebind<int32_t, DF> di;
   const auto x_bits = BitCast(di, x);
   const auto exp_bits = Sub(x_bits, Set(di, 0x3f2aaaab));
@@ -220,6 +217,8 @@ HWY_INLINE void YCbCrToRGB_SIMD(D d, V y, V cb, V cr, V* r, V* g, V* b) {
 
 template <class D, class V>
 HWY_INLINE V TempLuma_SIMD(D d, V r, V g, V b) {
+  // using bt 709 values (0.2126f, 0.7152f, 0.0722f) may be more perceptually
+  // accurate, but it needs more visual testing.
   return MulAdd(Set(d, 0.299f), r,
                 MulAdd(Set(d, 0.587f), g, Mul(Set(d, 0.114f), b)));
 }
@@ -244,26 +243,29 @@ HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
   *cr = MulAdd(Sub(Mul(r, kDiffR), y_base), kNormR, v128);
 }
 
-// ---------------------------------------------------------------------------
 // SIMD box-average downsample of linear RGB -> YCbCr chroma
-// Processes each row of down_width pixels. For each output pixel, averages
-// a 2x2 block of linear RGB, converts back to gamma, then to YCbCr.
-// ---------------------------------------------------------------------------
-HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
-                                        const float* lin_g0,
-                                        const float* lin_b0,
-                                        const float* lin_r1,
-                                        const float* lin_g1,
-                                        const float* lin_b1,
-                                        size_t down_width, size_t xsize_padded,
-                                        float* out_cb, float* out_cr) {
+HWY_INLINE void BoxDownsampleRow(const float* lin_r0, const float* lin_g0,
+                                 const float* lin_b0, const float* lin_r1,
+                                 const float* lin_g1, const float* lin_b1,
+                                 size_t down_width, size_t xsize_padded,
+                                 float* out_cb, float* out_cr) {
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
   const auto quarter = Set(d, 0.25f);
   size_t x = 0;
 
   for (; x + N <= down_width; x += N) {
-    Vec<D> r0e, r0o, g0e, g0o, b0e, b0o;
-    Vec<D> r1e, r1o, g1e, g1o, b1e, b1o;
+    Vec<D> r0e;
+    Vec<D> r0o;
+    Vec<D> g0e;
+    Vec<D> g0o;
+    Vec<D> b0e;
+    Vec<D> b0o;
+    Vec<D> r1e;
+    Vec<D> r1o;
+    Vec<D> g1e;
+    Vec<D> g1o;
+    Vec<D> b1e;
+    Vec<D> b1o;
     LoadInterleaved2(d, lin_r0 + 2 * x, r0e, r0o);
     LoadInterleaved2(d, lin_g0 + 2 * x, g0e, g0o);
     LoadInterleaved2(d, lin_b0 + 2 * x, b0e, b0o);
@@ -279,7 +281,9 @@ HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
     auto avg_g = LinearToGamma_SIMD(d, Mul(sum_g, quarter));
     auto avg_b = LinearToGamma_SIMD(d, Mul(sum_b, quarter));
 
-    Vec<D> vy, vcb, vcr;
+    Vec<D> vy;
+    Vec<D> vcb;
+    Vec<D> vcr;
     RGBToYCbCr_SIMD(d, avg_r, avg_g, avg_b, &vy, &vcb, &vcr);
 
     StoreU(vcb, d, out_cb + x);
@@ -288,7 +292,9 @@ HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
 
   // Scalar tail
   for (; x < down_width; ++x) {
-    float lr_sum = 0, lg_sum = 0, lb_sum = 0;
+    float lr_sum = 0;
+    float lg_sum = 0;
+    float lb_sum = 0;
     for (int iy = 0; iy < 2; ++iy) {
       const float* src_r = (iy == 0) ? lin_r0 : lin_r1;
       const float* src_g = (iy == 0) ? lin_g0 : lin_g1;
@@ -303,19 +309,16 @@ HWY_INLINE void BoxAverageDownsampleRow(const float* lin_r0,
     float avg_r = LinearToGamma(lr_sum * 0.25f);
     float avg_g = LinearToGamma(lg_sum * 0.25f);
     float avg_b = LinearToGamma(lb_sum * 0.25f);
-    float avg_y, avg_cb, avg_cr;
+    float avg_y;
+    float avg_cb;
+    float avg_cr;
     RGBToYCbCr_Scalar(avg_r, avg_g, avg_b, &avg_y, &avg_cb, &avg_cr);
     out_cb[x] = avg_cb;
     out_cr[x] = avg_cr;
   }
 }
 
-// ---------------------------------------------------------------------------
 // SIMD tent-filter upsample of one chroma row
-// For each x in [0, down_width), computes 4 upsampled values using the
-// 9/3/3/1 tent filter, and writes them to the 4 corresponding full-res
-// positions.
-// ---------------------------------------------------------------------------
 HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
                                 const float* next_row, size_t down_width,
                                 float* out0, float* out1) {
@@ -373,10 +376,6 @@ HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
   }
 }
 
-// ---------------------------------------------------------------------------
-// Main SharpYUV implementation
-// ---------------------------------------------------------------------------
-
 void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   jpeg_comp_master* m = cinfo->master;
   const size_t iMCU_height = DCTSIZE * cinfo->max_v_samp_factor;
@@ -399,8 +398,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       float* rows_in[MAX_SAMP_FACTOR];
       auto& input = *m->smooth_input[c];
       auto& output = *m->raw_data[c];
-      for (size_t y_in = y0, y_out = y_out0; y_in < y1;
-           y_in += vf, ++y_out) {
+      for (size_t y_in = y0, y_out = y_out0; y_in < y1; y_in += vf, ++y_out) {
         for (int iy = 0; iy < vf; ++iy) {
           rows_in[iy] = input.Row(y_in + iy);
         }
@@ -412,23 +410,28 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
 
   const size_t down_width = xsize_padded / 2;
   const size_t down_height = iMCU_height / 2;
+  const size_t actual_height =
+      (y0 >= cinfo->image_height)
+          ? 1
+          : std::min(y1, static_cast<size_t>(cinfo->image_height)) - y0;
+  const size_t actual_down_height = (actual_height + 1) / 2;
   const size_t high_size = xsize_padded * iMCU_height;
 
   // Hoisted workspace buffers from master struct.
   jpegli::RowBuffer<float>* ws = m->sharpyuv_workspace;
-  auto target_y_ws = &ws[0];
-  auto best_y_ws = &ws[1];
-  auto tmp_lin_r_ws = &ws[2];
-  auto tmp_lin_g_ws = &ws[3];
-  auto tmp_lin_b_ws = &ws[4];
-  auto up_cb_ws = &ws[5];
-  auto up_cr_ws = &ws[6];
-  auto target_cb_ws = &ws[7];
-  auto target_cr_ws = &ws[8];
-  auto best_cb_ws = &ws[9];
-  auto best_cr_ws = &ws[10];
-  auto err_cb_ws = &ws[11];
-  auto err_cr_ws = &ws[12];
+  auto* target_y_ws = &ws[0];
+  auto* best_y_ws = &ws[1];
+  auto* lin_r_ws = &ws[2];
+  auto* lin_g_ws = &ws[3];
+  auto* lin_b_ws = &ws[4];
+  auto* up_cb_ws = &ws[5];
+  auto* up_cr_ws = &ws[6];
+  auto* target_cb_ws = &ws[7];
+  auto* target_cr_ws = &ws[8];
+  auto* best_cb_ws = &ws[9];
+  auto* best_cr_ws = &ws[10];
+  auto* err_cb_ws = &ws[11];
+  auto* err_cr_ws = &ws[12];
 
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
 
@@ -436,21 +439,25 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   // Read pre-transform sRGB directly (if available) or convert from YCbCr.
   for (size_t y = 0; y < iMCU_height; ++y) {
     const float* row_y = m->smooth_input[0]->Row(y0 + y);
-    const float* row_cb = have_rgb_input ? nullptr : m->smooth_input[1]->Row(y0 + y);
-    const float* row_cr = have_rgb_input ? nullptr : m->smooth_input[2]->Row(y0 + y);
+    const float* row_cb =
+        have_rgb_input ? nullptr : m->smooth_input[1]->Row(y0 + y);
+    const float* row_cr =
+        have_rgb_input ? nullptr : m->smooth_input[2]->Row(y0 + y);
     const float* row_r = have_rgb_input ? m->input_rgb[0].Row(y0 + y) : nullptr;
     const float* row_g = have_rgb_input ? m->input_rgb[1].Row(y0 + y) : nullptr;
     const float* row_b = have_rgb_input ? m->input_rgb[2].Row(y0 + y) : nullptr;
     float* ty_out = target_y_ws->Row(y);
     float* by_out = best_y_ws->Row(y);
-    float* lr_out = tmp_lin_r_ws->Row(y);
-    float* lg_out = tmp_lin_g_ws->Row(y);
-    float* lb_out = tmp_lin_b_ws->Row(y);
+    float* lr_out = lin_r_ws->Row(y);
+    float* lg_out = lin_g_ws->Row(y);
+    float* lb_out = lin_b_ws->Row(y);
 
     size_t x = 0;
     for (; x + N <= xsize_padded; x += N) {
       auto py = LoadU(d, row_y + x);
-      decltype(py) r, g, b;
+      decltype(py) r;
+      decltype(py) g;
+      decltype(py) b;
       if (have_rgb_input) {
         r = LoadU(d, row_r + x);
         g = LoadU(d, row_g + x);
@@ -476,7 +483,9 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     }
     for (; x < xsize_padded; ++x) {
       float py = row_y[x];
-      float r, g, b;
+      float r;
+      float g;
+      float b;
       if (have_rgb_input) {
         r = row_r[x];
         g = row_g[x];
@@ -489,6 +498,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       float lr = GammaToLinear(r);
       float lg = GammaToLinear(g);
       float lb = GammaToLinear(b);
+      // see TempLuma_SIMD for bt 709 coefficients
       float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
       ty_out[x] = LinearToGamma(ly);
       by_out[x] = py;
@@ -499,25 +509,25 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   }
 
   // Box-average downsample of linear RGB to target Cb/Cr.
-  for (size_t y = 0; y < down_height; ++y) {
-    const float* r0 = tmp_lin_r_ws->Row(y * 2 + 0);
-    const float* g0 = tmp_lin_g_ws->Row(y * 2 + 0);
-    const float* b0 = tmp_lin_b_ws->Row(y * 2 + 0);
-    const float* r1 = tmp_lin_r_ws->Row(y * 2 + 1);
-    const float* g1 = tmp_lin_g_ws->Row(y * 2 + 1);
-    const float* b1 = tmp_lin_b_ws->Row(y * 2 + 1);
+  for (size_t y = 0; y < actual_down_height; ++y) {
+    const float* r0 = lin_r_ws->Row(y * 2 + 0);
+    const float* g0 = lin_g_ws->Row(y * 2 + 0);
+    const float* b0 = lin_b_ws->Row(y * 2 + 0);
+    const float* r1 = lin_r_ws->Row(y * 2 + 1);
+    const float* g1 = lin_g_ws->Row(y * 2 + 1);
+    const float* b1 = lin_b_ws->Row(y * 2 + 1);
     float* dcb = target_cb_ws->Row(y);
     float* dcr = target_cr_ws->Row(y);
 
-    BoxAverageDownsampleRow(r0, g0, b0, r1, g1, b1, down_width, xsize_padded,
-                            dcb, dcr);
+    BoxDownsampleRow(r0, g0, b0, r1, g1, b1, down_width, xsize_padded, dcb,
+                     dcr);
 
     // Also initialize best_cb/cr = target_cb/cr
     memcpy(best_cb_ws->Row(y), dcb, down_width * sizeof(float));
     memcpy(best_cr_ws->Row(y), dcr, down_width * sizeof(float));
   }
 
-  for (size_t y = 0; y < down_height; ++y) {
+  for (size_t y = 0; y < actual_down_height; ++y) {
     best_cb_ws->PadRow(y, down_width, 1);
     best_cr_ws->PadRow(y, down_width, 1);
   }
@@ -532,41 +542,43 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     auto acc_y = Zero(d);
 
     // Padding for upsampling (all rows for this iteration)
-    for (size_t y = 0; y < down_height; ++y) {
+    for (size_t y = 0; y < actual_down_height; ++y) {
       best_cb_ws->PadRow(y, down_width, 1);
       best_cr_ws->PadRow(y, down_width, 1);
     }
 
     // Pass 1: Upsample current best_cb/cr
-    for (size_t y = 0; y < down_height; ++y) {
+    for (size_t y = 0; y < actual_down_height; ++y) {
       size_t y_prev = (y == 0) ? 0 : y - 1;
-      size_t y_next = (y + 1 == down_height) ? y : y + 1;
+      size_t y_next = (y + 1 == actual_down_height) ? y : y + 1;
       TentUpsampleRow(best_cb_ws->Row(y_prev), best_cb_ws->Row(y),
-                      best_cb_ws->Row(y_next), down_width,
-                      up_cb_ws->Row(y * 2), up_cb_ws->Row(y * 2 + 1));
+                      best_cb_ws->Row(y_next), down_width, up_cb_ws->Row(y * 2),
+                      up_cb_ws->Row(y * 2 + 1));
       TentUpsampleRow(best_cr_ws->Row(y_prev), best_cr_ws->Row(y),
-                      best_cr_ws->Row(y_next), down_width,
-                      up_cr_ws->Row(y * 2), up_cr_ws->Row(y * 2 + 1));
+                      best_cr_ws->Row(y_next), down_width, up_cr_ws->Row(y * 2),
+                      up_cr_ws->Row(y * 2 + 1));
     }
 
     // Pass 2: Evaluate Y and Prepare for Chroma update
-    for (size_t y = 0; y < down_height; ++y) {
+    for (size_t y = 0; y < actual_down_height; ++y) {
       for (int iy = 0; iy < 2; ++iy) {
         size_t yy = y * 2 + iy;
         float* row_best_y = best_y_ws->Row(yy);
         const float* row_up_cb = up_cb_ws->Row(yy);
         const float* row_up_cr = up_cr_ws->Row(yy);
         const float* row_target_y = target_y_ws->Row(yy);
-        float* row_lin_r = tmp_lin_r_ws->Row(yy);
-        float* row_lin_g = tmp_lin_g_ws->Row(yy);
-        float* row_lin_b = tmp_lin_b_ws->Row(yy);
+        float* row_lin_r = lin_r_ws->Row(yy);
+        float* row_lin_g = lin_g_ws->Row(yy);
+        float* row_lin_b = lin_b_ws->Row(yy);
 
         size_t x = 0;
         for (; x + N <= xsize_padded; x += N) {
           auto py = LoadU(d, row_best_y + x);
           auto ucb = LoadU(d, row_up_cb + x);
           auto ucr = LoadU(d, row_up_cr + x);
-          Vec<D> r, g, b;
+          Vec<D> r;
+          Vec<D> g;
+          Vec<D> b;
           YCbCrToRGB_SIMD(d, py, ucb, ucr, &r, &g, &b);
           auto lin_r = GammaToLinear_SIMD(d, r);
           auto lin_g = GammaToLinear_SIMD(d, g);
@@ -583,11 +595,14 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
         }
         for (; x < xsize_padded; ++x) {
           float py = row_best_y[x];
-          float r, g, b;
+          float r;
+          float g;
+          float b;
           YCbCrToRGB_Scalar(py, row_up_cb[x], row_up_cr[x], &r, &g, &b);
           float lr = GammaToLinear(r);
           float lg = GammaToLinear(g);
           float lb = GammaToLinear(b);
+          // see TempLuma_SIMD for bt 709 coefficients
           float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
           float ey = row_target_y[x] - LinearToGamma(ly);
           diff_y_sum += std::abs(ey);
@@ -605,11 +620,10 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       float* row_tgt_cb = target_cb_ws->Row(y);
       float* row_tgt_cr = target_cr_ws->Row(y);
 
-      BoxAverageDownsampleRow(
-          tmp_lin_r_ws->Row(y * 2 + 0), tmp_lin_g_ws->Row(y * 2 + 0),
-          tmp_lin_b_ws->Row(y * 2 + 0), tmp_lin_r_ws->Row(y * 2 + 1),
-          tmp_lin_g_ws->Row(y * 2 + 1), tmp_lin_b_ws->Row(y * 2 + 1), down_width,
-          xsize_padded, row_err_cb, row_err_cr);
+      BoxDownsampleRow(lin_r_ws->Row(y * 2 + 0), lin_g_ws->Row(y * 2 + 0),
+                       lin_b_ws->Row(y * 2 + 0), lin_r_ws->Row(y * 2 + 1),
+                       lin_g_ws->Row(y * 2 + 1), lin_b_ws->Row(y * 2 + 1),
+                       down_width, xsize_padded, row_err_cb, row_err_cr);
 
       size_t x = 0;
       for (; x + N <= down_width; x += N) {
@@ -643,10 +657,11 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
 
   const size_t y_out0 = y0 / 2;
   for (size_t y_out = 0; y_out < down_height; ++y_out) {
+    size_t copy_y = std::min(y_out, actual_down_height - 1);
     float* row_out_cb = m->raw_data[1]->Row(y_out0 + y_out);
     float* row_out_cr = m->raw_data[2]->Row(y_out0 + y_out);
-    memcpy(row_out_cb, best_cb_ws->Row(y_out), down_width * sizeof(float));
-    memcpy(row_out_cr, best_cr_ws->Row(y_out), down_width * sizeof(float));
+    memcpy(row_out_cb, best_cb_ws->Row(copy_y), down_width * sizeof(float));
+    memcpy(row_out_cr, best_cr_ws->Row(copy_y), down_width * sizeof(float));
   }
 }
 
