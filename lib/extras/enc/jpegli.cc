@@ -66,10 +66,8 @@ Status VerifyInput(const PackedPixelFile& ppf) {
   JXL_RETURN_IF_ERROR(Encoder::VerifyBitDepth(image.format.data_type,
                                               info.bits_per_sample,
                                               info.exponent_bits_per_sample));
-  if ((image.format.data_type == JXL_TYPE_UINT8 && info.bits_per_sample != 8) ||
-      (image.format.data_type == JXL_TYPE_UINT16 &&
-       info.bits_per_sample != 16)) {
-    return JXL_FAILURE("Only full bit depth unsigned types are supported.");
+  if (image.format.data_type == JXL_TYPE_UINT8 && info.bits_per_sample != 8) {
+    return JXL_FAILURE("Only full bit depth uint8 type is supported.");
   }
   return true;
 }
@@ -391,6 +389,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
   unsigned char* output_buffer = nullptr;
   unsigned long output_size = 0;  // NOLINT
   std::vector<uint8_t> row_bytes;
+  std::vector<float> float_row;
   const size_t max_vector_size = MaxVectorSize();
   size_t rowlen = RoundUpTo(ppf.info.xsize, max_vector_size);
   hwy::AlignedFreeUniquePtr<float[]> xyb_tmp =
@@ -479,7 +478,11 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       cinfo.write_Adobe_marker = JXL_FALSE;
     }
     const PackedImage& image = ppf.frames[0].color;
-    if (jpeg_settings.xyb) {
+    const bool needs_float_conversion =
+        !jpeg_settings.xyb &&
+        image.format.data_type == JXL_TYPE_UINT16 &&
+        info.bits_per_sample != 16;
+    if (jpeg_settings.xyb || needs_float_conversion) {
       jpegli_set_input_format(&cinfo, JPEGLI_TYPE_FLOAT, JPEGLI_NATIVE_ENDIAN);
     } else {
       jpegli_set_input_format(&cinfo, ConvertDataType(image.format.data_type),
@@ -528,6 +531,28 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         }
         // feed to jpegli as native endian floats
         JSAMPROW row[] = {reinterpret_cast<uint8_t*>(row_out)};
+        jpegli_write_scanlines(&cinfo, row, 1);
+      }
+    } else if (needs_float_conversion) {
+      // Convert non-full-depth uint16 to float [0.0, 1.0] for jpegli.
+      const float scale = 1.0f / ((1u << info.bits_per_sample) - 1);
+      const bool is_little_endian =
+          (image.format.endianness == JXL_LITTLE_ENDIAN ||
+           (image.format.endianness == JXL_NATIVE_ENDIAN && IsLittleEndian()));
+      const size_t c_in = image.format.num_channels;
+      const size_t c_out = cinfo.num_components;
+      float_row.resize(info.xsize * c_out);
+      for (size_t y = 0; y < info.ysize; ++y) {
+        const uint8_t* row_in = pixels + y * image.stride;
+        for (size_t x = 0; x < info.xsize; ++x) {
+          for (size_t c = 0; c < c_out; ++c) {
+            const size_t ix = c_in * x + c;
+            uint16_t val = is_little_endian ? LoadLE16(&row_in[2 * ix])
+                                            : LoadBE16(&row_in[2 * ix]);
+            float_row[c_out * x + c] = val * scale;
+          }
+        }
+        JSAMPROW row[] = {reinterpret_cast<uint8_t*>(float_row.data())};
         jpegli_write_scanlines(&cinfo, row, 1);
       }
     } else {
