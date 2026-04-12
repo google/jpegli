@@ -31,6 +31,7 @@ using hwy::HWY_NAMESPACE::BitCast;
 using hwy::HWY_NAMESPACE::ConvertTo;
 using hwy::HWY_NAMESPACE::Div;
 using hwy::HWY_NAMESPACE::Floor;
+using hwy::HWY_NAMESPACE::GetLane;
 using hwy::HWY_NAMESPACE::IfThenElse;
 using hwy::HWY_NAMESPACE::Lanes;
 using hwy::HWY_NAMESPACE::Le;
@@ -60,23 +61,7 @@ constexpr D d;
 // Scalar helpers (used for tail elements only)
 // ---------------------------------------------------------------------------
 
-inline float GammaToLinear(float v) {
-  float n = std::max(0.0f, std::min(255.0f, v)) * (1.0f / 255.0f);
-  if (n <= 0.04045f) {
-    return n / 12.92f;
-  } else {
-    return std::pow((n + 0.055f) / 1.055f, 2.4f);
-  }
-}
 
-inline float LinearToGamma(float v) {
-  if (v <= 0.0031308f) {
-    return v * 12.92f * 255.0f;
-  } else {
-    return (1.055f * std::pow(std::max(0.0f, v), 1.0f / 2.4f) - 0.055f) *
-           255.0f;
-  }
-}
 
 inline void YCbCrToRGB_Scalar(float y, float cb, float cr, float* r, float* g,
                               float* b) {
@@ -94,8 +79,6 @@ inline void RGBToYCbCr_Scalar(float r, float g, float b, float* y, float* cb,
   const float kB = 0.114f;
   const float kAmpR = 0.701f;
   const float kAmpB = 0.886f;
-  const float kDiffR = kAmpR + kR;
-  const float kDiffB = kAmpB + kB;
   const float kNormR = 1.0f / (kAmpR + kG + kB);
   const float kNormB = 1.0f / (kR + kG + kAmpB);
 
@@ -104,8 +87,8 @@ inline void RGBToYCbCr_Scalar(float r, float g, float b, float* y, float* cb,
   float b_base = b * kB;
   float y_base = r_base + g_base + b_base;
   *y = y_base;
-  *cb = (b * kDiffB - y_base) * kNormB + 128.0f;
-  *cr = (r * kDiffR - y_base) * kNormR + 128.0f;
+  *cb = (b - y_base) * kNormB + 128.0f;
+  *cr = (r - y_base) * kNormR + 128.0f;
 }
 
 // ---------------------------------------------------------------------------
@@ -204,23 +187,38 @@ HWY_INLINE V LinearToGamma_SIMD(D d, V v) {
   return IfThenElse(is_low, low_val, high_val);
 }
 
+inline float GammaToLinear(float v) {
+  HWY_CAPPED(float, 1) d1;
+  return GetLane(GammaToLinear_SIMD(d1, Set(d1, v)));
+}
+
+inline float LinearToGamma(float v) {
+  HWY_CAPPED(float, 1) d1;
+  return GetLane(LinearToGamma_SIMD(d1, Set(d1, v)));
+}
+
 template <class D, class V>
 HWY_INLINE void YCbCrToRGB_SIMD(D d, V y, V cb, V cr, V* r, V* g, V* b) {
-  auto v128 = Set(d, 128.0f);
+  const auto v128 = Set(d, 128.0f);
   cb = Sub(cb, v128);
   cr = Sub(cr, v128);
-  *r = MulAdd(cr, Set(d, 1.402f), y);
-  *g = MulAdd(cb, Set(d, -0.114f * 1.772f / 0.587f),
-              MulAdd(cr, Set(d, -0.299f * 1.402f / 0.587f), y));
-  *b = MulAdd(cb, Set(d, 1.772f), y);
+  const auto kCrR = Set(d, 1.402f);
+  const auto kCbG = Set(d, -0.114f * 1.772f / 0.587f);
+  const auto kCrG = Set(d, -0.299f * 1.402f / 0.587f);
+  const auto kCbB = Set(d, 1.772f);
+  *r = MulAdd(cr, kCrR, y);
+  *g = MulAdd(cb, kCbG, MulAdd(cr, kCrG, y));
+  *b = MulAdd(cb, kCbB, y);
 }
 
 template <class D, class V>
 HWY_INLINE V TempLuma_SIMD(D d, V r, V g, V b) {
   // using bt 709 values (0.2126f, 0.7152f, 0.0722f) may be more perceptually
   // accurate, but it needs more visual testing.
-  return MulAdd(Set(d, 0.299f), r,
-                MulAdd(Set(d, 0.587f), g, Mul(Set(d, 0.114f), b)));
+  const auto kR = Set(d, 0.299f);
+  const auto kG = Set(d, 0.587f);
+  const auto kB = Set(d, 0.114f);
+  return MulAdd(kR, r, MulAdd(kG, g, Mul(kB, b)));
 }
 
 // Vectorized RGBToYCbCr: computes Y, Cb, Cr from gamma-space R, G, B vectors.
@@ -229,18 +227,16 @@ HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
   const auto kR = Set(d, 0.299f);
   const auto kG = Set(d, 0.587f);
   const auto kB = Set(d, 0.114f);
-  const auto kDiffR = Set(d, 0.701f + 0.299f);
-  const auto kDiffB = Set(d, 0.886f + 0.114f);
   const auto kNormR = Set(d, 1.0f / (0.701f + 0.587f + 0.114f));
   const auto kNormB = Set(d, 1.0f / (0.299f + 0.587f + 0.886f));
   const auto v128 = Set(d, 128.0f);
 
   auto y_base = MulAdd(kR, r, MulAdd(kG, g, Mul(kB, b)));
   *y = y_base;
-  // cb = (b * kDiffB - y_base) * kNormB + 128
-  *cb = MulAdd(Sub(Mul(b, kDiffB), y_base), kNormB, v128);
-  // cr = (r * kDiffR - y_base) * kNormR + 128
-  *cr = MulAdd(Sub(Mul(r, kDiffR), y_base), kNormR, v128);
+  // cb = (b - y_base) * kNormB + 128
+  *cb = MulAdd(Sub(b, y_base), kNormB, v128);
+  // cr = (r - y_base) * kNormR + 128
+  *cr = MulAdd(Sub(r, y_base), kNormR, v128);
 }
 
 // SIMD box-average downsample of linear RGB -> YCbCr chroma
