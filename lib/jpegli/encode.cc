@@ -31,6 +31,7 @@
 #include "lib/jpegli/quant.h"
 #include "lib/jpegli/simd.h"
 #include "lib/jpegli/types.h"
+#include "lib/jpegli/sharp_yuv.h"
 
 namespace jpegli {
 
@@ -430,6 +431,12 @@ void AllocateBuffers(j_compress_ptr cinfo) {
     for (int c = 0; c < num_all_components; ++c) {
       m->input_buffer[c].Allocate(cinfo, ysize_full, xsize_full);
     }
+    if (m->use_sharpyuv && cinfo->in_color_space == JCS_RGB &&
+        cinfo->jpeg_color_space == JCS_YCbCr) {
+      for (int c = 0; c < 3; ++c) {
+        m->input_rgb[c].Allocate(cinfo, ysize_full, xsize_full);
+      }
+    }
   }
   for (int c = 0; c < cinfo->num_components; ++c) {
     jpeg_component_info* comp = &cinfo->comp_info[c];
@@ -489,6 +496,14 @@ void AllocateBuffers(j_compress_ptr cinfo) {
     m->zero_bias_mul[c] = Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
     memset(m->zero_bias_mul[c], 0, DCTSIZE2 * sizeof(float));
     memset(m->zero_bias_offset[c], 0, DCTSIZE2 * sizeof(float));
+  }
+  if (m->use_sharpyuv) {
+    for (int i = 0; i < 7; ++i) {
+      m->sharpyuv_workspace[i].Allocate(cinfo, iMCU_height, xsize_full);
+    }
+    for (int i = 7; i < 13; ++i) {
+      m->sharpyuv_workspace[i].Allocate(cinfo, iMCU_height / 2, xsize_full / 2);
+    }
   }
 }
 
@@ -600,7 +615,11 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
   JPEGLI_CHECK(cinfo->master->next_iMCU_row < cinfo->total_iMCU_rows);
   if (!cinfo->raw_data_in) {
     ApplyInputSmoothing(cinfo);
-    DownsampleInputBuffer(cinfo);
+    if (cinfo->master->use_sharpyuv && cinfo->jpeg_color_space == JCS_YCbCr) {
+      ApplySharpYuvDownsample(cinfo);
+    } else {
+      DownsampleInputBuffer(cinfo);
+    }
   }
   ComputeAdaptiveQuantField(cinfo);
   if (IsStreamingSupported(cinfo)) {
@@ -687,12 +706,14 @@ void jpegli_CreateCompress(j_compress_ptr cinfo, int version,
   memset(cinfo->arith_ac_K, 0, sizeof(cinfo->arith_ac_K));
   cinfo->write_Adobe_marker = FALSE;
   cinfo->master = jpegli::Allocate<jpeg_comp_master>(cinfo, 1);
+  memset(cinfo->master->input_rgb, 0, sizeof(cinfo->master->input_rgb));
   jpegli::InitializeCompressParams(cinfo);
   cinfo->master->force_baseline = true;
   cinfo->master->xyb_mode = false;
   cinfo->master->cicp_transfer_function = 2;  // unknown transfer function code
   cinfo->master->use_std_tables = false;
   cinfo->master->use_adaptive_quantization = true;
+  cinfo->master->use_sharpyuv = false;
   cinfo->master->progressive_level = jpegli::kDefaultProgressiveLevel;
   cinfo->master->data_type = JPEGLI_TYPE_UINT8;
   cinfo->master->endianness = JPEGLI_NATIVE_ENDIAN;
@@ -927,6 +948,11 @@ void jpegli_enable_adaptive_quantization(j_compress_ptr cinfo, boolean value) {
   cinfo->master->use_adaptive_quantization = FROM_JXL_BOOL(value);
 }
 
+void jpegli_set_sharp_yuv(j_compress_ptr cinfo, boolean enable) {
+  CheckState(cinfo, jpegli::kEncStart);
+  cinfo->master->use_sharpyuv = FROM_JXL_BOOL(enable);
+}
+
 void jpegli_simple_progression(j_compress_ptr cinfo) {
   CheckState(cinfo, jpegli::kEncStart);
   jpegli_set_progressive_level(cinfo, 2);
@@ -1149,8 +1175,22 @@ JDIMENSION jpegli_write_scanlines(j_compress_ptr cinfo, JSAMPARRAY scanlines,
     cinfo->next_scanline += input_lag;
   }
   float* rows[jpegli::kMaxComponents];
+  const bool snapshot_rgb = m->use_sharpyuv &&
+                            cinfo->in_color_space == JCS_RGB &&
+                            cinfo->jpeg_color_space == JCS_YCbCr;
   for (size_t i = input_lag; i < num_lines; ++i) {
     jpegli::ReadInputRow(cinfo, scanlines[i], rows);
+    if (snapshot_rgb) {
+      size_t row_idx = m->next_input_row - 1;
+      size_t img_w = cinfo->image_width;
+      size_t pad_w = m->xsize_blocks * DCTSIZE;
+      for (int c = 0; c < 3; ++c) {
+        float* rgb_row = m->input_rgb[c].Row(row_idx);
+        memcpy(rgb_row, rows[c], img_w * sizeof(float));
+        float last = rgb_row[img_w - 1];
+        for (size_t x = img_w; x <= pad_w; ++x) rgb_row[x] = last;
+      }
+    }
     (*m->color_transform)(rows, cinfo->image_width);
     jpegli::PadInputBuffer(cinfo, rows);
     jpegli::ProcessiMCURows(cinfo);

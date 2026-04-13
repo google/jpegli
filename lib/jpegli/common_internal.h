@@ -112,6 +112,7 @@ class RowBuffer {
   size_t xsize() const { return xsize_; };
   size_t ysize() const { return ysize_; };
   size_t stride() const { return stride_; }
+  bool HasData() const { return xsize_ > 0; }
 
   void PadRow(size_t y, size_t from, int border) {
     float* row = Row(y);

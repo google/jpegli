@@ -24,6 +24,7 @@ class PackedPixelFile;
 
 struct JpegSettings {
   bool xyb = false;
+  bool use_sharpyuv = false;
   size_t target_size = 0;
   float quality = 0.0f;
   float distance = 1.f;
