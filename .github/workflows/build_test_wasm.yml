@@ -77,7 +77,7 @@ jobs:
       run: which node >> $HOME/.base_node_path
 
     - name: Install emsdk
-      uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+      uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
       # TODO(deymo): We could cache this action but it doesn't work when running
       # in a matrix.
       with:
