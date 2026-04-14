@@ -172,12 +172,15 @@ Status ConvertChannelsToExternal(const ImageF* in_channels[],
   // First channel may not be nullptr.
   size_t xsize = channels[0]->xsize();
   size_t ysize = channels[0]->ysize();
-  if (stride < bytes_per_pixel * xsize) {
+  size_t row_size;
+  if (!SafeMul(bytes_per_pixel, xsize, row_size) || stride < row_size) {
     return JXL_FAILURE("stride is smaller than scanline width in bytes: %" PRIuS
                        " vs %" PRIuS,
-                       stride, bytes_per_pixel * xsize);
+                       stride, row_size);
   }
-  if (out_size < (ysize - 1) * stride + bytes_per_pixel * xsize) {
+  size_t total_size;
+  if (!SafeMul(ysize - 1, stride, total_size) ||
+      !SafeAdd(total_size, row_size, total_size) || out_size < total_size) {
     return JXL_FAILURE("out_size is too small to store image");
   }
 
@@ -381,12 +384,21 @@ Status ConvertFromExternal(const uint8_t* data, size_t size, size_t xsize,
                            ImageF* channel) {
   size_t bytes_per_channel = JxlDataTypeBytes(format.data_type);
   size_t bytes_per_pixel = format.num_channels * bytes_per_channel;
-  const size_t last_row_size = xsize * bytes_per_pixel;
+  size_t last_row_size;
+  if (!SafeMul(xsize, bytes_per_pixel, last_row_size)) {
+    return JXL_FAILURE("Image dimensions are too large");
+  }
   const size_t align = format.align;
-  const size_t row_size =
-      (align > 1 ? jxl::DivCeil(last_row_size, align) * align : last_row_size);
-  const size_t bytes_to_read = row_size * (ysize - 1) + last_row_size;
+  size_t row_size = last_row_size;
+  if (align > 1) {
+    row_size = jxl::DivCeil(last_row_size, align) * align;
+  }
   if (xsize == 0 || ysize == 0) return JXL_FAILURE("Empty image");
+  size_t bytes_to_read;
+  if (!SafeMul(row_size, ysize - 1, bytes_to_read) ||
+      !SafeAdd(bytes_to_read, last_row_size, bytes_to_read)) {
+    return JXL_FAILURE("Image dimensions are too large");
+  }
   if (size > 0 && size < bytes_to_read) {
     return JXL_FAILURE("Buffer size is too small, expected: %" PRIuS
                        " got: %" PRIuS " (Image: %" PRIuS "x%" PRIuS
