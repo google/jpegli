@@ -77,7 +77,7 @@ struct Args {
     cmdline->AddOptionFlag('\0', "xyb", "Convert to XYB colorspace",
                            &settings.xyb, &SetBooleanTrue, 1);
 
-    cmdline->AddOptionFlag('\0', "sharpyuv",
+    cmdline->AddOptionFlag('\0', "sharp_yuv",
                            "Use true linear-light sharp YUV downsampling for 4:2:0",
                            &settings.use_sharpyuv, &SetBooleanTrue, 1);
 
