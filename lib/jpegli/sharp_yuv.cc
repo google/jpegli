@@ -7,7 +7,6 @@
 #include "lib/jpegli/sharp_yuv.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -26,12 +25,10 @@ namespace HWY_NAMESPACE {
 
 using hwy::HWY_NAMESPACE::Abs;
 using hwy::HWY_NAMESPACE::Add;
-using hwy::HWY_NAMESPACE::And;
 using hwy::HWY_NAMESPACE::BitCast;
 using hwy::HWY_NAMESPACE::ConvertTo;
 using hwy::HWY_NAMESPACE::Div;
 using hwy::HWY_NAMESPACE::Floor;
-using hwy::HWY_NAMESPACE::GetLane;
 using hwy::HWY_NAMESPACE::IfThenElse;
 using hwy::HWY_NAMESPACE::Lanes;
 using hwy::HWY_NAMESPACE::Le;
@@ -42,7 +39,6 @@ using hwy::HWY_NAMESPACE::Max;
 using hwy::HWY_NAMESPACE::Min;
 using hwy::HWY_NAMESPACE::Mul;
 using hwy::HWY_NAMESPACE::MulAdd;
-using hwy::HWY_NAMESPACE::Or;
 using hwy::HWY_NAMESPACE::Rebind;
 using hwy::HWY_NAMESPACE::ReduceSum;
 using hwy::HWY_NAMESPACE::Set;
@@ -57,45 +53,7 @@ using hwy::HWY_NAMESPACE::Zero;
 using D = HWY_CAPPED(float, 8);
 constexpr D d;
 
-// ---------------------------------------------------------------------------
-// Scalar helpers (used for tail elements only)
-// ---------------------------------------------------------------------------
-
-
-
-inline void YCbCrToRGB_Scalar(float y, float cb, float cr, float* r, float* g,
-                              float* b) {
-  cb -= 128.0f;
-  cr -= 128.0f;
-  *r = y + cr * 1.402f;
-  *g = y + cb * (-0.114f * 1.772f / 0.587f) + cr * (-0.299f * 1.402f / 0.587f);
-  *b = y + cb * 1.772f;
-}
-
-inline void RGBToYCbCr_Scalar(float r, float g, float b, float* y, float* cb,
-                              float* cr) {
-  const float kR = 0.299f;
-  const float kG = 0.587f;
-  const float kB = 0.114f;
-  const float kAmpR = 0.701f;
-  const float kAmpB = 0.886f;
-  const float kNormR = 1.0f / (kAmpR + kG + kB);
-  const float kNormB = 1.0f / (kR + kG + kAmpB);
-
-  float r_base = r * kR;
-  float g_base = g * kG;
-  float b_base = b * kB;
-  float y_base = r_base + g_base + b_base;
-  *y = y_base;
-  *cb = (b - y_base) * kNormB + 128.0f;
-  *cr = (r - y_base) * kNormR + 128.0f;
-}
-
-// ---------------------------------------------------------------------------
 // Fast log2/exp2 approximations (same approach as adaptive_quantization.cc)
-// ---------------------------------------------------------------------------
-
-// Evaluates a rational polynomial p(x)/q(x) via Horner's scheme.
 template <size_t NP, size_t NQ, class DF, class V, typename T>
 HWY_INLINE V EvalRationalPoly(const DF df, const V x, const T (&p)[NP],
                               const T (&q)[NQ]) {
@@ -157,10 +115,7 @@ HWY_INLINE V FastPowf(const DF df, V x, float power) {
   return FastPow2f(df, Mul(FastLog2f(df, x), Set(df, power)));
 }
 
-// ---------------------------------------------------------------------------
 // Highway SIMD gamma helpers using fast polynomial approximations
-// ---------------------------------------------------------------------------
-
 template <class D, class V>
 HWY_INLINE V GammaToLinear_SIMD(D d, V v) {
   auto v_zero = Set(d, 0.0f);
@@ -185,16 +140,6 @@ HWY_INLINE V LinearToGamma_SIMD(D d, V v) {
   auto high_val =
       Mul(Sub(Mul(p, Set(d, 1.055f)), Set(d, 0.055f)), Set(d, 255.0f));
   return IfThenElse(is_low, low_val, high_val);
-}
-
-inline float GammaToLinear(float v) {
-  HWY_CAPPED(float, 1) d1;
-  return GetLane(GammaToLinear_SIMD(d1, Set(d1, v)));
-}
-
-inline float LinearToGamma(float v) {
-  HWY_CAPPED(float, 1) d1;
-  return GetLane(LinearToGamma_SIMD(d1, Set(d1, v)));
 }
 
 template <class D, class V>
@@ -239,7 +184,8 @@ HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
   *cr = MulAdd(Sub(r, y_base), kNormR, v128);
 }
 
-// SIMD box-average downsample of linear RGB -> YCbCr chroma
+// Box-averages a 2x2 block of linear-light RGB pixels and converts to
+// gamma-space YCbCr, writing only the Cb and Cr chroma values.
 HWY_INLINE void BoxDownsampleRow(const float* lin_r0, const float* lin_g0,
                                  const float* lin_b0, const float* lin_r1,
                                  const float* lin_g1, const float* lin_b1,
@@ -286,35 +232,11 @@ HWY_INLINE void BoxDownsampleRow(const float* lin_r0, const float* lin_g0,
     StoreU(vcr, d, out_cr + x);
   }
 
-  // Scalar tail
-  for (; x < down_width; ++x) {
-    float lr_sum = 0;
-    float lg_sum = 0;
-    float lb_sum = 0;
-    for (int iy = 0; iy < 2; ++iy) {
-      const float* src_r = (iy == 0) ? lin_r0 : lin_r1;
-      const float* src_g = (iy == 0) ? lin_g0 : lin_g1;
-      const float* src_b = (iy == 0) ? lin_b0 : lin_b1;
-      for (int ix = 0; ix < 2; ++ix) {
-        size_t si = x * 2 + ix;
-        lr_sum += src_r[si];
-        lg_sum += src_g[si];
-        lb_sum += src_b[si];
-      }
-    }
-    float avg_r = LinearToGamma(lr_sum * 0.25f);
-    float avg_g = LinearToGamma(lg_sum * 0.25f);
-    float avg_b = LinearToGamma(lb_sum * 0.25f);
-    float avg_y;
-    float avg_cb;
-    float avg_cr;
-    RGBToYCbCr_Scalar(avg_r, avg_g, avg_b, &avg_y, &avg_cb, &avg_cr);
-    out_cb[x] = avg_cb;
-    out_cr[x] = avg_cr;
-  }
+
 }
 
-// SIMD tent-filter upsample of one chroma row
+// 2x tent-filter upsample of one downsampled chroma row into two
+// full-resolution output rows (out0 = even output row, out1 = odd output row).
 HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
                                 const float* next_row, size_t down_width,
                                 float* out0, float* out1) {
@@ -348,28 +270,7 @@ HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
     StoreInterleaved2(val_bl, val_br, d, out1 + 2 * x);
   }
 
-  // Scalar tail
-  for (; x < down_width; ++x) {
-    size_t x_prev = (x == 0) ? 0 : x - 1;
-    size_t x_next = (x + 1 == down_width) ? x : x + 1;
 
-    float cc = cur_row[x];
-    float ct = prev_row[x];
-    float cb = next_row[x];
-    float cl = cur_row[x_prev];
-    float cr = cur_row[x_next];
-    float ctl = prev_row[x_prev];
-    float ctr = prev_row[x_next];
-    float cbl = next_row[x_prev];
-    float cbr = next_row[x_next];
-
-    float c9 = cc * 9.0f;
-    float inv16 = 1.0f / 16.0f;
-    out0[x * 2 + 0] = (c9 + ct * 3.0f + cl * 3.0f + ctl) * inv16;
-    out0[(x * 2 + 1)] = (c9 + ct * 3.0f + cr * 3.0f + ctr) * inv16;
-    out1[x * 2 + 0] = (c9 + cb * 3.0f + cl * 3.0f + cbl) * inv16;
-    out1[(x * 2 + 1)] = (c9 + cb * 3.0f + cr * 3.0f + cbr) * inv16;
-  }
 }
 
 void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
@@ -413,7 +314,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
   const size_t actual_down_height = (actual_height + 1) / 2;
   const size_t high_size = xsize_padded * iMCU_height;
 
-  // Hoisted workspace buffers from master struct.
+  // Aliases to workspace buffers in master struct.
   jpegli::RowBuffer<float>* ws = m->sharpyuv_workspace;
   auto* target_y_ws = &ws[0];
   auto* best_y_ws = &ws[1];
@@ -477,31 +378,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       StoreU(lin_g, d, lg_out + x);
       StoreU(lin_b, d, lb_out + x);
     }
-    for (; x < xsize_padded; ++x) {
-      float py = row_y[x];
-      float r;
-      float g;
-      float b;
-      if (have_rgb_input) {
-        r = row_r[x];
-        g = row_g[x];
-        b = row_b[x];
-      } else {
-        float pcb = row_cb[x];
-        float pcr = row_cr[x];
-        YCbCrToRGB_Scalar(py, pcb, pcr, &r, &g, &b);
-      }
-      float lr = GammaToLinear(r);
-      float lg = GammaToLinear(g);
-      float lb = GammaToLinear(b);
-      // see TempLuma_SIMD for bt 709 coefficients
-      float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
-      ty_out[x] = LinearToGamma(ly);
-      by_out[x] = py;
-      lr_out[x] = lr;
-      lg_out[x] = lg;
-      lb_out[x] = lb;
-    }
+
   }
 
   // Box-average downsample of linear RGB to target Cb/Cr.
@@ -589,24 +466,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
           StoreU(lin_g, d, row_lin_g + x);
           StoreU(lin_b, d, row_lin_b + x);
         }
-        for (; x < xsize_padded; ++x) {
-          float py = row_best_y[x];
-          float r;
-          float g;
-          float b;
-          YCbCrToRGB_Scalar(py, row_up_cb[x], row_up_cr[x], &r, &g, &b);
-          float lr = GammaToLinear(r);
-          float lg = GammaToLinear(g);
-          float lb = GammaToLinear(b);
-          // see TempLuma_SIMD for bt 709 coefficients
-          float ly = 0.299f * lr + 0.587f * lg + 0.114f * lb;
-          float ey = row_target_y[x] - LinearToGamma(ly);
-          diff_y_sum += std::abs(ey);
-          row_best_y[x] = std::max(0.0f, std::min(255.0f, py + ey));
-          row_lin_r[x] = lr;
-          row_lin_g[x] = lg;
-          row_lin_b[x] = lb;
-        }
+
       }
 
       float* row_best_cb = best_cb_ws->Row(y);
@@ -632,10 +492,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
         StoreU(Add(bcb, Sub(tcb, dcb)), d, row_best_cb + x);
         StoreU(Add(bcr, Sub(tcr, dcr)), d, row_best_cr + x);
       }
-      for (; x < down_width; ++x) {
-        row_best_cb[x] += row_tgt_cb[x] - row_err_cb[x];
-        row_best_cr[x] += row_tgt_cr[x] - row_err_cr[x];
-      }
+
     }
     diff_y_sum += ReduceSum(d, acc_y);
 

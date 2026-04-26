@@ -11,9 +11,10 @@
 
 namespace jpegli {
 
-// Applies a sharp 2x2 area downscale in linear RGB space instead of
-// gamma compressed YCbCr space. This prevents bleeding/blur artifacts
-// and preserves color boundaries much better.
+// Applies an iterative sharp chroma downsampling for 4:2:0 subsampling.
+// The algorithm downsamples Cb/Cr in linear RGB space and iteratively refines
+// the chroma values to minimize luma error after upsample, preserving color
+// boundaries better than a simple box filter.
 void ApplySharpYuvDownsample(j_compress_ptr cinfo);
 
 }  // namespace jpegli
