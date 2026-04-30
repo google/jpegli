@@ -71,7 +71,7 @@ std::vector<uint8_t> GetSomeTestImage(size_t xsize, size_t ysize,
   size_t rect_y0 = rng(ysize);
   size_t rect_x1 = rng(xsize);
   size_t rect_y1 = rng(ysize);
-  if (rect_x1 < rect_x0) std::swap(rect_x0, rect_y1);
+  if (rect_x1 < rect_x0) std::swap(rect_x0, rect_x1);
   if (rect_y1 < rect_y0) std::swap(rect_y0, rect_y1);
 
   size_t num_pixels = xsize * ysize;
