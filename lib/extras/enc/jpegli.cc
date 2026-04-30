@@ -60,6 +60,9 @@ Status VerifyInput(const PackedPixelFile& ppf) {
   }
   const PackedImage& image = ppf.frames[0].color;
   JPEGLI_RETURN_IF_ERROR(Encoder::VerifyImageSize(image, info));
+  if (image.xsize != info.xsize || image.ysize != info.ysize) {
+    return JPEGLI_FAILURE("Frame size does not match image size.");
+  }
   if (image.format.data_type == JPEGLI_TYPE_FLOAT16) {
     return JPEGLI_FAILURE("FLOAT16 input is not supported.");
   }
