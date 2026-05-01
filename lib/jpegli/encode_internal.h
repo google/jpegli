@@ -68,6 +68,7 @@ struct ScanTokenInfo {
 
 struct jpeg_comp_master {
   jpegli::RowBuffer<float> input_buffer[jpegli::kMaxComponents];
+  jpegli::RowBuffer<float> input_rgb[3];
   jpegli::RowBuffer<float>* smooth_input[jpegli::kMaxComponents];
   jpegli::RowBuffer<float>* raw_data[jpegli::kMaxComponents];
   bool force_baseline;
@@ -75,6 +76,7 @@ struct jpeg_comp_master {
   uint8_t cicp_transfer_function;
   bool use_std_tables;
   bool use_adaptive_quantization;
+  bool use_sharpyuv;
   int progressive_level;
   size_t xsize_blocks;
   size_t ysize_blocks;
@@ -138,6 +140,7 @@ struct jpeg_comp_master {
   float psnr_tolerance;
   float min_distance;
   float max_distance;
+  jpegli::RowBuffer<float> sharpyuv_workspace[13];
 };
 
 #endif  // LIB_JPEGLI_ENCODE_INTERNAL_H_

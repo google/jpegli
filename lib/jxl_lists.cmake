@@ -198,6 +198,8 @@ set(JPEGXL_INTERNAL_JPEGLI_SOURCES
   jpegli/quant.h
   jpegli/render.cc
   jpegli/render.h
+  jpegli/sharp_yuv.cc
+  jpegli/sharp_yuv.h
   jpegli/simd.cc
   jpegli/simd.h
   jpegli/source_manager.cc
