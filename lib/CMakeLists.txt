@@ -4,11 +4,11 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-set(JPEGXL_MAJOR_VERSION 0)
-set(JPEGXL_MINOR_VERSION 12)
-set(JPEGXL_PATCH_VERSION 0)
-set(JPEGXL_LIBRARY_VERSION
-    "${JPEGXL_MAJOR_VERSION}.${JPEGXL_MINOR_VERSION}.${JPEGXL_PATCH_VERSION}")
+set(JPEGLI_MAJOR_VERSION 0)
+set(JPEGLI_MINOR_VERSION 1)
+set(JPEGLI_PATCH_VERSION 0)
+set(JPEGLI_LIBRARY_VERSION
+    "${JPEGLI_MAJOR_VERSION}.${JPEGLI_MINOR_VERSION}.${JPEGLI_PATCH_VERSION}")
 
 # This is the library API/ABI compatibility version. Changing this value makes
 # the shared library incompatible with previous version. A program linked
@@ -16,12 +16,12 @@ set(JPEGXL_LIBRARY_VERSION
 # It is important to update this value when making incompatible API/ABI changes
 # so that programs that depend on libjxl can update their dependencies. Semantic
 # versioning allows 0.y.z to have incompatible changes in minor versions.
-set(JPEGXL_SO_MINOR_VERSION 12)
-if (JPEGXL_MAJOR_VERSION EQUAL 0)
-  set(JPEGXL_LIBRARY_SOVERSION
-      "${JPEGXL_MAJOR_VERSION}.${JPEGXL_SO_MINOR_VERSION}")
+set(JPEGLI_SO_MINOR_VERSION 12)
+if (JPEGLI_MAJOR_VERSION EQUAL 0)
+  set(JPEGLI_LIBRARY_SOVERSION
+      "${JPEGLI_MAJOR_VERSION}.${JPEGLI_SO_MINOR_VERSION}")
 else()
-  set(JPEGXL_LIBRARY_SOVERSION "${JPEGXL_MAJOR_VERSION}")
+  set(JPEGLI_LIBRARY_SOVERSION "${JPEGLI_MAJOR_VERSION}")
 endif()
 
 # List of warning and feature flags for our library and tests.

@@ -5,7 +5,7 @@ includedir=@PKGCONFIG_TARGET_INCLUDES@
 
 Name: libjxl_threads
 Description: JPEG XL multi-thread runner using std::threads.
-Version: @JPEGXL_LIBRARY_VERSION@
+Version: @JPEGLI_LIBRARY_VERSION@
 @JPEGXL_REQUIRES_TYPE@: @JPEGXL_THREADS_LIBRARY_REQUIRES@
 Libs: -L${libdir} -ljxl_threads
 Libs.private: -lm
