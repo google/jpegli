@@ -329,16 +329,19 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
     }
 
     // Setup framebuffer: extra channels
-    char* extra_rows_ptr =
-        input_extra_rows.data() -
-        (dataWindow.min.x + start_y * row_size) * extraPixelBytes;
+    char* extra_rows_ptr = input_extra_rows.data();
     for (OpenEXR::ChannelList::ConstIterator it = channels.begin();
          it != channels.end(); ++it) {
       if (extraChannels.find(&it.channel()) == extraChannels.end()) {
         continue;
       }
       const size_t size = it.channel().type == OpenEXR::HALF ? 2 : 4;
-      fb.insert(it.name(), OpenEXR::Slice(it.channel().type, extra_rows_ptr,
+      // Compute per-channel virtual base pointer using per-channel stride (not
+      // extraPixelBytes) to avoid underflow when dataWindow.min.x > 0 with
+      // multiple extra channels.
+      char* ch_base_ptr =
+          extra_rows_ptr - (dataWindow.min.x + start_y * row_size) * size;
+      fb.insert(it.name(), OpenEXR::Slice(it.channel().type, ch_base_ptr,
                                           size, size * row_size));
       extra_rows_ptr += size * row_size * (end_y - start_y + 1);
     }
@@ -358,26 +361,29 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
       const int exr_x1 = std::max(dataWindow.min.x, displayWindow.min.x);
       const int exr_x2 = std::min(dataWindow.max.x, displayWindow.max.x);
 
-      const char* exr_ptr =
-          input_row + (exr_x1 - dataWindow.min.x) * colorPixelBytes;
-      uint8_t* image_ptr =
-          row + (exr_x1 - displayWindow.min.x) * colorPixelBytes;
-      memcpy(image_ptr, exr_ptr, (exr_x2 - exr_x1 + 1) * colorPixelBytes);
+      // Guard: skip copy when windows have no horizontal overlap.
+      if (exr_x1 <= exr_x2) {
+        const char* exr_ptr =
+            input_row + (exr_x1 - dataWindow.min.x) * colorPixelBytes;
+        uint8_t* image_ptr =
+            row + (exr_x1 - displayWindow.min.x) * colorPixelBytes;
+        memcpy(image_ptr, exr_ptr, (exr_x2 - exr_x1 + 1) * colorPixelBytes);
 
-      const char* JXL_RESTRICT input_ec_slice = input_extra_rows.data();
-      for (PackedImage& ec : frame.extra_channels) {
-        const char* const JXL_RESTRICT input_ec_row =
-            input_ec_slice + (exr_y - start_y) * ec.stride;
-        uint8_t* ec_row =
-            static_cast<uint8_t*>(ec.pixels()) + ec.stride * image_y;
-        input_ec_slice += ec.stride * (end_y - start_y + 1);
+        const char* JXL_RESTRICT input_ec_slice = input_extra_rows.data();
+        for (PackedImage& ec : frame.extra_channels) {
+          const char* const JXL_RESTRICT input_ec_row =
+              input_ec_slice + (exr_y - start_y) * ec.stride;
+          uint8_t* ec_row =
+              static_cast<uint8_t*>(ec.pixels()) + ec.stride * image_y;
+          input_ec_slice += ec.stride * (end_y - start_y + 1);
 
-        const char* exr_ec_ptr =
-            input_ec_row + (exr_x1 - dataWindow.min.x) * ec.pixel_stride();
-        uint8_t* image_ec_ptr =
-            ec_row + (exr_x1 - displayWindow.min.x) * ec.pixel_stride();
-        memcpy(image_ec_ptr, exr_ec_ptr,
-               (exr_x2 - exr_x1 + 1) * ec.pixel_stride());
+          const char* exr_ec_ptr =
+              input_ec_row + (exr_x1 - dataWindow.min.x) * ec.pixel_stride();
+          uint8_t* image_ec_ptr =
+              ec_row + (exr_x1 - displayWindow.min.x) * ec.pixel_stride();
+          memcpy(image_ec_ptr, exr_ec_ptr,
+                 (exr_x2 - exr_x1 + 1) * ec.pixel_stride());
+        }
       }
     }
   }
