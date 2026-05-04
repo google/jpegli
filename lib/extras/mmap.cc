@@ -21,7 +21,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-namespace jxl {
+namespace jpegli {
 
 struct MemoryMappedFileImpl {
   static StatusOr<std::unique_ptr<MemoryMappedFileImpl>> Init(
@@ -29,14 +29,14 @@ struct MemoryMappedFileImpl {
     auto f = make_unique<MemoryMappedFileImpl>();
     f->fd = open(path, O_RDONLY);
     if (f->fd == -1) {
-      return JXL_FAILURE("Cannot open file %s", path);
+      return JPEGLI_FAILURE("Cannot open file %s", path);
     }
     f->mmap_len = lseek(f->fd, 0, SEEK_END);
     lseek(f->fd, 0, SEEK_SET);
 
     f->ptr = mmap(nullptr, f->mmap_len, PROT_READ, MAP_SHARED, f->fd, 0);
     if (f->ptr == MAP_FAILED) {
-      return JXL_FAILURE("mmap failure");
+      return JPEGLI_FAILURE("mmap failure");
     }
     return f;
   }
@@ -58,7 +58,7 @@ struct MemoryMappedFileImpl {
   void* ptr = nullptr;
 };
 
-}  // namespace jxl
+}  // namespace jpegli
 
 #elif defined(_WIN32)
 #include <string.h>
@@ -78,7 +78,7 @@ using HandleUniquePtr =
 
 }  // namespace
 
-namespace jxl {
+namespace jpegli {
 
 struct MemoryMappedFileImpl {
   static StatusOr<std::unique_ptr<MemoryMappedFileImpl>> Init(
@@ -89,15 +89,15 @@ struct MemoryMappedFileImpl {
                                 nullptr, OPEN_EXISTING,
                                 FILE_FLAG_SEQUENTIAL_SCAN, nullptr));
     if (f->handle.get() == INVALID_HANDLE_VALUE) {
-      return JXL_FAILURE("Cannot open file %s", path);
+      return JPEGLI_FAILURE("Cannot open file %s", path);
     }
     if (!GetFileSizeEx(f->handle.get(), &f->fsize)) {
-      return JXL_FAILURE("Cannot get file size (%s)", path);
+      return JPEGLI_FAILURE("Cannot get file size (%s)", path);
     }
     f->handle_mapping.reset(CreateFileMappingW(f->handle.get(), nullptr,
                                                PAGE_READONLY, 0, 0, nullptr));
     if (f->handle_mapping == nullptr) {
-      return JXL_FAILURE("Cannot create memory mapping (%s)", path);
+      return JPEGLI_FAILURE("Cannot create memory mapping (%s)", path);
     }
     f->ptr = MapViewOfFile(f->handle_mapping.get(), FILE_MAP_READ, 0, 0, 0);
     return f;
@@ -114,30 +114,30 @@ struct MemoryMappedFileImpl {
   void* ptr = nullptr;
 };
 
-}  // namespace jxl
+}  // namespace jpegli
 
 #else
 
-namespace jxl {
+namespace jpegli {
 
 struct MemoryMappedFileImpl {
   static StatusOr<std::unique_ptr<MemoryMappedFileImpl>> Init(
       const char* path) {
-    return JXL_FAILURE("Memory mapping not supported on this system");
+    return JPEGLI_FAILURE("Memory mapping not supported on this system");
   }
 
   const uint8_t* data() const { return nullptr; }
   size_t size() const { return 0; }
 };
 
-}  // namespace jxl
+}  // namespace jpegli
 
 #endif
 
-namespace jxl {
+namespace jpegli {
 
 StatusOr<MemoryMappedFile> MemoryMappedFile::Init(const char* path) {
-  JXL_ASSIGN_OR_RETURN(auto mmf, MemoryMappedFileImpl::Init(path));
+  JPEGLI_ASSIGN_OR_RETURN(auto mmf, MemoryMappedFileImpl::Init(path));
   MemoryMappedFile ret;
   ret.impl_ = std::move(mmf);
   return ret;
@@ -151,4 +151,4 @@ MemoryMappedFile& MemoryMappedFile::operator=(MemoryMappedFile&&) noexcept =
 
 const uint8_t* MemoryMappedFile::data() const { return impl_->data(); }
 size_t MemoryMappedFile::size() const { return impl_->size(); }
-}  // namespace jxl
+}  // namespace jpegli

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_ERROR_H_
-#define LIB_JPEGLI_ERROR_H_
+#ifndef JPEGLI_LIB_JPEGLI_ERROR_H_
+#define JPEGLI_LIB_JPEGLI_ERROR_H_
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -24,7 +24,7 @@ bool FormatString(char* buffer, const char* format, ...);
   jpegli::FormatString(cinfo->err->msg_parm.s, ("%s:%d: " format), __FILE__, \
                        __LINE__, ##__VA_ARGS__),                             \
       (*cinfo->err->error_exit)(reinterpret_cast<j_common_ptr>(cinfo)),      \
-      JXL_CRASH()
+      JPEGLI_CRASH()
 
 #define JPEGLI_WARN(format, ...)                                             \
   jpegli::FormatString(cinfo->err->msg_parm.s, ("%s:%d: " format), __FILE__, \
@@ -45,4 +45,4 @@ bool FormatString(char* buffer, const char* format, ...);
     }                                               \
   } while (0)
 
-#endif  // LIB_JPEGLI_ERROR_H_
+#endif  // JPEGLI_LIB_JPEGLI_ERROR_H_

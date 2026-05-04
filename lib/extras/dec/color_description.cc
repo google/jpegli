@@ -17,7 +17,7 @@
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding.h"
 
-namespace jxl {
+namespace jpegli {
 
 namespace {
 
@@ -27,41 +27,41 @@ struct EnumName {
   T value;
 };
 
-constexpr auto kJxlColorSpaceNames =
-    to_array<EnumName<JxlColorSpace>>({{"RGB", JXL_COLOR_SPACE_RGB},
-                                       {"Gra", JXL_COLOR_SPACE_GRAY},
-                                       {"XYB", JXL_COLOR_SPACE_XYB},
-                                       {"CS?", JXL_COLOR_SPACE_UNKNOWN}});
+constexpr auto kJpegliColorSpaceNames =
+    to_array<EnumName<JpegliColorSpace>>({{"RGB", JPEGLI_COLOR_SPACE_RGB},
+                                          {"Gra", JPEGLI_COLOR_SPACE_GRAY},
+                                          {"XYB", JPEGLI_COLOR_SPACE_XYB},
+                                          {"CS?", JPEGLI_COLOR_SPACE_UNKNOWN}});
 
-constexpr auto kJxlWhitePointNames =
-    to_array<EnumName<JxlWhitePoint>>({{"D65", JXL_WHITE_POINT_D65},
-                                       {"Cst", JXL_WHITE_POINT_CUSTOM},
-                                       {"EER", JXL_WHITE_POINT_E},
-                                       {"DCI", JXL_WHITE_POINT_DCI}});
+constexpr auto kJpegliWhitePointNames =
+    to_array<EnumName<JpegliWhitePoint>>({{"D65", JPEGLI_WHITE_POINT_D65},
+                                          {"Cst", JPEGLI_WHITE_POINT_CUSTOM},
+                                          {"EER", JPEGLI_WHITE_POINT_E},
+                                          {"DCI", JPEGLI_WHITE_POINT_DCI}});
 
-constexpr auto kJxlPrimariesNames =
-    to_array<EnumName<JxlPrimaries>>({{"SRG", JXL_PRIMARIES_SRGB},
-                                      {"Cst", JXL_PRIMARIES_CUSTOM},
-                                      {"202", JXL_PRIMARIES_2100},
-                                      {"DCI", JXL_PRIMARIES_P3}});
+constexpr auto kJpegliPrimariesNames =
+    to_array<EnumName<JpegliPrimaries>>({{"SRG", JPEGLI_PRIMARIES_SRGB},
+                                         {"Cst", JPEGLI_PRIMARIES_CUSTOM},
+                                         {"202", JPEGLI_PRIMARIES_2100},
+                                         {"DCI", JPEGLI_PRIMARIES_P3}});
 
-constexpr auto kJxlRenderingIntentNames =
-    to_array<EnumName<JxlRenderingIntent>>(
-        {{"Per", JXL_RENDERING_INTENT_PERCEPTUAL},
-         {"Rel", JXL_RENDERING_INTENT_RELATIVE},
-         {"Sat", JXL_RENDERING_INTENT_SATURATION},
-         {"Abs", JXL_RENDERING_INTENT_ABSOLUTE}});
+constexpr auto kJpegliRenderingIntentNames =
+    to_array<EnumName<JpegliRenderingIntent>>(
+        {{"Per", JPEGLI_RENDERING_INTENT_PERCEPTUAL},
+         {"Rel", JPEGLI_RENDERING_INTENT_RELATIVE},
+         {"Sat", JPEGLI_RENDERING_INTENT_SATURATION},
+         {"Abs", JPEGLI_RENDERING_INTENT_ABSOLUTE}});
 
-constexpr auto kJxlTransferFunctionNames =
-    to_array<EnumName<JxlTransferFunction>>(
-        {{"709", JXL_TRANSFER_FUNCTION_709},
-         {"TF?", JXL_TRANSFER_FUNCTION_UNKNOWN},
-         {"Lin", JXL_TRANSFER_FUNCTION_LINEAR},
-         {"SRG", JXL_TRANSFER_FUNCTION_SRGB},
-         {"PeQ", JXL_TRANSFER_FUNCTION_PQ},
-         {"DCI", JXL_TRANSFER_FUNCTION_DCI},
-         {"HLG", JXL_TRANSFER_FUNCTION_HLG},
-         {"", JXL_TRANSFER_FUNCTION_GAMMA}});
+constexpr auto kJpegliTransferFunctionNames =
+    to_array<EnumName<JpegliTransferFunction>>(
+        {{"709", JPEGLI_TRANSFER_FUNCTION_709},
+         {"TF?", JPEGLI_TRANSFER_FUNCTION_UNKNOWN},
+         {"Lin", JPEGLI_TRANSFER_FUNCTION_LINEAR},
+         {"SRG", JPEGLI_TRANSFER_FUNCTION_SRGB},
+         {"PeQ", JPEGLI_TRANSFER_FUNCTION_PQ},
+         {"DCI", JPEGLI_TRANSFER_FUNCTION_DCI},
+         {"HLG", JPEGLI_TRANSFER_FUNCTION_HLG},
+         {"", JPEGLI_TRANSFER_FUNCTION_GAMMA}});
 
 template <typename T, size_t N>
 Status ParseEnum(const std::string& token,
@@ -87,7 +87,7 @@ class Tokenizer {
     } else {
       *next = input_->substr(start_, end - start_);
     }
-    if (next->empty()) return JXL_FAILURE("Missing token");
+    if (next->empty()) return JPEGLI_FAILURE("Missing token");
     start_ = end + 1;
     return true;
   }
@@ -103,63 +103,63 @@ Status ParseDouble(const std::string& num, double* d) {
   errno = 0;
   *d = strtod(num.c_str(), &end);
   if (*d == 0.0 && end == num.c_str()) {
-    return JXL_FAILURE("Invalid double: %s", num.c_str());
+    return JPEGLI_FAILURE("Invalid double: %s", num.c_str());
   }
   if (std::isnan(*d)) {
-    return JXL_FAILURE("Invalid double: %s", num.c_str());
+    return JPEGLI_FAILURE("Invalid double: %s", num.c_str());
   }
   if (errno == ERANGE) {
-    return JXL_FAILURE("Double out of range: %s", num.c_str());
+    return JPEGLI_FAILURE("Double out of range: %s", num.c_str());
   }
   return true;
 }
 
 Status ParseDouble(Tokenizer* tokenizer, double* d) {
   std::string num;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&num));
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&num));
   return ParseDouble(num, d);
 }
 
-Status ParseColorSpace(Tokenizer* tokenizer, JxlColorEncoding* c) {
+Status ParseColorSpace(Tokenizer* tokenizer, JpegliColorEncoding* c) {
   std::string str;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&str));
-  JxlColorSpace cs;
-  if (ParseEnum(str, kJxlColorSpaceNames, &cs)) {
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&str));
+  JpegliColorSpace cs;
+  if (ParseEnum(str, kJpegliColorSpaceNames, &cs)) {
     c->color_space = cs;
     return true;
   }
 
-  return JXL_FAILURE("Unknown ColorSpace %s", str.c_str());
+  return JPEGLI_FAILURE("Unknown ColorSpace %s", str.c_str());
 }
 
-Status ParseWhitePoint(Tokenizer* tokenizer, JxlColorEncoding* c) {
-  if (c->color_space == JXL_COLOR_SPACE_XYB) {
+Status ParseWhitePoint(Tokenizer* tokenizer, JpegliColorEncoding* c) {
+  if (c->color_space == JPEGLI_COLOR_SPACE_XYB) {
     // Implicit white point.
-    c->white_point = JXL_WHITE_POINT_D65;
+    c->white_point = JPEGLI_WHITE_POINT_D65;
     return true;
   }
 
   std::string str;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&str));
-  if (ParseEnum(str, kJxlWhitePointNames, &c->white_point)) return true;
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&str));
+  if (ParseEnum(str, kJpegliWhitePointNames, &c->white_point)) return true;
 
   Tokenizer xy_tokenizer(&str, ';');
-  c->white_point = JXL_WHITE_POINT_CUSTOM;
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->white_point_xy + 0));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->white_point_xy + 1));
+  c->white_point = JPEGLI_WHITE_POINT_CUSTOM;
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->white_point_xy + 0));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->white_point_xy + 1));
   return true;
 }
 
-Status ParsePrimaries(Tokenizer* tokenizer, JxlColorEncoding* c) {
-  if (c->color_space == JXL_COLOR_SPACE_GRAY ||
-      c->color_space == JXL_COLOR_SPACE_XYB) {
+Status ParsePrimaries(Tokenizer* tokenizer, JpegliColorEncoding* c) {
+  if (c->color_space == JPEGLI_COLOR_SPACE_GRAY ||
+      c->color_space == JPEGLI_COLOR_SPACE_XYB) {
     // No primaries case.
     return true;
   }
 
   std::string str;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&str));
-  if (ParseEnum(str, kJxlPrimariesNames, &c->primaries)) return true;
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&str));
+  if (ParseEnum(str, kJpegliPrimariesNames, &c->primaries)) return true;
   if (str == "Ado") {
     c->primaries_red_xy[0] = 0.6400;
     c->primaries_red_xy[1] = 0.3300;
@@ -167,61 +167,62 @@ Status ParsePrimaries(Tokenizer* tokenizer, JxlColorEncoding* c) {
     c->primaries_green_xy[1] = 0.7100;
     c->primaries_blue_xy[0] = 0.1500;
     c->primaries_blue_xy[1] = 0.0600;
-    c->primaries = JXL_PRIMARIES_CUSTOM;
+    c->primaries = JPEGLI_PRIMARIES_CUSTOM;
     return true;
   }
 
   Tokenizer xy_tokenizer(&str, ';');
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_red_xy + 0));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_red_xy + 1));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_green_xy + 0));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_green_xy + 1));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_blue_xy + 0));
-  JXL_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_blue_xy + 1));
-  c->primaries = JXL_PRIMARIES_CUSTOM;
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_red_xy + 0));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_red_xy + 1));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_green_xy + 0));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_green_xy + 1));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_blue_xy + 0));
+  JPEGLI_RETURN_IF_ERROR(ParseDouble(&xy_tokenizer, c->primaries_blue_xy + 1));
+  c->primaries = JPEGLI_PRIMARIES_CUSTOM;
 
   return true;
 }
 
-Status ParseRenderingIntent(Tokenizer* tokenizer, JxlColorEncoding* c) {
+Status ParseRenderingIntent(Tokenizer* tokenizer, JpegliColorEncoding* c) {
   std::string str;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&str));
-  if (ParseEnum(str, kJxlRenderingIntentNames, &c->rendering_intent))
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&str));
+  if (ParseEnum(str, kJpegliRenderingIntentNames, &c->rendering_intent))
     return true;
 
-  return JXL_FAILURE("Invalid RenderingIntent %s\n", str.c_str());
+  return JPEGLI_FAILURE("Invalid RenderingIntent %s\n", str.c_str());
 }
 
-Status ParseTransferFunction(Tokenizer* tokenizer, JxlColorEncoding* c) {
-  if (c->color_space == JXL_COLOR_SPACE_XYB) {
+Status ParseTransferFunction(Tokenizer* tokenizer, JpegliColorEncoding* c) {
+  if (c->color_space == JPEGLI_COLOR_SPACE_XYB) {
     // Implicit TF.
-    c->transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+    c->transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
     c->gamma = 1 / 3.;
     return true;
   }
 
   std::string str;
-  JXL_RETURN_IF_ERROR(tokenizer->Next(&str));
-  if (ParseEnum(str, kJxlTransferFunctionNames, &c->transfer_function)) {
+  JPEGLI_RETURN_IF_ERROR(tokenizer->Next(&str));
+  if (ParseEnum(str, kJpegliTransferFunctionNames, &c->transfer_function)) {
     return true;
   }
   if (str == "Ado") {
-    c->transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+    c->transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
     c->gamma = 256.0 / 563.0;
     return true;
   }
   if (str[0] == 'g') {
-    JXL_RETURN_IF_ERROR(ParseDouble(str.substr(1), &c->gamma));
-    c->transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+    JPEGLI_RETURN_IF_ERROR(ParseDouble(str.substr(1), &c->gamma));
+    c->transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
     return true;
   }
 
-  return JXL_FAILURE("Invalid gamma %s", str.c_str());
+  return JPEGLI_FAILURE("Invalid gamma %s", str.c_str());
 }
 
 }  // namespace
 
-Status ParseDescription(const std::string& description, JxlColorEncoding* c) {
+Status ParseDescription(const std::string& description,
+                        JpegliColorEncoding* c) {
   *c = {};
   if (description == "sRGB") {
     return ParseDescription("RGB_D65_SRG_Rel_SRG", c);
@@ -235,13 +236,13 @@ Status ParseDescription(const std::string& description, JxlColorEncoding* c) {
     return ParseDescription("RGB_D65_202_Rel_HLG", c);
   } else {
     Tokenizer tokenizer(&description, '_');
-    JXL_RETURN_IF_ERROR(ParseColorSpace(&tokenizer, c));
-    JXL_RETURN_IF_ERROR(ParseWhitePoint(&tokenizer, c));
-    JXL_RETURN_IF_ERROR(ParsePrimaries(&tokenizer, c));
-    JXL_RETURN_IF_ERROR(ParseRenderingIntent(&tokenizer, c));
-    JXL_RETURN_IF_ERROR(ParseTransferFunction(&tokenizer, c));
+    JPEGLI_RETURN_IF_ERROR(ParseColorSpace(&tokenizer, c));
+    JPEGLI_RETURN_IF_ERROR(ParseWhitePoint(&tokenizer, c));
+    JPEGLI_RETURN_IF_ERROR(ParsePrimaries(&tokenizer, c));
+    JPEGLI_RETURN_IF_ERROR(ParseRenderingIntent(&tokenizer, c));
+    JPEGLI_RETURN_IF_ERROR(ParseTransferFunction(&tokenizer, c));
   }
   return true;
 }
 
-}  // namespace jxl
+}  // namespace jpegli

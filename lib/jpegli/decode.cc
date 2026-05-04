@@ -126,10 +126,10 @@ void InitProgressMonitor(j_decompress_ptr cinfo, bool coef_only) {
     cinfo->progress->total_passes = 1;
   } else {
     int input_passes = !cinfo->buffered_image && m->is_multiscan_ ? 1 : 0;
-    bool two_pass_quant = FROM_JXL_BOOL(cinfo->quantize_colors) &&
+    bool two_pass_quant = FROM_JPEGLI_BOOL(cinfo->quantize_colors) &&
                           (cinfo->colormap != nullptr) &&
-                          FROM_JXL_BOOL(cinfo->two_pass_quantize) &&
-                          FROM_JXL_BOOL(cinfo->enable_2pass_quant);
+                          FROM_JPEGLI_BOOL(cinfo->two_pass_quantize) &&
+                          FROM_JPEGLI_BOOL(cinfo->enable_2pass_quant);
     cinfo->progress->total_passes = input_passes + (two_pass_quant ? 2 : 1);
   }
   cinfo->progress->completed_passes = 0;
@@ -337,8 +337,8 @@ int ConsumeInput(j_decompress_ptr cinfo) {
       }
     }
     if (status == kHandleRestart) {
-      JXL_DASSERT(m->input_buffer_.size() <=
-                  m->input_buffer_pos_ + src->bytes_in_buffer);
+      JPEGLI_DASSERT(m->input_buffer_.size() <=
+                     m->input_buffer_pos_ + src->bytes_in_buffer);
       m->input_buffer_.clear();
       m->input_buffer_pos_ = 0;
       if (cinfo->unread_marker == 0xd0 + m->next_restart_marker_) {
@@ -358,8 +358,8 @@ int ConsumeInput(j_decompress_ptr cinfo) {
       continue;
     }
     if (status == kHandleMarkerProcessor) {
-      JXL_DASSERT(m->input_buffer_.size() <=
-                  m->input_buffer_pos_ + src->bytes_in_buffer);
+      JPEGLI_DASSERT(m->input_buffer_.size() <=
+                     m->input_buffer_pos_ + src->bytes_in_buffer);
       m->input_buffer_.clear();
       m->input_buffer_pos_ = 0;
       if (!(*GetMarkerProcessor(cinfo))(cinfo)) {
@@ -372,7 +372,7 @@ int ConsumeInput(j_decompress_ptr cinfo) {
       break;
     }
     if (m->input_buffer_.empty()) {
-      JXL_DASSERT(m->input_buffer_pos_ == 0);
+      JPEGLI_DASSERT(m->input_buffer_pos_ == 0);
       m->input_buffer_.assign(src->next_input_byte,
                               src->next_input_byte + src->bytes_in_buffer);
     }
@@ -785,20 +785,20 @@ boolean jpegli_has_multiple_scans(j_decompress_ptr cinfo) {
     JPEGLI_ERROR("jpegli_has_multiple_scans: unexpected state %d",
                  cinfo->global_state);
   }
-  return TO_JXL_BOOL(cinfo->master->is_multiscan_);
+  return TO_JPEGLI_BOOL(cinfo->master->is_multiscan_);
 }
 
 boolean jpegli_input_complete(j_decompress_ptr cinfo) {
-  return TO_JXL_BOOL(cinfo->master->found_eoi_);
+  return TO_JPEGLI_BOOL(cinfo->master->found_eoi_);
 }
 
 boolean jpegli_start_decompress(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   if (cinfo->global_state == jpegli::kDecHeaderDone) {
     m->streaming_mode_ = !m->is_multiscan_ &&
-                         !FROM_JXL_BOOL(cinfo->buffered_image) &&
-                         (!FROM_JXL_BOOL(cinfo->quantize_colors) ||
-                          !FROM_JXL_BOOL(cinfo->two_pass_quantize));
+                         !FROM_JPEGLI_BOOL(cinfo->buffered_image) &&
+                         (!FROM_JPEGLI_BOOL(cinfo->quantize_colors) ||
+                          !FROM_JPEGLI_BOOL(cinfo->two_pass_quantize));
     jpegli::AllocateCoefficientBuffer(cinfo);
     jpegli_calc_output_dimensions(cinfo);
     jpegli::PrepareForScan(cinfo);

@@ -49,7 +49,7 @@ source $OPT/emsdk/emsdk_env.sh
 # the node binary with a version which supports SIMD:
 echo "NODE_JS='/path/to/node_binary'" >> $EMSDK/.emscripten
 
-# Assuming you are in the root level of the cloned libjxl repo,
+# Assuming you are in the root level of the cloned jpegli repo,
 # either build with regular WASM:
 BUILD_TARGET=wasm32 emconfigure ./ci.sh release
 # or with SIMD WASM:

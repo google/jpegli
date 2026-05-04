@@ -25,7 +25,7 @@
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -182,31 +182,31 @@ void GenerateMetadata(const PackedPixelFile& ppf, std::vector<uint8_t>* out) {
     ebps->Add(ppf.info.exponent_bits_per_sample);
     for (const auto& eci : ppf.extra_channels_info) {
       switch (eci.ec_info.type) {
-        case JXL_CHANNEL_ALPHA: {
+        case JPEGLI_CHANNEL_ALPHA: {
           ectype->Add(std::string("Alpha"));
           break;
         }
-        case JXL_CHANNEL_DEPTH: {
+        case JPEGLI_CHANNEL_DEPTH: {
           ectype->Add(std::string("Depth"));
           break;
         }
-        case JXL_CHANNEL_SPOT_COLOR: {
+        case JPEGLI_CHANNEL_SPOT_COLOR: {
           ectype->Add(std::string("SpotColor"));
           break;
         }
-        case JXL_CHANNEL_SELECTION_MASK: {
+        case JPEGLI_CHANNEL_SELECTION_MASK: {
           ectype->Add(std::string("SelectionMask"));
           break;
         }
-        case JXL_CHANNEL_BLACK: {
+        case JPEGLI_CHANNEL_BLACK: {
           ectype->Add(std::string("Black"));
           break;
         }
-        case JXL_CHANNEL_CFA: {
+        case JPEGLI_CHANNEL_CFA: {
           ectype->Add(std::string("CFA"));
           break;
         }
-        case JXL_CHANNEL_THERMAL: {
+        case JPEGLI_CHANNEL_THERMAL: {
           ectype->Add(std::string("Thermal"));
           break;
         }
@@ -264,14 +264,14 @@ bool WriteFrameToNPYArray(size_t xsize, size_t ysize, const PackedFrame& frame,
         size_t sample_size = color.pixel_stride();
         size_t offset = y * color.stride + x * sample_size;
         uint8_t* pixels = reinterpret_cast<uint8_t*>(color.pixels());
-        JXL_ENSURE(offset + sample_size <= color.pixels_size);
+        JPEGLI_ENSURE(offset + sample_size <= color.pixels_size);
         Append(out, pixels + offset, sample_size);
       }
       for (const auto& ec : frame.extra_channels) {
         size_t sample_size = ec.pixel_stride();
         size_t offset = y * ec.stride + x * sample_size;
         uint8_t* pixels = reinterpret_cast<uint8_t*>(ec.pixels());
-        JXL_ENSURE(offset + sample_size <= ec.pixels_size);
+        JPEGLI_ENSURE(offset + sample_size <= ec.pixels_size);
         Append(out, pixels + offset, sample_size);
       }
     }
@@ -298,7 +298,7 @@ class NumPyEncoder : public Encoder {
  public:
   Status Encode(const PackedPixelFile& ppf, EncodedImage* encoded_image,
                 ThreadPool* pool) const override {
-    JXL_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
+    JPEGLI_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
     GenerateMetadata(ppf, &encoded_image->metadata);
     encoded_image->bitstreams.emplace_back();
     if (!WriteNPYArray(ppf, &encoded_image->bitstreams.back())) {
@@ -316,11 +316,11 @@ class NumPyEncoder : public Encoder {
     }
     return true;
   }
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {1, 3}) {
-      formats.push_back(JxlPixelFormat{num_channels, JXL_TYPE_FLOAT,
-                                       JXL_LITTLE_ENDIAN, /*align=*/0});
+      formats.push_back(JpegliPixelFormat{num_channels, JPEGLI_TYPE_FLOAT,
+                                          JPEGLI_LITTLE_ENDIAN, /*align=*/0});
     }
     return formats;
   }
@@ -330,8 +330,8 @@ class NumPyEncoder : public Encoder {
 }  // namespace
 
 std::unique_ptr<Encoder> GetNumPyEncoder() {
-  return jxl::make_unique<NumPyEncoder>();
+  return jpegli::make_unique<NumPyEncoder>();
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli

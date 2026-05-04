@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_SSIMULACRA2_H_
-#define TOOLS_SSIMULACRA2_H_
+#ifndef JPEGLI_TOOLS_SSIMULACRA2_H_
+#define JPEGLI_TOOLS_SSIMULACRA2_H_
 
 #include <vector>
 
@@ -25,8 +25,8 @@ struct Msssim {
 
 // Computes the SSIMULACRA 2 score between reference image 'orig' and
 // distorted image 'distorted'.
-jxl::StatusOr<Msssim> ComputeSSIMULACRA2(
-    const jxl::extras::PackedPixelFile& orig,
-    const jxl::extras::PackedPixelFile& distorted);
+jpegli::StatusOr<Msssim> ComputeSSIMULACRA2(
+    const jpegli::extras::PackedPixelFile& orig,
+    const jpegli::extras::PackedPixelFile& distorted);
 
-#endif  // TOOLS_SSIMULACRA2_H_
+#endif  // JPEGLI_TOOLS_SSIMULACRA2_H_

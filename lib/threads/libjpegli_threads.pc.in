@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@PKGCONFIG_TARGET_LIBS@
+includedir=@PKGCONFIG_TARGET_INCLUDES@
+
+Name: libjpegli_threads
+Description: JPEGLI multi-thread runner using std::threads.
+Version: @JPEGLI_LIBRARY_VERSION@
+@JPEGLI_REQUIRES_TYPE@: @JPEGLI_THREADS_LIBRARY_REQUIRES@
+Libs: -L${libdir} -ljpegli_threads
+Libs.private: -lm
+Cflags: -I${includedir}
+Cflags.private: -DJPEGLI_THREADS_STATIC_DEFINE

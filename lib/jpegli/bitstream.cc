@@ -278,12 +278,12 @@ void WriteScanHeader(j_compress_ptr cinfo, int scan_index) {
   EncodeSOS(cinfo, scan_index);
 }
 
-void WriteBlock(const int32_t* JXL_RESTRICT symbols,
-                const int32_t* JXL_RESTRICT extra_bits, const int num_nonzeros,
-                const bool emit_eob,
-                const HuffmanCodeTable* JXL_RESTRICT dc_code,
-                const HuffmanCodeTable* JXL_RESTRICT ac_code,
-                JpegBitWriter* JXL_RESTRICT bw) {
+void WriteBlock(const int32_t* JPEGLI_RESTRICT symbols,
+                const int32_t* JPEGLI_RESTRICT extra_bits,
+                const int num_nonzeros, const bool emit_eob,
+                const HuffmanCodeTable* JPEGLI_RESTRICT dc_code,
+                const HuffmanCodeTable* JPEGLI_RESTRICT ac_code,
+                JpegBitWriter* JPEGLI_RESTRICT bw) {
   int symbol = symbols[0];
   WriteBits(bw, dc_code->depth[symbol], dc_code->code[symbol] | extra_bits[0]);
   for (int i = 1; i < num_nonzeros; ++i) {
@@ -310,7 +310,7 @@ void WriteBlock(const int32_t* JXL_RESTRICT symbols,
 
 namespace {
 
-JXL_INLINE void EmitMarker(JpegBitWriter* bw, int marker) {
+JPEGLI_INLINE void EmitMarker(JpegBitWriter* bw, int marker) {
   bw->data[bw->pos++] = 0xFF;
   bw->data[bw->pos++] = marker;
 }

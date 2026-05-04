@@ -14,15 +14,15 @@
 // IWYU pragma: no_include "OpenEXRConfig.h"
 #include "lib/extras/enc/encode.h"
 
-#if !JPEGXL_ENABLE_EXR
+#if !JPEGLI_ENABLE_EXR
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 std::unique_ptr<Encoder> GetEXREncoder() { return nullptr; }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_EXR
+#else  // JPEGLI_ENABLE_EXR
 
 #include <ImathVec.h>
 #include <ImfIO.h>
@@ -49,7 +49,7 @@ std::unique_ptr<Encoder> GetEXREncoder() { return nullptr; }
 #include "lib/extras/codestream_header.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -105,48 +105,49 @@ float LoadLEFloat(const uint8_t* p) {
   return result;
 }
 
-Status EncodeImageEXR(const PackedImage& image, const JxlBasicInfo& info,
-                      const JxlColorEncoding& c_enc, ThreadPool* pool,
+Status EncodeImageEXR(const PackedImage& image, const JpegliBasicInfo& info,
+                      const JpegliColorEncoding& c_enc, ThreadPool* pool,
                       std::vector<uint8_t>* bytes) {
   OpenEXR::setGlobalThreadCount(0);
 
   const size_t xsize = info.xsize;
   const size_t ysize = info.ysize;
   const bool has_alpha = info.alpha_bits > 0;
-  const bool alpha_is_premultiplied = FROM_JXL_BOOL(info.alpha_premultiplied);
+  const bool alpha_is_premultiplied =
+      FROM_JPEGLI_BOOL(info.alpha_premultiplied);
 
   if (info.num_color_channels != 3) {
-    return JXL_FAILURE("OpenEXR encoding: expected 3 color channels, got %u",
-                       static_cast<unsigned>(info.num_color_channels));
+    return JPEGLI_FAILURE("OpenEXR encoding: expected 3 color channels, got %u",
+                          static_cast<unsigned>(info.num_color_channels));
   }
-  if (c_enc.color_space != JXL_COLOR_SPACE_RGB &&
-      c_enc.color_space != JXL_COLOR_SPACE_GRAY) {
-    return JXL_FAILURE(
+  if (c_enc.color_space != JPEGLI_COLOR_SPACE_RGB &&
+      c_enc.color_space != JPEGLI_COLOR_SPACE_GRAY) {
+    return JPEGLI_FAILURE(
         "OpenEXR encoding: expected RGB (%d) or grayscale (%d) colorspace, got "
         "%d",
-        static_cast<int>(JXL_COLOR_SPACE_RGB),
-        static_cast<int>(JXL_COLOR_SPACE_GRAY),
+        static_cast<int>(JPEGLI_COLOR_SPACE_RGB),
+        static_cast<int>(JPEGLI_COLOR_SPACE_GRAY),
         static_cast<int>(c_enc.color_space));
   }
-  if (c_enc.transfer_function != JXL_TRANSFER_FUNCTION_LINEAR) {
-    return JXL_FAILURE(
+  if (c_enc.transfer_function != JPEGLI_TRANSFER_FUNCTION_LINEAR) {
+    return JPEGLI_FAILURE(
         "OpenEXR encoding: expected linear transfer function (%d), got %d",
-        static_cast<int>(JXL_TRANSFER_FUNCTION_LINEAR),
+        static_cast<int>(JPEGLI_TRANSFER_FUNCTION_LINEAR),
         static_cast<int>(c_enc.transfer_function));
   }
 
   const size_t num_channels = 3 + (has_alpha ? 1 : 0);
-  const JxlPixelFormat format = image.format;
+  const JpegliPixelFormat format = image.format;
 
-  if (format.data_type != JXL_TYPE_FLOAT) {
-    return JXL_FAILURE("Unsupported pixel format for OpenEXR output");
+  if (format.data_type != JPEGLI_TYPE_FLOAT) {
+    return JPEGLI_FAILURE("Unsupported pixel format for OpenEXR output");
   }
 
   const uint8_t* in = static_cast<const uint8_t*>(image.pixels());
   size_t in_stride = num_channels * 4 * xsize;
 
   OpenEXR::Header header(xsize, ysize);
-  if (c_enc.color_space == JXL_COLOR_SPACE_RGB) {
+  if (c_enc.color_space == JPEGLI_COLOR_SPACE_RGB) {
     OpenEXR::Chromaticities chromaticities;
     chromaticities.red =
         Imath::V2f(c_enc.primaries_red_xy[0], c_enc.primaries_red_xy[1]);
@@ -161,7 +162,7 @@ Status EncodeImageEXR(const PackedImage& image, const JxlBasicInfo& info,
   OpenEXR::addWhiteLuminance(header, info.intensity_target);
 
   auto loadFloat =
-      format.endianness == JXL_BIG_ENDIAN ? LoadBEFloat : LoadLEFloat;
+      format.endianness == JPEGLI_BIG_ENDIAN ? LoadBEFloat : LoadLEFloat;
   auto loadAlpha =
       has_alpha ? loadFloat : [](const uint8_t* p) -> float { return 1.0f; };
 
@@ -171,7 +172,7 @@ Status EncodeImageEXR(const PackedImage& image, const JxlBasicInfo& info,
     InMemoryOStream os(bytes);
     OpenEXR::RgbaOutputFile output(
         os, header,
-        c_enc.color_space == JXL_COLOR_SPACE_GRAY
+        c_enc.color_space == JPEGLI_COLOR_SPACE_GRAY
             ? (has_alpha ? OpenEXR::WRITE_YA : OpenEXR::WRITE_Y)
             : (has_alpha ? OpenEXR::WRITE_RGBA : OpenEXR::WRITE_RGB));
     // How many rows to write at once. Again, the OpenEXR documentation
@@ -186,7 +187,7 @@ Status EncodeImageEXR(const PackedImage& image, const JxlBasicInfo& info,
                             /*xStride=*/1, /*yStride=*/xsize);
       for (size_t y = start_y; y <= end_y; ++y) {
         const uint8_t* in_row = &in[(y - start_y) * in_stride];
-        OpenEXR::Rgba* const JXL_RESTRICT row_data =
+        OpenEXR::Rgba* const JPEGLI_RESTRICT row_data =
             &output_rows[(y - start_y) * xsize];
         for (size_t x = 0; x < xsize; ++x) {
           const uint8_t* in_pixel = &in_row[4 * num_channels * x];
@@ -210,15 +211,16 @@ Status EncodeImageEXR(const PackedImage& image, const JxlBasicInfo& info,
 }
 
 class EXREncoder : public Encoder {
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {3, 4}) {
-      for (const JxlDataType data_type : {JXL_TYPE_FLOAT}) {
-        for (JxlEndianness endianness : {JXL_BIG_ENDIAN, JXL_LITTLE_ENDIAN}) {
-          formats.push_back(JxlPixelFormat{/*num_channels=*/num_channels,
-                                           /*data_type=*/data_type,
-                                           /*endianness=*/endianness,
-                                           /*align=*/0});
+      for (const JpegliDataType data_type : {JPEGLI_TYPE_FLOAT}) {
+        for (JpegliEndianness endianness :
+             {JPEGLI_BIG_ENDIAN, JPEGLI_LITTLE_ENDIAN}) {
+          formats.push_back(JpegliPixelFormat{/*num_channels=*/num_channels,
+                                              /*data_type=*/data_type,
+                                              /*endianness=*/endianness,
+                                              /*align=*/0});
         }
       }
     }
@@ -226,16 +228,16 @@ class EXREncoder : public Encoder {
   }
   Status Encode(const PackedPixelFile& ppf, EncodedImage* encoded_image,
                 ThreadPool* pool) const override {
-    JXL_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
+    JPEGLI_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
     encoded_image->icc.clear();
     encoded_image->bitstreams.clear();
     encoded_image->bitstreams.reserve(ppf.frames.size());
     for (const auto& frame : ppf.frames) {
-      JXL_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
+      JPEGLI_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
       encoded_image->bitstreams.emplace_back();
-      JXL_RETURN_IF_ERROR(EncodeImageEXR(frame.color, ppf.info,
-                                         ppf.color_encoding, pool,
-                                         &encoded_image->bitstreams.back()));
+      JPEGLI_RETURN_IF_ERROR(EncodeImageEXR(frame.color, ppf.info,
+                                            ppf.color_encoding, pool,
+                                            &encoded_image->bitstreams.back()));
     }
     return true;
   }
@@ -244,10 +246,10 @@ class EXREncoder : public Encoder {
 }  // namespace
 
 std::unique_ptr<Encoder> GetEXREncoder() {
-  return jxl::make_unique<EXREncoder>();
+  return jpegli::make_unique<EXREncoder>();
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_EXR
+#endif  // JPEGLI_ENABLE_EXR

@@ -9,16 +9,16 @@
 
 #include "lib/base/memory_manager.h"
 
-namespace jxl {
+namespace jpegli {
 namespace test {
 
 namespace {
 void* TestAlloc(void* /* opaque*/, size_t size) { return malloc(size); }
 void TestFree(void* /* opaque*/, void* address) { free(address); }
-JxlMemoryManager kMemoryManager{nullptr, &TestAlloc, &TestFree};
+JpegliMemoryManager kMemoryManager{nullptr, &TestAlloc, &TestFree};
 }  // namespace
 
-JxlMemoryManager* MemoryManager() { return &kMemoryManager; };
+JpegliMemoryManager* MemoryManager() { return &kMemoryManager; };
 
 }  // namespace test
-}  // namespace jxl
+}  // namespace jpegli

@@ -56,7 +56,6 @@ jobs:
           cmake \
           doxygen \
           graphviz \
-          libbrotli-dev \
           libgif-dev \
           libgtest-dev \
           libjpeg-dev \
@@ -79,14 +78,12 @@ jobs:
       run: |
         SKIP_TEST=1 \
         ./ci.sh release \
-          -DJPEGXL_DEP_LICENSE_DIR=/usr/share/doc \
-          -DJPEGXL_STATIC=ON \
+          -DJPEGLI_DEP_LICENSE_DIR=/usr/share/doc \
+          -DJPEGLI_STATIC=ON \
           -DBUILD_TESTING=OFF \
-          -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
-          -DJPEGXL_ENABLE_VIEWERS=OFF \
-          -DJPEGXL_ENABLE_PLUGINS=OFF \
-          -DJPEGXL_ENABLE_OPENEXR=OFF \
-          -DJPEGXL_ENABLE_DEVTOOLS=OFF \
+          -DJPEGLI_ENABLE_JPEGLI_LIBJPEG=OFF \
+          -DJPEGLI_ENABLE_OPENEXR=OFF \
+          -DJPEGLI_ENABLE_DEVTOOLS=OFF \
 
     - name: Package release tarball
       run: |
@@ -141,7 +138,7 @@ jobs:
       id: 'env'
       run: |
         matrix_os=${{ matrix.os }}
-        artifact_name="jxl-debs-amd64-${matrix_os/:/-}"
+        artifact_name="jpegli-debs-amd64-${matrix_os/:/-}"
         echo ${artifact_name}
         echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
 
@@ -205,10 +202,10 @@ jobs:
         ./ci.sh debian_build highway
         dpkg -i build/debs/libhwy-dev_*_amd64.deb
 
-    - name: Build libjxl
+    - name: Build libjpegli
       run: |
         apt build-dep -y .
-        EXCLUDE_DEBIAN_PACKAGES="${{ matrix.exclude_debian_packages || '' }}" ./ci.sh debian_build jpeg-xl
+        EXCLUDE_DEBIAN_PACKAGES="${{ matrix.exclude_debian_packages || '' }}" ./ci.sh debian_build jpegli
 
     - name: Stats
       run: |
@@ -219,12 +216,12 @@ jobs:
       with:
         name: ${{ steps.env.outputs.artifact_name }}
         path: |
-          build/debs/*jxl*.*
+          build/debs/*jpegli*.*
 
     - name: Package release tarball
       if: github.event_name == 'release'
       run: |
-        (cd build/debs/; find -maxdepth 1 -name '*jxl*.*') | \
+        (cd build/debs/; find -maxdepth 1 -name '*jpegli*.*') | \
         tar -zcvf release_file.tar.gz -C build/debs/ -T -
         ln -s release_file.tar.gz \
           ${{ steps.env.outputs.artifact_name }}-${{ github.event.release.tag_name }}.tar.gz
@@ -324,18 +321,16 @@ jobs:
         set -x
         mkdir build
         cmake -Bbuild -H. ${{ matrix.arch }} \
-          -DJPEGXL_STATIC=${{ matrix.static || 'ON'}} \
-          -DJPEGXL_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
+          -DJPEGLI_STATIC=${{ matrix.static || 'ON'}} \
+          -DJPEGLI_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
           -DBUILD_TESTING=OFF \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DCMAKE_INSTALL_PREFIX=`pwd`/${PREFIX} \
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
-          -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
-          -DJPEGXL_ENABLE_OPENEXR=OFF \
-          -DJPEGXL_ENABLE_PLUGINS=OFF \
-          -DJPEGXL_ENABLE_TCMALLOC=OFF \
-          -DJPEGXL_ENABLE_VIEWERS=OFF \
-          -DJPEGXL_ENABLE_DEVTOOLS=${{ matrix.tools || 'ON'}} \
+          -DJPEGLI_ENABLE_JPEGLI_LIBJPEG=OFF \
+          -DJPEGLI_ENABLE_OPENEXR=OFF \
+          -DJPEGLI_ENABLE_TCMALLOC=OFF \
+          -DJPEGLI_ENABLE_DEVTOOLS=${{ matrix.tools || 'ON'}} \
           -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
         #
     - name: Build

@@ -35,8 +35,7 @@
 #include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 struct JPEGArgs {
   std::string base_quant_fn;
@@ -164,7 +163,7 @@ class JPEGCodec : public ImageCodec {
 
   Status Compress(const std::string& filename, const PackedPixelFile& ppf,
                   ThreadPool* pool, std::vector<uint8_t>* compressed,
-                  jpegxl::tools::SpeedStats* speed_stats) override {
+                  jpegli_tools::SpeedStats* speed_stats) override {
     if (jpeg_encoder_.find("cjpeg") != std::string::npos) {
 // Not supported on Windows due to Linux-specific functions.
 // Not supported in Android NDK before API 28.
@@ -175,12 +174,12 @@ class JPEGCodec : public ImageCodec {
       TemporaryFile encoded_file(basename, "jpg");
       std::string in_filename;
       std::string encoded_filename;
-      JXL_RETURN_IF_ERROR(in_file.GetFileName(&in_filename));
-      JXL_RETURN_IF_ERROR(encoded_file.GetFileName(&encoded_filename));
-      jxl::extras::EncodedImage encoded;
-      JXL_RETURN_IF_ERROR(
-          jxl::extras::GetPNMEncoder()->Encode(ppf, &encoded, pool));
-      JXL_RETURN_IF_ERROR(WriteFile(in_filename, encoded.bitstreams[0]));
+      JPEGLI_RETURN_IF_ERROR(in_file.GetFileName(&in_filename));
+      JPEGLI_RETURN_IF_ERROR(encoded_file.GetFileName(&encoded_filename));
+      jpegli::extras::EncodedImage encoded;
+      JPEGLI_RETURN_IF_ERROR(
+          jpegli::extras::GetPNMEncoder()->Encode(ppf, &encoded, pool));
+      JPEGLI_RETURN_IF_ERROR(WriteFile(in_filename, encoded.bitstreams[0]));
       std::string compress_command = jpeg_encoder_;
       std::vector<std::string> arguments;
       arguments.emplace_back("-outfile");
@@ -193,23 +192,23 @@ class JPEGCodec : public ImageCodec {
       } else if (chroma_subsampling_ == "420") {
         arguments.emplace_back("2x2");
       } else if (!chroma_subsampling_.empty()) {
-        return JXL_FAILURE("Unsupported chroma subsampling");
+        return JPEGLI_FAILURE("Unsupported chroma subsampling");
       }
       arguments.emplace_back("-optimize");
       arguments.push_back(in_filename);
-      const double start = jxl::Now();
-      JXL_RETURN_IF_ERROR(RunCommand(compress_command, arguments, false));
-      const double end = jxl::Now();
+      const double start = jpegli::Now();
+      JPEGLI_RETURN_IF_ERROR(RunCommand(compress_command, arguments, false));
+      const double end = jpegli::Now();
       speed_stats->NotifyElapsed(end - start);
       return ReadFile(encoded_filename, compressed);
 #else
-      return JXL_FAILURE("Not supported on this build");
+      return JPEGLI_FAILURE("Not supported on this build");
 #endif
     }
 
     double elapsed = 0.0;
     if (jpeg_encoder_ == "jpegli") {
-      jxl::extras::JpegSettings settings;
+      jpegli::extras::JpegSettings settings;
       settings.xyb = xyb_mode_;
       if (!xyb_mode_) {
         settings.use_std_quant_tables = use_std_tables_;
@@ -239,15 +238,15 @@ class JPEGCodec : public ImageCodec {
       settings.libjpeg_quality = libjpeg_quality_;
       settings.libjpeg_chroma_subsampling = libjpeg_chroma_subsampling_;
       settings.optimize_coding = !fix_codes_;
-      const double start = jxl::Now();
-      JXL_RETURN_IF_ERROR(
-          jxl::extras::EncodeJpeg(ppf, settings, pool, compressed));
-      const double end = jxl::Now();
+      const double start = jpegli::Now();
+      JPEGLI_RETURN_IF_ERROR(
+          jpegli::extras::EncodeJpeg(ppf, settings, pool, compressed));
+      const double end = jpegli::Now();
       elapsed = end - start;
     } else {
-      jxl::extras::EncodedImage encoded;
-      std::unique_ptr<jxl::extras::Encoder> encoder =
-          jxl::extras::GetJPEGEncoder();
+      jpegli::extras::EncodedImage encoded;
+      std::unique_ptr<jpegli::extras::Encoder> encoder =
+          jpegli::extras::GetJPEGEncoder();
       if (!encoder) {
         fprintf(stderr, "libjpeg codec is not supported\n");
         return false;
@@ -288,9 +287,9 @@ class JPEGCodec : public ImageCodec {
       SET_ENCODER_ARG(search_tolerance);
       SET_ENCODER_ARG(search_first_iter_slope);
       SET_ENCODER_ARG(search_max_iters);
-      const double start = jxl::Now();
-      JXL_RETURN_IF_ERROR(encoder->Encode(ppf, &encoded, pool));
-      const double end = jxl::Now();
+      const double start = jpegli::Now();
+      JPEGLI_RETURN_IF_ERROR(encoder->Encode(ppf, &encoded, pool));
+      const double end = jpegli::Now();
       elapsed = end - start;
       *compressed = encoded.bitstreams.back();
     }
@@ -300,28 +299,28 @@ class JPEGCodec : public ImageCodec {
 
   Status Decompress(const std::string& filename,
                     const Span<const uint8_t> compressed, ThreadPool* pool,
-                    jxl::extras::PackedPixelFile* ppf,
-                    jpegxl::tools::SpeedStats* speed_stats) override {
+                    jpegli::extras::PackedPixelFile* ppf,
+                    jpegli_tools::SpeedStats* speed_stats) override {
     if (jpeg_decoder_ == "jpegli") {
       std::vector<uint8_t> jpeg_bytes(compressed.data(),
                                       compressed.data() + compressed.size());
-      const double start = jxl::Now();
-      jxl::extras::JpegDecompressParams dparams;
+      const double start = jpegli::Now();
+      jpegli::extras::JpegDecompressParams dparams;
       dparams.output_data_type =
-          bitdepth_ > 8 ? JXL_TYPE_UINT16 : JXL_TYPE_UINT8;
+          bitdepth_ > 8 ? JPEGLI_TYPE_UINT16 : JPEGLI_TYPE_UINT8;
       dparams.num_colors = num_colors_;
-      JXL_RETURN_IF_ERROR(
-          jxl::extras::DecodeJpeg(jpeg_bytes, dparams, pool, ppf));
-      const double end = jxl::Now();
+      JPEGLI_RETURN_IF_ERROR(
+          jpegli::extras::DecodeJpeg(jpeg_bytes, dparams, pool, ppf));
+      const double end = jpegli::Now();
       speed_stats->NotifyElapsed(end - start);
     } else {
-      const double start = jxl::Now();
-      jxl::extras::JPGDecompressParams dparams;
+      const double start = jpegli::Now();
+      jpegli::extras::JPGDecompressParams dparams;
       dparams.num_colors = num_colors_;
-      JXL_RETURN_IF_ERROR(
-          jxl::extras::DecodeImageJPG(compressed, jxl::extras::ColorHints(),
-                                      ppf, /*constraints=*/nullptr, &dparams));
-      const double end = jxl::Now();
+      JPEGLI_RETURN_IF_ERROR(jpegli::extras::DecodeImageJPG(
+          compressed, jpegli::extras::ColorHints(), ppf,
+          /*constraints=*/nullptr, &dparams));
+      const double end = jpegli::Now();
       speed_stats->NotifyElapsed(end - start);
     }
     return true;
@@ -350,5 +349,4 @@ ImageCodec* CreateNewJPEGCodec(const BenchmarkArgs& args) {
   return new JPEGCodec(args);
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

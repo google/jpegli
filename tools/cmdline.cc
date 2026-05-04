@@ -13,8 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 void CommandLineParser::PrintHelp() const {
   // Use stdout, not stderr, so help can easily be grepped.
@@ -117,5 +116,4 @@ void CommandLineParser::VerbosePrintf(int min_verbosity, const char* format,
   va_end(args);
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

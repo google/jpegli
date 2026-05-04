@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_INPUT_H_
-#define LIB_JPEGLI_INPUT_H_
+#ifndef JPEGLI_LIB_JPEGLI_INPUT_H_
+#define JPEGLI_LIB_JPEGLI_INPUT_H_
 
 #include "lib/jpegli/common.h"
 
@@ -15,4 +15,4 @@ void ChooseInputMethod(j_compress_ptr cinfo);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_INPUT_H_
+#endif  // JPEGLI_LIB_JPEGLI_INPUT_H_

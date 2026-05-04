@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef TOOLS_TRACKING_MEMORY_MANAGER_H_
-#define TOOLS_TRACKING_MEMORY_MANAGER_H_
+#ifndef JPEGLI_TOOLS_TRACKING_MEMORY_MANAGER_H_
+#define JPEGLI_TOOLS_TRACKING_MEMORY_MANAGER_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -15,8 +15,7 @@
 #include "lib/base/memory_manager.h"
 #include "lib/base/status.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 const uint64_t kGiB = 1u << 30;
 
@@ -24,11 +23,11 @@ class TrackingMemoryManager {
  public:
   explicit TrackingMemoryManager(uint64_t cap = 0, uint64_t total_cap = 0);
 
-  // void setInner(JxlMemoryManager* inner) { inner_ = inner; }
+  // void setInner(JpegliMemoryManager* inner) { inner_ = inner; }
 
-  JxlMemoryManager* get() { return &outer_; }
+  JpegliMemoryManager* get() { return &outer_; }
 
-  jxl::Status Reset();
+  jpegli::Status Reset();
 
   bool seen_oom = false;
   uint64_t max_bytes_in_use = 0;
@@ -46,12 +45,11 @@ class TrackingMemoryManager {
   uint64_t total_cap_;
   uint64_t bytes_in_use_ = 0;
   uint64_t num_allocations_ = 0;
-  JxlMemoryManager outer_;
-  JxlMemoryManager default_;
-  JxlMemoryManager* inner_;
+  JpegliMemoryManager outer_;
+  JpegliMemoryManager default_;
+  JpegliMemoryManager* inner_;
 };
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_TRACKING_MEMORY_MANAGER_H_
+#endif  // JPEGLI_TOOLS_TRACKING_MEMORY_MANAGER_H_

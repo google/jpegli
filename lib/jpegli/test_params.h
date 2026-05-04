@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_TEST_PARAMS_H_
-#define LIB_JPEGLI_TEST_PARAMS_H_
+#ifndef JPEGLI_LIB_JPEGLI_TEST_PARAMS_H_
+#define JPEGLI_LIB_JPEGLI_TEST_PARAMS_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -13,16 +13,10 @@
 #include <algorithm>
 #include <vector>
 
+#include "lib/base/common.h"
 #include "lib/jpegli/types.h"
 
 namespace jpegli {
-
-// We define this here as well to make sure that the *_api_test.cc tests only
-// use the public API and therefore we don't include any *_internal.h headers.
-template <typename T1, typename T2>
-constexpr inline T1 DivCeil(T1 a, T2 b) {
-  return (a + b - 1) / b;
-}
 
 #define ARRAY_SIZE(X) (sizeof(X) / sizeof((X)[0]))
 
@@ -161,4 +155,4 @@ struct DecompressParams {
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_TEST_PARAMS_H_
+#endif  // JPEGLI_LIB_JPEGLI_TEST_PARAMS_H_

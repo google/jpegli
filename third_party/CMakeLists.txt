@@ -26,7 +26,7 @@ if((SANITIZER STREQUAL "asan") OR (SANITIZER STREQUAL "msan"))
   set(HWY_ENABLE_INSTALL OFF CACHE INTERNAL "")
 endif()
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/highway/CMakeLists.txt" AND
-    NOT JPEGXL_FORCE_SYSTEM_HWY)
+    NOT JPEGLI_FORCE_SYSTEM_HWY)
   add_subdirectory(highway)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/highway/LICENSE"
                  ${PROJECT_BINARY_DIR}/LICENSE.highway COPYONLY)
@@ -39,14 +39,14 @@ else()
         "Highway is required to build JPEG XL. You can run "
         "${PROJECT_SOURCE_DIR}/deps.sh to download this dependency.")
   endif()
-  if(JPEGXL_DEP_LICENSE_DIR)
-    configure_file("${JPEGXL_DEP_LICENSE_DIR}/libhwy-dev/copyright"
+  if(JPEGLI_DEP_LICENSE_DIR)
+    configure_file("${JPEGLI_DEP_LICENSE_DIR}/libhwy-dev/copyright"
                    ${PROJECT_BINARY_DIR}/LICENSE.highway COPYONLY)
-  endif()  # JPEGXL_DEP_LICENSE_DIR
+  endif()  # JPEGLI_DEP_LICENSE_DIR
 endif()
 
 # *cms
-if (JPEGXL_ENABLE_SKCMS)
+if (JPEGLI_ENABLE_SKCMS)
   if( NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/skcms/skcms.h" )
     message(FATAL_ERROR "Please provide skcms or "
             "run ${PROJECT_SOURCE_DIR}/deps.sh to fetch the build dependencies.")
@@ -55,8 +55,8 @@ if (JPEGXL_ENABLE_SKCMS)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/skcms/LICENSE"
                  ${PROJECT_BINARY_DIR}/LICENSE.skcms COPYONLY)
 endif ()
-if (NOT JPEGXL_ENABLE_SKCMS)
-  if( NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lcms/.git" OR JPEGXL_FORCE_SYSTEM_LCMS2 )
+if (NOT JPEGLI_ENABLE_SKCMS)
+  if( NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lcms/.git" OR JPEGLI_FORCE_SYSTEM_LCMS2 )
     find_package(LCMS2 2.12)
     if ( NOT LCMS2_FOUND )
       message(FATAL_ERROR "Please provide lcms2 or run git submodule update --init")
@@ -69,7 +69,7 @@ if (NOT JPEGXL_ENABLE_SKCMS)
 endif()
 
 # libpng
-if (JPEGXL_BUNDLE_LIBPNG AND EMSCRIPTEN)
+if (JPEGLI_BUNDLE_LIBPNG AND EMSCRIPTEN)
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/CMakeLists.txt")
     message(FATAL_ERROR "Please provide libpng or "
             "run ${PROJECT_SOURCE_DIR}/deps.sh to fetch the build dependencies.")
@@ -81,7 +81,7 @@ if (JPEGXL_BUNDLE_LIBPNG AND EMSCRIPTEN)
   set(PNG_FOUND YES PARENT_SCOPE)
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/" PARENT_SCOPE)
   set(PNG_LIBRARIES "" PARENT_SCOPE)
-elseif (JPEGXL_BUNDLE_LIBPNG)
+elseif (JPEGLI_BUNDLE_LIBPNG)
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libpng/CMakeLists.txt")
     message(FATAL_ERROR "Please provide libpng or "
             "run ${PROJECT_SOURCE_DIR}/deps.sh to fetch the build dependencies.")
@@ -105,22 +105,22 @@ elseif (JPEGXL_BUNDLE_LIBPNG)
   set(PNG_LIBRARIES png_static PARENT_SCOPE)
   set_property(TARGET png_static PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET zlibstatic PROPERTY POSITION_INDEPENDENT_CODE ON)
-  if(JPEGXL_DEP_LICENSE_DIR)
+  if(JPEGLI_DEP_LICENSE_DIR)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/libpng/LICENSE"
                    ${PROJECT_BINARY_DIR}/LICENSE.libpng COPYONLY)
   endif()
 else()
   find_package(PNG)
-  if(PNG_FOUND AND JPEGXL_DEP_LICENSE_DIR)
-    configure_file("${JPEGXL_DEP_LICENSE_DIR}/zlib1g-dev/copyright"
+  if(PNG_FOUND AND JPEGLI_DEP_LICENSE_DIR)
+    configure_file("${JPEGLI_DEP_LICENSE_DIR}/zlib1g-dev/copyright"
                    ${PROJECT_BINARY_DIR}/LICENSE.zlib COPYONLY)
-    configure_file("${JPEGXL_DEP_LICENSE_DIR}/libpng-dev/copyright"
+    configure_file("${JPEGLI_DEP_LICENSE_DIR}/libpng-dev/copyright"
                    ${PROJECT_BINARY_DIR}/LICENSE.libpng COPYONLY)
-  endif()  # JPEGXL_DEP_LICENSE_DIR
+  endif()  # JPEGLI_DEP_LICENSE_DIR
 endif()
 
 # sjpeg
-if (JPEGXL_ENABLE_SJPEG)
+if (JPEGLI_ENABLE_SJPEG)
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sjpeg/CMakeLists.txt")
     message(FATAL_ERROR "Please provide sjpeg or "
             "run ${PROJECT_SOURCE_DIR}/deps.sh to fetch the build dependencies.")
