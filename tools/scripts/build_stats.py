@@ -129,7 +129,7 @@ def LoadTarget(target, build_dir):
     link_params = LoadTargetCommand(target, build_dir).split()
 
   # The target name is not always the same as the filename of the output, for
-  # example, "djxl" target generates "tools/djxl" file.
+  # example, "djpegli" target generates "tools/djpegli" file.
   if '-o' in link_params:
     target_filename = link_params[link_params.index('-o') + 1]
   elif target.endswith('.a'):
@@ -368,7 +368,7 @@ def SizeStats(args):
         ret.setdefault(t, 0)
         ret[t] += sym.size
       # SIMD namespaces are not part of the partition, they are already included
-      # in the jpegxl-static normally.
+      # in the jpegli-static normally.
       if not ret:
         continue
       tgt_stats.append(ObjectStats('\\--> ' + namespace, False, ret))

@@ -54,7 +54,7 @@ vcpkg above.
           "type": "STRING"
         },
         {
-          "name": "JPEGXL_ENABLE_TCMALLOC",
+          "name": "JPEGLI_ENABLE_TCMALLOC",
           "value": "False",
           "type": "BOOL"
         },
@@ -64,12 +64,7 @@ vcpkg above.
           "type": "BOOL"
         },
         {
-          "name": "JPEGXL_ENABLE_FUZZERS",
-          "value": "False",
-          "type": "BOOL"
-        },
-        {
-          "name": "JPEGXL_ENABLE_VIEWERS",
+          "name": "JPEGLI_ENABLE_FUZZERS",
           "value": "False",
           "type": "BOOL"
         }

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_COMMON_INTERNAL_H_
-#define LIB_JPEGLI_COMMON_INTERNAL_H_
+#ifndef JPEGLI_LIB_JPEGLI_COMMON_INTERNAL_H_
+#define JPEGLI_LIB_JPEGLI_COMMON_INTERNAL_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -13,6 +13,7 @@
 #include <cstring>
 #include <hwy/aligned_allocator.h>
 
+#include "lib/base/common.h"
 #include "lib/base/compiler_specific.h"  // for ssize_t
 #include "lib/jpegli/memory_manager.h"
 #include "lib/jpegli/simd.h"
@@ -32,16 +33,6 @@ enum State {
   kEncReadImage,
   kEncWriteCoeffs,
 };
-
-template <typename T1, typename T2>
-constexpr inline T1 DivCeil(T1 a, T2 b) {
-  return (a + b - 1) / b;
-}
-
-template <typename T1, typename T2>
-constexpr inline T1 RoundUpTo(T1 a, T2 b) {
-  return DivCeil(a, b) * b;
-}
 
 constexpr size_t kDCTBlockSize = 64;
 // This is set to the same value as MAX_COMPS_IN_SCAN, because that is the
@@ -146,4 +137,4 @@ class RowBuffer {
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_COMMON_INTERNAL_H_
+#endif  // JPEGLI_LIB_JPEGLI_COMMON_INTERNAL_H_

@@ -334,8 +334,8 @@ void ProcessCompressionParams(j_compress_ptr cinfo) {
   if (cinfo->scan_info == nullptr) {
     SetDefaultScanScript(cinfo);
   }
-  cinfo->progressive_mode = TO_JXL_BOOL(cinfo->scan_info->Ss != 0 ||
-                                        cinfo->scan_info->Se != DCTSIZE2 - 1);
+  cinfo->progressive_mode = TO_JPEGLI_BOOL(
+      cinfo->scan_info->Ss != 0 || cinfo->scan_info->Se != DCTSIZE2 - 1);
   ValidateScanScript(cinfo);
   m->scan_token_info =
       Allocate<ScanTokenInfo>(cinfo, cinfo->num_scans, JPOOL_IMAGE);
@@ -788,7 +788,8 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
       JPEGLI_ERROR("Unsupported jpeg colorspace %d", colorspace);
   }
   // Adobe marker is only needed to distinguish CMYK and YCCK JPEGs.
-  cinfo->write_Adobe_marker = TO_JXL_BOOL(cinfo->jpeg_color_space == JCS_YCCK);
+  cinfo->write_Adobe_marker =
+      TO_JPEGLI_BOOL(cinfo->jpeg_color_space == JCS_YCCK);
   if (cinfo->comp_info == nullptr) {
     cinfo->comp_info =
         jpegli::Allocate<jpeg_component_info>(cinfo, MAX_COMPONENTS);
@@ -840,7 +841,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
 void jpegli_set_distance(j_compress_ptr cinfo, float distance,
                          boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
-  cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
+  cinfo->master->force_baseline = FROM_JPEGLI_BOOL(force_baseline);
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/true);
 }
@@ -864,7 +865,7 @@ void jpegli_set_psnr(j_compress_ptr cinfo, float psnr, float tolerance,
 void jpegli_set_quality(j_compress_ptr cinfo, int quality,
                         boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
-  cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
+  cinfo->master->force_baseline = FROM_JPEGLI_BOOL(force_baseline);
   float distance = jpegli_quality_to_distance(quality);
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
@@ -873,7 +874,7 @@ void jpegli_set_quality(j_compress_ptr cinfo, int quality,
 void jpegli_set_linear_quality(j_compress_ptr cinfo, int scale_factor,
                                boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
-  cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
+  cinfo->master->force_baseline = FROM_JPEGLI_BOOL(force_baseline);
   float distance = jpegli::LinearQualityToDistance(scale_factor);
   float distances[NUM_QUANT_TBLS] = {distance, distance, distance};
   jpegli::SetQuantMatrices(cinfo, distances, /*add_two_chroma_tables=*/false);
@@ -924,7 +925,7 @@ void jpegli_add_quant_table(j_compress_ptr cinfo, int which_tbl,
 
 void jpegli_enable_adaptive_quantization(j_compress_ptr cinfo, boolean value) {
   CheckState(cinfo, jpegli::kEncStart);
-  cinfo->master->use_adaptive_quantization = FROM_JXL_BOOL(value);
+  cinfo->master->use_adaptive_quantization = FROM_JPEGLI_BOOL(value);
 }
 
 void jpegli_simple_progression(j_compress_ptr cinfo) {
@@ -1244,7 +1245,7 @@ void jpegli_finish_compress(j_compress_ptr cinfo) {
 
   const bool tokens_done = jpegli::IsStreamingSupported(cinfo);
   const bool bitstream_done =
-      tokens_done && !FROM_JXL_BOOL(cinfo->optimize_coding);
+      tokens_done && !FROM_JPEGLI_BOOL(cinfo->optimize_coding);
 
   if (!tokens_done) {
     jpegli::TokenizeJpeg(cinfo);

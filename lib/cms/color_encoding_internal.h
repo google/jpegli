@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_COLOR_ENCODING_INTERNAL_H_
-#define LIB_JXL_COLOR_ENCODING_INTERNAL_H_
+#ifndef JPEGLI_LIB_CMS_COLOR_ENCODING_INTERNAL_H_
+#define JPEGLI_LIB_CMS_COLOR_ENCODING_INTERNAL_H_
 
 // Metadata for color space conversions.
 
@@ -25,18 +25,18 @@
 #include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding.h"
 #include "lib/cms/color_encoding_cms.h"
-#include "lib/cms/jxl_cms_internal.h"
+#include "lib/cms/jpegli_cms_internal.h"
 
-namespace jxl {
+namespace jpegli {
 
-using IccBytes = ::jxl::cms::IccBytes;
-using ColorSpace = ::jxl::cms::ColorSpace;
-using WhitePoint = ::jxl::cms::WhitePoint;
-using Primaries = ::jxl::cms::Primaries;
-using TransferFunction = ::jxl::cms::TransferFunction;
-using RenderingIntent = ::jxl::cms::RenderingIntent;
-using CIExy = ::jxl::cms::CIExy;
-using PrimariesCIExy = ::jxl::cms::PrimariesCIExy;
+using IccBytes = ::jpegli::cms::IccBytes;
+using ColorSpace = ::jpegli::cms::ColorSpace;
+using WhitePoint = ::jpegli::cms::WhitePoint;
+using Primaries = ::jpegli::cms::Primaries;
+using TransferFunction = ::jpegli::cms::TransferFunction;
+using RenderingIntent = ::jpegli::cms::RenderingIntent;
+using CIExy = ::jpegli::cms::CIExy;
+using PrimariesCIExy = ::jpegli::cms::PrimariesCIExy;
 
 // Returns bit with the given `index` (0 = least significant).
 template <typename T>
@@ -122,7 +122,7 @@ struct Customxy {
 
  private:
   friend struct ColorEncoding;
-  ::jxl::cms::Customxy storage_;
+  ::jpegli::cms::Customxy storage_;
 };
 
 struct CustomTransferFunction {
@@ -136,7 +136,7 @@ struct CustomTransferFunction {
 
  private:
   friend struct ColorEncoding;
-  ::jxl::cms::CustomTransferFunction storage_;
+  ::jpegli::cms::CustomTransferFunction storage_;
 };
 
 // Compact encoding of data required to interpret and translate pixels to a
@@ -160,10 +160,10 @@ struct ColorEncoding {
   // Must be called after modifying fields. Defined in color_management.cc.
   Status CreateICC() {
     storage_.icc.clear();
-    const JxlColorEncoding external = ToExternal();
+    const JpegliColorEncoding external = ToExternal();
     if (!MaybeCreateProfile(external, &storage_.icc)) {
       storage_.icc.clear();
-      return JXL_FAILURE("Failed to create ICC profile");
+      return JPEGLI_FAILURE("Failed to create ICC profile");
     }
     return true;
   }
@@ -174,9 +174,9 @@ struct ColorEncoding {
   const IccBytes& ICC() const { return storage_.icc; }
 
   // Returns true if `icc` is assigned and decoded successfully.
-  Status SetICC(IccBytes&& icc, const JxlCmsInterface* cms) {
-    JXL_ENSURE(cms != nullptr);
-    JXL_ENSURE(!icc.empty());
+  Status SetICC(IccBytes&& icc, const JpegliCmsInterface* cms) {
+    JPEGLI_ENSURE(cms != nullptr);
+    JPEGLI_ENSURE(!icc.empty());
     storage_.have_fields = true;
     return storage_.SetFieldsFromICC(std::move(icc), *cms);
   }
@@ -187,7 +187,7 @@ struct ColorEncoding {
   // used anymore after this and functions such as IsSRGB return false no matter
   // what the contents of the icc profile.
   void SetICCRaw(IccBytes&& icc) {
-    JXL_DASSERT(!icc.empty());
+    JPEGLI_DASSERT(!icc.empty());
     storage_.icc = std::move(icc);
     storage_.have_fields = false;
   }
@@ -241,7 +241,7 @@ struct ColorEncoding {
   Status SetSRGB(const ColorSpace cs,
                  const RenderingIntent ri = RenderingIntent::kRelative) {
     storage_.icc.clear();
-    JXL_ENSURE(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
+    JPEGLI_ENSURE(cs == ColorSpace::kGray || cs == ColorSpace::kRGB);
     storage_.color_space = cs;
     storage_.white_point = WhitePoint::kD65;
     storage_.primaries = Primaries::kSRGB;
@@ -257,7 +257,7 @@ struct ColorEncoding {
 
   WhitePoint GetWhitePointType() const { return storage_.white_point; }
   Status SetWhitePointType(const WhitePoint& wp) {
-    JXL_ENSURE(storage_.have_fields);
+    JPEGLI_ENSURE(storage_.have_fields);
     storage_.white_point = wp;
     return true;
   }
@@ -267,14 +267,14 @@ struct ColorEncoding {
 
   Primaries GetPrimariesType() const { return storage_.primaries; }
   Status SetPrimariesType(const Primaries& p) {
-    JXL_ENSURE(storage_.have_fields);
-    JXL_ENSURE(HasPrimaries());
+    JPEGLI_ENSURE(storage_.have_fields);
+    JPEGLI_ENSURE(HasPrimaries());
     storage_.primaries = p;
     return true;
   }
 
-  jxl::cms::CustomTransferFunction& Tf() { return storage_.tf; }
-  const jxl::cms::CustomTransferFunction& Tf() const { return storage_.tf; }
+  jpegli::cms::CustomTransferFunction& Tf() { return storage_.tf; }
+  const jpegli::cms::CustomTransferFunction& Tf() const { return storage_.tf; }
 
   RenderingIntent GetRenderingIntent() const {
     return storage_.rendering_intent;
@@ -289,13 +289,13 @@ struct ColorEncoding {
 
   mutable bool all_default;
 
-  JxlColorEncoding ToExternal() const { return storage_.ToExternal(); }
-  Status FromExternal(const JxlColorEncoding& external) {
-    JXL_RETURN_IF_ERROR(storage_.FromExternal(external));
+  JpegliColorEncoding ToExternal() const { return storage_.ToExternal(); }
+  Status FromExternal(const JpegliColorEncoding& external) {
+    JPEGLI_RETURN_IF_ERROR(storage_.FromExternal(external));
     (void)CreateICC();
     return true;
   }
-  const jxl::cms::ColorEncoding& View() const { return storage_; }
+  const jpegli::cms::ColorEncoding& View() const { return storage_; }
   std::string Description() const;
 
  private:
@@ -310,7 +310,7 @@ struct ColorEncoding {
     c_rgb->storage_.tf.SetTransferFunction(tf);
     Status status = c_rgb->CreateICC();
     (void)status;
-    JXL_DASSERT(status);
+    JPEGLI_DASSERT(status);
 
     ColorEncoding* c_gray = c2.data() + 1;
     c_gray->SetColorSpace(ColorSpace::kGray);
@@ -319,12 +319,12 @@ struct ColorEncoding {
     c_gray->storage_.tf.SetTransferFunction(tf);
     status = c_gray->CreateICC();
     (void)status;
-    JXL_DASSERT(status);
+    JPEGLI_DASSERT(status);
 
     return c2;
   }
 
-  ::jxl::cms::ColorEncoding storage_;
+  ::jpegli::cms::ColorEncoding storage_;
   // Only used if white_point == kCustom.
   Customxy white_;
 
@@ -338,7 +338,7 @@ struct ColorEncoding {
 };
 
 static inline std::string Description(const ColorEncoding& c) {
-  const JxlColorEncoding external = c.View().ToExternal();
+  const JpegliColorEncoding external = c.View().ToExternal();
   return ColorEncodingDescription(external);
 }
 
@@ -349,7 +349,7 @@ static inline std::ostream& operator<<(std::ostream& os,
 
 class ColorSpaceTransform {
  public:
-  explicit ColorSpaceTransform(const JxlCmsInterface& cms) : cms_(cms) {}
+  explicit ColorSpaceTransform(const JpegliCmsInterface& cms) : cms_(cms) {}
   ~ColorSpaceTransform() {
     if (cms_data_ != nullptr) {
       cms_.destroy(cms_data_);
@@ -362,23 +362,23 @@ class ColorSpaceTransform {
 
   Status Init(const ColorEncoding& c_src, const ColorEncoding& c_dst,
               float intensity_target, size_t xsize, size_t num_threads) {
-    JxlColorProfile input_profile;
+    JpegliColorProfile input_profile;
     icc_src_ = c_src.ICC();
     input_profile.icc.data = icc_src_.data();
     input_profile.icc.size = icc_src_.size();
     input_profile.color_encoding = c_src.ToExternal();
     input_profile.num_channels = c_src.IsCMYK() ? 4 : c_src.Channels();
-    JxlColorProfile output_profile;
+    JpegliColorProfile output_profile;
     icc_dst_ = c_dst.ICC();
     output_profile.icc.data = icc_dst_.data();
     output_profile.icc.size = icc_dst_.size();
     output_profile.color_encoding = c_dst.ToExternal();
     if (c_dst.IsCMYK())
-      return JXL_FAILURE("Conversion to CMYK is not supported");
+      return JPEGLI_FAILURE("Conversion to CMYK is not supported");
     output_profile.num_channels = c_dst.Channels();
     cms_data_ = cms_.init(cms_.init_data, num_threads, xsize, &input_profile,
                           &output_profile, intensity_target);
-    JXL_RETURN_IF_ERROR(cms_data_ != nullptr);
+    JPEGLI_RETURN_IF_ERROR(cms_data_ != nullptr);
     return true;
   }
 
@@ -393,17 +393,18 @@ class ColorSpaceTransform {
   Status Run(const size_t thread, const float* buf_src, float* buf_dst,
              size_t xsize) {
     // TODO(eustas): convert false to Status?
-    return FROM_JXL_BOOL(cms_.run(cms_data_, thread, buf_src, buf_dst, xsize));
+    return FROM_JPEGLI_BOOL(
+        cms_.run(cms_data_, thread, buf_src, buf_dst, xsize));
   }
 
  private:
-  JxlCmsInterface cms_;
+  JpegliCmsInterface cms_;
   void* cms_data_ = nullptr;
   // The interface may retain pointers into these.
   IccBytes icc_src_;
   IccBytes icc_dst_;
 };
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_COLOR_ENCODING_INTERNAL_H_
+#endif  // JPEGLI_LIB_CMS_COLOR_ENCODING_INTERNAL_H_

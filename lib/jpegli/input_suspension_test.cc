@@ -129,9 +129,9 @@ boolean test_marker_processor(j_decompress_ptr cinfo) {
   return TRUE;
 }
 
-jxl::Status ReadOutputImage(const DecompressParams& dparams,
-                            j_decompress_ptr cinfo, SourceManager* src,
-                            TestImage* output) {
+jpegli::Status ReadOutputImage(const DecompressParams& dparams,
+                               j_decompress_ptr cinfo, SourceManager* src,
+                               TestImage* output) {
   output->ysize = cinfo->output_height;
   output->xsize = cinfo->output_width;
   output->components = cinfo->num_components;
@@ -171,7 +171,7 @@ jxl::Status ReadOutputImage(const DecompressParams& dparams,
       }
       while ((num_output_lines =
                   jpegli_read_raw_data(cinfo, data.data(), max_lines)) == 0) {
-        JXL_ENSURE(src && src->LoadNextChunk());
+        JPEGLI_ENSURE(src && src->LoadNextChunk());
       }
     } else {
       size_t max_output_lines = dparams.max_output_lines;
@@ -186,13 +186,13 @@ jxl::Status ReadOutputImage(const DecompressParams& dparams,
       }
       while ((num_output_lines = jpegli_read_scanlines(cinfo, scanlines.data(),
                                                        max_lines)) == 0) {
-        JXL_ENSURE(src && src->LoadNextChunk());
+        JPEGLI_ENSURE(src && src->LoadNextChunk());
       }
     }
     total_output_lines += num_output_lines;
     EXPECT_EQ(total_output_lines, cinfo->output_scanline);
     if (num_output_lines < max_lines) {
-      JXL_ENSURE(src && src->LoadNextChunk());
+      JPEGLI_ENSURE(src && src->LoadNextChunk());
     }
   }
   return true;
@@ -207,13 +207,13 @@ struct TestConfig {
   float max_rms_dist = 1.0f;
 };
 
-jxl::StatusOr<std::vector<uint8_t>> GetTestJpegData(TestConfig& config) {
+jpegli::StatusOr<std::vector<uint8_t>> GetTestJpegData(TestConfig& config) {
   std::vector<uint8_t> compressed;
   if (!config.fn.empty()) {
-    JXL_ASSIGN_OR_RETURN(compressed, ReadTestData(config.fn));
+    JPEGLI_ASSIGN_OR_RETURN(compressed, ReadTestData(config.fn));
   } else {
     GeneratePixels(&config.input);
-    JXL_RETURN_IF_ERROR(
+    JPEGLI_RETURN_IF_ERROR(
         EncodeWithJpegli(config.input, config.jparams, &compressed));
   }
   return compressed;
@@ -231,8 +231,8 @@ class InputSuspensionTestParam : public ::testing::TestWithParam<TestConfig> {};
 TEST_P(InputSuspensionTestParam, InputOutputLockStepNonBuffered) {
   TestConfig config = GetParam();
   const DecompressParams& dparams = config.dparams;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data.");
   bool is_partial = config.dparams.size_factor < 1.0f;
   if (is_partial) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
@@ -264,7 +264,7 @@ TEST_P(InputSuspensionTestParam, InputOutputLockStepNonBuffered) {
       EXPECT_EQ(0, memcmp(markers_seen, kMarkerSequence, num_markers_seen));
     }
     VerifyHeader(config.jparams, &cinfo);
-    cinfo.raw_data_out = TO_JXL_BOOL(dparams.output_mode == RAW_DATA);
+    cinfo.raw_data_out = TO_JPEGLI_BOOL(dparams.output_mode == RAW_DATA);
 
     if (dparams.output_mode == COEFFICIENTS) {
       jvirt_barray_ptr* coef_arrays;
@@ -296,8 +296,8 @@ TEST_P(InputSuspensionTestParam, InputOutputLockStepBuffered) {
   TestConfig config = GetParam();
   if (config.jparams.add_marker) return;
   const DecompressParams& dparams = config.dparams;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data.");
   bool is_partial = config.dparams.size_factor < 1.0f;
   if (is_partial) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
@@ -319,7 +319,7 @@ TEST_P(InputSuspensionTestParam, InputOutputLockStepBuffered) {
     jpegli_set_output_format(&cinfo, dparams.data_type, dparams.endianness);
 
     cinfo.buffered_image = TRUE;
-    cinfo.raw_data_out = TO_JXL_BOOL(dparams.output_mode == RAW_DATA);
+    cinfo.raw_data_out = TO_JPEGLI_BOOL(dparams.output_mode == RAW_DATA);
 
     EXPECT_TRUE(jpegli_start_decompress(&cinfo));
     EXPECT_FALSE(jpegli_input_complete(&cinfo));
@@ -371,8 +371,8 @@ TEST_P(InputSuspensionTestParam, PreConsumeInputBuffered) {
   TestConfig config = GetParam();
   if (config.jparams.add_marker) return;
   const DecompressParams& dparams = config.dparams;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data.");
   bool is_partial = config.dparams.size_factor < 1.0f;
   if (is_partial) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
@@ -397,8 +397,8 @@ TEST_P(InputSuspensionTestParam, PreConsumeInputBuffered) {
     }
     EXPECT_EQ(JPEG_REACHED_SOS, jpegli_consume_input(&cinfo));
     cinfo.buffered_image = TRUE;
-    cinfo.raw_data_out = TO_JXL_BOOL(dparams.output_mode == RAW_DATA);
-    cinfo.do_block_smoothing = TO_JXL_BOOL(dparams.do_block_smoothing);
+    cinfo.raw_data_out = TO_JPEGLI_BOOL(dparams.output_mode == RAW_DATA);
+    cinfo.do_block_smoothing = TO_JPEGLI_BOOL(dparams.do_block_smoothing);
 
     EXPECT_TRUE(jpegli_start_decompress(&cinfo));
     EXPECT_FALSE(jpegli_input_complete(&cinfo));
@@ -444,8 +444,8 @@ TEST_P(InputSuspensionTestParam, PreConsumeInputNonBuffered) {
   TestConfig config = GetParam();
   if (config.jparams.add_marker || IsSequential(config)) return;
   const DecompressParams& dparams = config.dparams;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data.");
   bool is_partial = config.dparams.size_factor < 1.0f;
   if (is_partial) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
@@ -466,8 +466,8 @@ TEST_P(InputSuspensionTestParam, PreConsumeInputNonBuffered) {
       }
     }
     EXPECT_EQ(JPEG_REACHED_SOS, jpegli_consume_input(&cinfo));
-    cinfo.raw_data_out = TO_JXL_BOOL(dparams.output_mode == RAW_DATA);
-    cinfo.do_block_smoothing = TO_JXL_BOOL(dparams.do_block_smoothing);
+    cinfo.raw_data_out = TO_JPEGLI_BOOL(dparams.output_mode == RAW_DATA);
+    cinfo.do_block_smoothing = TO_JPEGLI_BOOL(dparams.do_block_smoothing);
 
     if (dparams.output_mode == COEFFICIENTS) {
       jpegli_read_coefficients(&cinfo);

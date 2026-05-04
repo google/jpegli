@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_DECODE_MARKER_H_
-#define LIB_JPEGLI_DECODE_MARKER_H_
+#ifndef JPEGLI_LIB_JPEGLI_DECODE_MARKER_H_
+#define JPEGLI_LIB_JPEGLI_DECODE_MARKER_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -31,4 +31,4 @@ jpeg_marker_parser_method GetMarkerProcessor(j_decompress_ptr cinfo);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_DECODE_MARKER_H_
+#endif  // JPEGLI_LIB_JPEGLI_DECODE_MARKER_H_

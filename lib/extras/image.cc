@@ -21,7 +21,7 @@
 #include "lib/base/sanitizers.h"
 #endif
 
-namespace jxl {
+namespace jpegli {
 namespace detail {
 
 namespace {
@@ -43,7 +43,7 @@ void InitializePadding(PlaneBase& plane, const size_t sizeof_t) {
   if (valid_size == initialize_size) return;
 
   for (size_t y = 0; y < ysize; ++y) {
-    uint8_t* JXL_RESTRICT row = plane.bytes() + y * plane.bytes_per_row();
+    uint8_t* JPEGLI_RESTRICT row = plane.bytes() + y * plane.bytes_per_row();
 #if defined(__clang__) &&                                           \
     ((!defined(__apple_build_version__) && __clang_major__ <= 6) || \
      (defined(__apple_build_version__) &&                           \
@@ -71,9 +71,9 @@ PlaneBase::PlaneBase(const uint32_t xsize, const uint32_t ysize,
       bytes_per_row_(BytesPerRow(xsize_, sizeof_t)),
       sizeof_t_(sizeof_t) {}
 
-Status PlaneBase::Allocate(JxlMemoryManager* memory_manager,
+Status PlaneBase::Allocate(JpegliMemoryManager* memory_manager,
                            size_t pre_padding) {
-  JXL_ENSURE(bytes_.address<void>() == nullptr);
+  JPEGLI_ENSURE(bytes_.address<void>() == nullptr);
 
   // Dimensions can be zero, e.g. for lazily-allocated images. Only allocate
   // if nonzero, because "zero" bytes still have padding/bookkeeping overhead.
@@ -83,10 +83,10 @@ Status PlaneBase::Allocate(JxlMemoryManager* memory_manager,
 
   size_t max_y_size = std::numeric_limits<size_t>::max() / bytes_per_row_;
   if (ysize_ > max_y_size) {
-    return JXL_FAILURE("Image dimensions are too large");
+    return JPEGLI_FAILURE("Image dimensions are too large");
   }
 
-  JXL_ASSIGN_OR_RETURN(
+  JPEGLI_ASSIGN_OR_RETURN(
       bytes_, AlignedMemory::Create(memory_manager, bytes_per_row_ * ysize_,
                                     pre_padding * sizeof_t_));
 
@@ -105,4 +105,4 @@ void PlaneBase::Swap(PlaneBase& other) {
 }
 
 }  // namespace detail
-}  // namespace jxl
+}  // namespace jpegli

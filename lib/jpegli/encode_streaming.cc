@@ -37,7 +37,7 @@ static const int kStreamingModeTokens = 1;
 static const int kStreamingModeBits = 2;
 
 namespace {
-void ZigZagShuffle(int32_t* JXL_RESTRICT block) {
+void ZigZagShuffle(int32_t* JPEGLI_RESTRICT block) {
   // TODO(szabadka) SIMDify this.
   int32_t tmp[DCTSIZE2];
   tmp[0] = block[0];
@@ -118,7 +118,7 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
   int32_t* block = m->block_tmp;
   int32_t* symbols = m->block_tmp + DCTSIZE2;
   int32_t* nonzero_idx = m->block_tmp + 3 * DCTSIZE2;
-  coeff_t* JXL_RESTRICT last_dc_coeff = m->last_dc_coeff;
+  coeff_t* JPEGLI_RESTRICT last_dc_coeff = m->last_dc_coeff;
   bool adaptive_quant = m->use_adaptive_quantization && m->psnr_target == 0;
   JBLOCKARRAY blocks[kMaxComponents];
   if (kMode == kStreamingModeCoefficients) {
@@ -167,7 +167,7 @@ void ProcessiMCURow(j_compress_ptr cinfo) {
         dc_code = &m->coding_tables[m->context_map[c]];
         ac_code = &m->coding_tables[m->context_map[c + 4]];
       }
-      float* JXL_RESTRICT qmc = m->quant_mul[c];
+      float* JPEGLI_RESTRICT qmc = m->quant_mul[c];
       const size_t stride = m->raw_data[c]->stride();
       const int h_factor = m->h_factor[c];
       const float* zero_bias_offset = m->zero_bias_offset[c];

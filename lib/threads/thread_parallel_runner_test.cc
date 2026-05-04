@@ -15,9 +15,9 @@
 #include "lib/base/testing.h"
 #include "lib/threads/test_utils.h"
 
-using ::jxl::test::ThreadPoolForTests;
+using ::jpegli::test::ThreadPoolForTests;
 
-namespace jpegxl {
+namespace jpegli {
 namespace {
 
 int PopulationCount(uint64_t bits) {
@@ -41,7 +41,7 @@ TEST(ThreadParallelRunnerTest, TestPool) {
         std::fill(mementos.begin(), mementos.end(), 0);
         const auto do_task = [begin, num_tasks, &mementos](
                                  const int task,
-                                 const int thread) -> jxl::Status {
+                                 const int thread) -> jpegli::Status {
           // Parameter is in the given range
           EXPECT_GE(task, begin);
           EXPECT_LT(task, begin + num_tasks);
@@ -51,7 +51,7 @@ TEST(ThreadParallelRunnerTest, TestPool) {
           return true;
         };
         EXPECT_TRUE(RunOnPool(pool.get(), begin, begin + num_tasks,
-                              jxl::ThreadPool::NoInit, do_task, "TestPool"));
+                              jpegli::ThreadPool::NoInit, do_task, "TestPool"));
         for (int task = begin; task < begin + num_tasks; ++task) {
           EXPECT_EQ(1000 + task, mementos.at(task - begin));
         }
@@ -70,7 +70,8 @@ TEST(ThreadParallelRunnerTest, TestSmallAssignments) {
     std::atomic<uint64_t> id_bits{0};
     std::atomic<uint32_t> num_calls{0};
     const auto do_task = [&num_calls, num_threads, &id_bits](
-                             const int task, const int thread) -> jxl::Status {
+                             const int task,
+                             const int thread) -> jpegli::Status {
       num_calls.fetch_add(1, std::memory_order_relaxed);
 
       EXPECT_LT(static_cast<size_t>(thread), num_threads);
@@ -80,8 +81,9 @@ TEST(ThreadParallelRunnerTest, TestSmallAssignments) {
       }
       return true;
     };
-    EXPECT_TRUE(RunOnPool(pool.get(), 0, num_threads, jxl::ThreadPool::NoInit,
-                          do_task, "TestSmallAssignments"));
+    EXPECT_TRUE(RunOnPool(pool.get(), 0, num_threads,
+                          jpegli::ThreadPool::NoInit, do_task,
+                          "TestSmallAssignments"));
 
     // Correct number of tasks.
     EXPECT_EQ(num_threads, num_calls.load());
@@ -109,11 +111,11 @@ TEST(ThreadParallelRunnerTest, TestCounter) {
 
   const int kNumTasks = kNumThreads * 19;
   const auto count = [&counters](const int task,
-                                 const int thread) -> jxl::Status {
+                                 const int thread) -> jpegli::Status {
     counters[thread].counter += task;
     return true;
   };
-  EXPECT_TRUE(RunOnPool(pool.get(), 0, kNumTasks, jxl::ThreadPool::NoInit,
+  EXPECT_TRUE(RunOnPool(pool.get(), 0, kNumTasks, jpegli::ThreadPool::NoInit,
                         count, "TestCounter"));
 
   int expected = 0;
@@ -128,4 +130,4 @@ TEST(ThreadParallelRunnerTest, TestCounter) {
 }
 
 }  // namespace
-}  // namespace jpegxl
+}  // namespace jpegli

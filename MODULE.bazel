@@ -3,7 +3,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""JPEG XL reference implementation"""
+"""JPEGLI reference implementation"""
 
 module(
     name = "jpegli",
@@ -11,7 +11,6 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "brotli", version = "1.1.0")
 bazel_dep(name = "giflib", version = "5.2.1.bcr.1")
 bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
 bazel_dep(name = "libjpeg_turbo", version = "2.1.91.bcr.1")

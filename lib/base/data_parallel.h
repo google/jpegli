@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_DATA_PARALLEL_H_
-#define LIB_JXL_BASE_DATA_PARALLEL_H_
+#ifndef JPEGLI_LIB_BASE_DATA_PARALLEL_H_
+#define JPEGLI_LIB_BASE_DATA_PARALLEL_H_
 
 // Portable, low-overhead C++11 ThreadPool alternative to OpenMP for
 // data-parallel computations.
@@ -17,25 +17,25 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/parallel_runner.h"
 #include "lib/base/status.h"
-#if JXL_COMPILER_MSVC
+#if JPEGLI_COMPILER_MSVC
 // suppress warnings about the const & applied to function types
 #pragma warning(disable : 4180)
 #endif
 
-namespace jxl {
+namespace jpegli {
 
 struct ThreadPoolNoInit {};
 
 class ThreadPool {
  public:
-  ThreadPool(JxlParallelRunner runner, void* runner_opaque)
+  ThreadPool(JpegliParallelRunner runner, void* runner_opaque)
       : runner_(runner),
         runner_opaque_(runner ? runner_opaque : static_cast<void*>(this)) {}
 
   ThreadPool(const ThreadPool&) = delete;
   ThreadPool& operator&(const ThreadPool&) = delete;
 
-  JxlParallelRunner runner() const { return runner_; }
+  JpegliParallelRunner runner() const { return runner_; }
   void* runner_opaque() const { return runner_opaque_; }
 
   // Runs init_func(num_threads) followed by data_func(task, thread) on worker
@@ -49,31 +49,31 @@ class ThreadPool {
   template <class InitFunc, class DataFunc>
   Status Run(uint32_t begin, uint32_t end, const InitFunc& init_func,
              const DataFunc& data_func, const char* caller) {
-    JXL_ENSURE(begin <= end);
+    JPEGLI_ENSURE(begin <= end);
     if (begin == end) return true;
     RunCallState<InitFunc, DataFunc> call_state(init_func, data_func);
     // The runner_ uses the C convention and returns 0 in case of error, so we
     // convert it to a Status.
     if (!runner_) {
-      void* jpegxl_opaque = static_cast<void*>(&call_state);
-      if (call_state.CallInitFunc(jpegxl_opaque, 1) !=
-          JXL_PARALLEL_RET_SUCCESS) {
-        return JXL_FAILURE("Failed to initialize thread");
+      void* jpegli_opaque = static_cast<void*>(&call_state);
+      if (call_state.CallInitFunc(jpegli_opaque, 1) !=
+          JPEGLI_PARALLEL_RET_SUCCESS) {
+        return JPEGLI_FAILURE("Failed to initialize thread");
       }
       for (uint32_t i = begin; i < end; i++) {
-        call_state.CallDataFunc(jpegxl_opaque, i, 0);
+        call_state.CallDataFunc(jpegli_opaque, i, 0);
       }
       if (call_state.HasError()) {
-        return JXL_FAILURE("[%s] failed", caller);
+        return JPEGLI_FAILURE("[%s] failed", caller);
       }
       return true;
     }
-    JxlParallelRetCode ret = (*runner_)(
+    JpegliParallelRetCode ret = (*runner_)(
         runner_opaque_, static_cast<void*>(&call_state),
         &call_state.CallInitFunc, &call_state.CallDataFunc, begin, end);
 
-    if (ret != JXL_PARALLEL_RET_SUCCESS || call_state.HasError()) {
-      return JXL_FAILURE("[%s] failed", caller);
+    if (ret != JPEGLI_PARALLEL_RET_SUCCESS || call_state.HasError()) {
+      return JPEGLI_FAILURE("[%s] failed", caller);
     }
     return true;
   }
@@ -83,31 +83,31 @@ class ThreadPool {
 
  private:
   // class holding the state of a Run() call to pass to the runner_ as an
-  // opaque_jpegxl pointer.
+  // opaque_jpegli pointer.
   template <class InitFunc, class DataFunc>
   class RunCallState final {
    public:
     RunCallState(const InitFunc& init_func, const DataFunc& data_func)
         : init_func_(init_func), data_func_(data_func) {}
 
-    // JxlParallelRunInit interface.
-    static int CallInitFunc(void* jpegxl_opaque, size_t num_threads) {
+    // JpegliParallelRunInit interface.
+    static int CallInitFunc(void* jpegli_opaque, size_t num_threads) {
       auto* self =
-          static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
+          static_cast<RunCallState<InitFunc, DataFunc>*>(jpegli_opaque);
       // Returns -1 when the internal init function returns false Status to
       // indicate an error.
       if (!self->init_func_(num_threads)) {
         self->has_error_ = 1;
-        return JXL_PARALLEL_RET_RUNNER_ERROR;
+        return JPEGLI_PARALLEL_RET_RUNNER_ERROR;
       }
-      return JXL_PARALLEL_RET_SUCCESS;
+      return JPEGLI_PARALLEL_RET_SUCCESS;
     }
 
-    // JxlParallelRunFunction interface.
-    static void CallDataFunc(void* jpegxl_opaque, uint32_t value,
+    // JpegliParallelRunFunction interface.
+    static void CallDataFunc(void* jpegli_opaque, uint32_t value,
                              size_t thread_id) {
       auto* self =
-          static_cast<RunCallState<InitFunc, DataFunc>*>(jpegxl_opaque);
+          static_cast<RunCallState<InitFunc, DataFunc>*>(jpegli_opaque);
       if (self->has_error_) return;
       if (!self->data_func_(value, thread_id)) {
         self->has_error_ = 1;
@@ -123,7 +123,7 @@ class ThreadPool {
   };
 
   // The caller supplied runner function and its opaque void*.
-  const JxlParallelRunner runner_;
+  const JpegliParallelRunner runner_;
   void* const runner_opaque_;
 };
 
@@ -147,9 +147,9 @@ Status RunOnPool(ThreadPool* pool, const uint32_t begin, const uint32_t end,
   return RunOnPool(pool, begin, end, init_func, data_func, caller);
 }
 
-}  // namespace jxl
-#if JXL_COMPILER_MSVC
+}  // namespace jpegli
+#if JPEGLI_COMPILER_MSVC
 #pragma warning(default : 4180)
 #endif
 
-#endif  // LIB_JXL_BASE_DATA_PARALLEL_H_
+#endif  // JPEGLI_LIB_BASE_DATA_PARALLEL_H_

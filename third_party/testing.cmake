@@ -24,7 +24,7 @@ if(BUILD_TESTING)
 # the base system instead, but it would work just fine. This makes packages
 # using GTest and calling find_package(GTest) actually work.
 if (EXISTS "${SOURCE_DIR}/googletest/CMakeLists.txt" AND
-    NOT JPEGXL_FORCE_SYSTEM_GTEST)
+    NOT JPEGLI_FORCE_SYSTEM_GTEST)
   set(BUILD_GMOCK OFF CACHE INTERNAL "")
   add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
   include(GoogleTest)
@@ -49,10 +49,10 @@ if (EXISTS "${SOURCE_DIR}/googletest/CMakeLists.txt" AND
   configure_file("${SOURCE_DIR}/googletest/LICENSE"
                  ${PROJECT_BINARY_DIR}/LICENSE.googletest COPYONLY)
 else()
-  if(JPEGXL_DEP_LICENSE_DIR)
-    configure_file("${JPEGXL_DEP_LICENSE_DIR}/googletest/copyright"
+  if(JPEGLI_DEP_LICENSE_DIR)
+    configure_file("${JPEGLI_DEP_LICENSE_DIR}/googletest/copyright"
                    ${PROJECT_BINARY_DIR}/LICENSE.googletest COPYONLY)
-  endif()  # JPEGXL_DEP_LICENSE_DIR
+  endif()  # JPEGLI_DEP_LICENSE_DIR
   find_package(GTest REQUIRED)
   include(GoogleTest)
   set_target_properties(GTest::GTest PROPERTIES IMPORTED_GLOBAL TRUE)

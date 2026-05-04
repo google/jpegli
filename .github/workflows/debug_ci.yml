@@ -90,7 +90,6 @@ jobs:
           libstdc++-10-dev:${{ matrix.arch }}
 
           # Dependencies
-          libbrotli-dev:${{ matrix.arch }}
           libgif-dev:${{ matrix.arch }}
           libjpeg-dev:${{ matrix.arch }}
           libpng-dev:${{ matrix.arch }}
@@ -126,8 +125,7 @@ jobs:
     - name: Configure
       run: |
         CMAKE_FLAGS="${{ matrix.cmake_flags }}" ./ci.sh release \
-          -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
-          -DJPEGXL_ENABLE_JNI=OFF \
+          -DJPEGLI_ENABLE_JNI=OFF \
           ${{ join(matrix.cmake_args, ' ') }}
       env:
         SKIP_BUILD: 1

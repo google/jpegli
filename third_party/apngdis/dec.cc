@@ -45,9 +45,9 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
-#if !JPEGXL_ENABLE_APNG
+#if !JPEGLI_ENABLE_APNG
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 bool CanDecodeAPNG() { return false; }
 Status DecodeImageAPNG(const Span<const uint8_t> bytes,
@@ -56,9 +56,9 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   return false;
 }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_APNG
+#else  // JPEGLI_ENABLE_APNG
 
 #include <algorithm>
 #include <array>
@@ -82,7 +82,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 #include "lib/extras/codestream_header.h"
 #include "png.h" /* original (unpatched) libpng is ok */
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -93,15 +93,16 @@ constexpr std::array<uint8_t, 8> kPngSignature = {137,  'P',  'N', 'G',
 double F64FromU32(const uint32_t x) { return static_cast<int32_t>(x) * 1E-5; }
 
 /** Extract information from 'sRGB' chunk. */
-Status DecodeSrgbChunk(const Bytes payload, JxlColorEncoding* color_encoding) {
-  if (payload.size() != 1) return JXL_FAILURE("Wrong sRGB size");
+Status DecodeSrgbChunk(const Bytes payload,
+                       JpegliColorEncoding* color_encoding) {
+  if (payload.size() != 1) return JPEGLI_FAILURE("Wrong sRGB size");
   uint8_t ri = payload[0];
   // (PNG uses the same values as ICC.)
-  if (ri >= 4) return JXL_FAILURE("Invalid Rendering Intent");
-  color_encoding->white_point = JXL_WHITE_POINT_D65;
-  color_encoding->primaries = JXL_PRIMARIES_SRGB;
-  color_encoding->transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
-  color_encoding->rendering_intent = static_cast<JxlRenderingIntent>(ri);
+  if (ri >= 4) return JPEGLI_FAILURE("Invalid Rendering Intent");
+  color_encoding->white_point = JPEGLI_WHITE_POINT_D65;
+  color_encoding->primaries = JPEGLI_PRIMARIES_SRGB;
+  color_encoding->transfer_function = JPEGLI_TRANSFER_FUNCTION_SRGB;
+  color_encoding->rendering_intent = static_cast<JpegliRenderingIntent>(ri);
   return true;
 }
 
@@ -111,151 +112,153 @@ Status DecodeSrgbChunk(const Bytes payload, JxlColorEncoding* color_encoding) {
  * If the cICP profile is not fully supported, return `false` and leave
  * `color_encoding` unmodified.
  */
-Status DecodeCicpChunk(const Bytes payload, JxlColorEncoding* color_encoding) {
-  if (payload.size() != 4) return JXL_FAILURE("Wrong cICP size");
-  JxlColorEncoding color_enc = *color_encoding;
+Status DecodeCicpChunk(const Bytes payload,
+                       JpegliColorEncoding* color_encoding) {
+  if (payload.size() != 4) return JPEGLI_FAILURE("Wrong cICP size");
+  JpegliColorEncoding color_enc = *color_encoding;
 
   // From https://www.itu.int/rec/T-REC-H.273-202107-I/en
   if (payload[0] == 1) {
     // IEC 61966-2-1 sRGB
-    color_enc.primaries = JXL_PRIMARIES_SRGB;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.primaries = JPEGLI_PRIMARIES_SRGB;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else if (payload[0] == 4) {
     // Rec. ITU-R BT.470-6 System M
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 0.67;
     color_enc.primaries_red_xy[1] = 0.33;
     color_enc.primaries_green_xy[0] = 0.21;
     color_enc.primaries_green_xy[1] = 0.71;
     color_enc.primaries_blue_xy[0] = 0.14;
     color_enc.primaries_blue_xy[1] = 0.08;
-    color_enc.white_point = JXL_WHITE_POINT_CUSTOM;
+    color_enc.white_point = JPEGLI_WHITE_POINT_CUSTOM;
     color_enc.white_point_xy[0] = 0.310;
     color_enc.white_point_xy[1] = 0.316;
   } else if (payload[0] == 5) {
     // Rec. ITU-R BT.1700-0 625 PAL and 625 SECAM
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 0.64;
     color_enc.primaries_red_xy[1] = 0.33;
     color_enc.primaries_green_xy[0] = 0.29;
     color_enc.primaries_green_xy[1] = 0.60;
     color_enc.primaries_blue_xy[0] = 0.15;
     color_enc.primaries_blue_xy[1] = 0.06;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else if (payload[0] == 6 || payload[0] == 7) {
     // SMPTE ST 170 (2004) / SMPTE ST 240 (1999)
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 0.630;
     color_enc.primaries_red_xy[1] = 0.340;
     color_enc.primaries_green_xy[0] = 0.310;
     color_enc.primaries_green_xy[1] = 0.595;
     color_enc.primaries_blue_xy[0] = 0.155;
     color_enc.primaries_blue_xy[1] = 0.070;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else if (payload[0] == 8) {
     // Generic film (colour filters using Illuminant C)
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 0.681;
     color_enc.primaries_red_xy[1] = 0.319;
     color_enc.primaries_green_xy[0] = 0.243;
     color_enc.primaries_green_xy[1] = 0.692;
     color_enc.primaries_blue_xy[0] = 0.145;
     color_enc.primaries_blue_xy[1] = 0.049;
-    color_enc.white_point = JXL_WHITE_POINT_CUSTOM;
+    color_enc.white_point = JPEGLI_WHITE_POINT_CUSTOM;
     color_enc.white_point_xy[0] = 0.310;
     color_enc.white_point_xy[1] = 0.316;
   } else if (payload[0] == 9) {
     // Rec. ITU-R BT.2100-2
-    color_enc.primaries = JXL_PRIMARIES_2100;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.primaries = JPEGLI_PRIMARIES_2100;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else if (payload[0] == 10) {
     // CIE 1931 XYZ
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 1;
     color_enc.primaries_red_xy[1] = 0;
     color_enc.primaries_green_xy[0] = 0;
     color_enc.primaries_green_xy[1] = 1;
     color_enc.primaries_blue_xy[0] = 0;
     color_enc.primaries_blue_xy[1] = 0;
-    color_enc.white_point = JXL_WHITE_POINT_E;
+    color_enc.white_point = JPEGLI_WHITE_POINT_E;
   } else if (payload[0] == 11) {
     // SMPTE RP 431-2 (2011)
-    color_enc.primaries = JXL_PRIMARIES_P3;
-    color_enc.white_point = JXL_WHITE_POINT_DCI;
+    color_enc.primaries = JPEGLI_PRIMARIES_P3;
+    color_enc.white_point = JPEGLI_WHITE_POINT_DCI;
   } else if (payload[0] == 12) {
     // SMPTE EG 432-1 (2010)
-    color_enc.primaries = JXL_PRIMARIES_P3;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.primaries = JPEGLI_PRIMARIES_P3;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else if (payload[0] == 22) {
-    color_enc.primaries = JXL_PRIMARIES_CUSTOM;
+    color_enc.primaries = JPEGLI_PRIMARIES_CUSTOM;
     color_enc.primaries_red_xy[0] = 0.630;
     color_enc.primaries_red_xy[1] = 0.340;
     color_enc.primaries_green_xy[0] = 0.295;
     color_enc.primaries_green_xy[1] = 0.605;
     color_enc.primaries_blue_xy[0] = 0.155;
     color_enc.primaries_blue_xy[1] = 0.077;
-    color_enc.white_point = JXL_WHITE_POINT_D65;
+    color_enc.white_point = JPEGLI_WHITE_POINT_D65;
   } else {
-    JXL_WARNING("Unsupported primaries specified in cICP chunk: %d",
-                static_cast<int>(payload[0]));
+    JPEGLI_WARNING("Unsupported primaries specified in cICP chunk: %d",
+                   static_cast<int>(payload[0]));
     return false;
   }
 
   if (payload[1] == 1 || payload[1] == 6 || payload[1] == 14 ||
       payload[1] == 15) {
     // Rec. ITU-R BT.709-6
-    color_enc.transfer_function = JXL_TRANSFER_FUNCTION_709;
+    color_enc.transfer_function = JPEGLI_TRANSFER_FUNCTION_709;
   } else if (payload[1] == 4) {
     // Rec. ITU-R BT.1700-0 625 PAL and 625 SECAM
-    color_enc.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+    color_enc.transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
     color_enc.gamma = 1 / 2.2;
   } else if (payload[1] == 5) {
     // Rec. ITU-R BT.470-6 System B, G
-    color_enc.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+    color_enc.transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
     color_enc.gamma = 1 / 2.8;
   } else if (payload[1] == 8 || payload[1] == 13 || payload[1] == 16 ||
              payload[1] == 17 || payload[1] == 18) {
-    // These codes all match the corresponding JXL enum values
-    color_enc.transfer_function = static_cast<JxlTransferFunction>(payload[1]);
+    // These codes all match the corresponding JPEGLI enum values
+    color_enc.transfer_function =
+        static_cast<JpegliTransferFunction>(payload[1]);
   } else {
-    JXL_WARNING("Unsupported transfer function specified in cICP chunk: %d",
-                static_cast<int>(payload[1]));
+    JPEGLI_WARNING("Unsupported transfer function specified in cICP chunk: %d",
+                   static_cast<int>(payload[1]));
     return false;
   }
 
   if (payload[2] != 0) {
-    JXL_WARNING("Unsupported color space specified in cICP chunk: %d",
-                static_cast<int>(payload[2]));
+    JPEGLI_WARNING("Unsupported color space specified in cICP chunk: %d",
+                   static_cast<int>(payload[2]));
     return false;
   }
   if (payload[3] != 1) {
-    JXL_WARNING("Unsupported full-range flag specified in cICP chunk: %d",
-                static_cast<int>(payload[3]));
+    JPEGLI_WARNING("Unsupported full-range flag specified in cICP chunk: %d",
+                   static_cast<int>(payload[3]));
     return false;
   }
   // cICP has no rendering intent, so use the default
-  color_enc.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
+  color_enc.rendering_intent = JPEGLI_RENDERING_INTENT_RELATIVE;
   *color_encoding = color_enc;
   return true;
 }
 
 /** Extract information from 'gAMA' chunk. */
-Status DecodeGamaChunk(Bytes payload, JxlColorEncoding* color_encoding) {
-  if (payload.size() != 4) return JXL_FAILURE("Wrong gAMA size");
-  color_encoding->transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+Status DecodeGamaChunk(Bytes payload, JpegliColorEncoding* color_encoding) {
+  if (payload.size() != 4) return JPEGLI_FAILURE("Wrong gAMA size");
+  color_encoding->transfer_function = JPEGLI_TRANSFER_FUNCTION_GAMMA;
   color_encoding->gamma = F64FromU32(LoadBE32(payload.data()));
   return true;
 }
 
 /** Extract information from 'cHTM' chunk. */
-Status DecodeChrmChunk(Bytes payload, JxlColorEncoding* color_encoding) {
-  if (payload.size() != 32) return JXL_FAILURE("Wrong cHRM size");
+Status DecodeChrmChunk(Bytes payload, JpegliColorEncoding* color_encoding) {
+  if (payload.size() != 32) return JPEGLI_FAILURE("Wrong cHRM size");
   const uint8_t* data = payload.data();
-  color_encoding->white_point = JXL_WHITE_POINT_CUSTOM;
+  color_encoding->white_point = JPEGLI_WHITE_POINT_CUSTOM;
   color_encoding->white_point_xy[0] = F64FromU32(LoadBE32(data + 0));
   color_encoding->white_point_xy[1] = F64FromU32(LoadBE32(data + 4));
 
-  color_encoding->primaries = JXL_PRIMARIES_CUSTOM;
+  color_encoding->primaries = JPEGLI_PRIMARIES_CUSTOM;
   color_encoding->primaries_red_xy[0] = F64FromU32(LoadBE32(data + 8));
   color_encoding->primaries_red_xy[1] = F64FromU32(LoadBE32(data + 12));
   color_encoding->primaries_green_xy[0] = F64FromU32(LoadBE32(data + 16));
@@ -267,7 +270,7 @@ Status DecodeChrmChunk(Bytes payload, JxlColorEncoding* color_encoding) {
 
 /** Extracts information from 'cLLi' chunk. */
 Status DecodeClliChunk(Bytes payload, float* max_content_light_level) {
-  if (payload.size() != 8) return JXL_FAILURE("Wrong cLLi size");
+  if (payload.size() != 8) return JPEGLI_FAILURE("Wrong cLLi size");
   const uint8_t* data = payload.data();
   const uint32_t maxcll_png =
       Clamp1(png_get_uint_32(data), uint32_t{0}, uint32_t{10000 * 10000});
@@ -277,22 +280,23 @@ Status DecodeClliChunk(Bytes payload, float* max_content_light_level) {
 }
 
 /** Returns false if invalid. */
-JXL_INLINE Status DecodeHexNibble(const char c, uint32_t* JXL_RESTRICT nibble) {
+JPEGLI_INLINE Status DecodeHexNibble(const char c,
+                                     uint32_t* JPEGLI_RESTRICT nibble) {
   if ('a' <= c && c <= 'f') {
     *nibble = 10 + c - 'a';
   } else if ('0' <= c && c <= '9') {
     *nibble = c - '0';
   } else {
     *nibble = 0;
-    return JXL_FAILURE("Invalid metadata nibble");
+    return JPEGLI_FAILURE("Invalid metadata nibble");
   }
-  JXL_ENSURE(*nibble < 16);
+  JPEGLI_ENSURE(*nibble < 16);
   return true;
 }
 
 /** Returns false if invalid. */
-JXL_INLINE Status DecodeDecimal(const char** pos, const char* end,
-                                uint32_t* JXL_RESTRICT value) {
+JPEGLI_INLINE Status DecodeDecimal(const char** pos, const char* end,
+                                   uint32_t* JPEGLI_RESTRICT value) {
   size_t len = 0;
   *value = 0;
   while (*pos < end) {
@@ -310,7 +314,7 @@ JXL_INLINE Status DecodeDecimal(const char** pos, const char* end,
     (*pos)++;
   }
   if (len == 0 || len > 8) {
-    return JXL_FAILURE("Failed to parse decimal");
+    return JPEGLI_FAILURE("Failed to parse decimal");
   }
   return true;
 }
@@ -355,7 +359,7 @@ Status MaybeDecodeBase16(const char* key, const char* encoded,
     pos++;
   }
   uint32_t bytes_to_decode = 0;
-  JXL_RETURN_IF_ERROR(DecodeDecimal(&pos, encoded_end, &bytes_to_decode));
+  JPEGLI_RETURN_IF_ERROR(DecodeDecimal(&pos, encoded_end, &bytes_to_decode));
 
   // We need 2*bytes for the hex values plus 1 byte every 36 values,
   // plus terminal \n for length.
@@ -364,10 +368,10 @@ Status MaybeDecodeBase16(const char* key, const char* encoded,
   if (ok) tail -= 2 * static_cast<size_t>(bytes_to_decode);
   ok = ok && (tail == 1 + DivCeil(bytes_to_decode, 36));
   if (!ok) {
-    return JXL_FAILURE("Not enough bytes to parse %d bytes in hex",
-                       bytes_to_decode);
+    return JPEGLI_FAILURE("Not enough bytes to parse %d bytes in hex",
+                          bytes_to_decode);
   }
-  JXL_ENSURE(bytes->empty());
+  JPEGLI_ENSURE(bytes->empty());
   bytes->reserve(bytes_to_decode);
 
   // Encoding: base16 with newline after 72 chars.
@@ -382,8 +386,8 @@ Status MaybeDecodeBase16(const char* key, const char* encoded,
     if (pos + 2 >= encoded_end) return false;  // Truncated base16 2;
     uint32_t nibble0;
     uint32_t nibble1;
-    JXL_RETURN_IF_ERROR(DecodeHexNibble(pos[0], &nibble0));
-    JXL_RETURN_IF_ERROR(DecodeHexNibble(pos[1], &nibble1));
+    JPEGLI_RETURN_IF_ERROR(DecodeHexNibble(pos[0], &nibble0));
+    JPEGLI_RETURN_IF_ERROR(DecodeHexNibble(pos[1], &nibble1));
     bytes->push_back(static_cast<uint8_t>((nibble0 << 4) + nibble1));
     pos += 2;
   }
@@ -411,7 +415,7 @@ Status DecodeBlob(const png_text_struct& info, PackedMetadata* metadata) {
   if (strncmp(key, kKey, strlen(kKey)) != 0) return false;
 
   if (!MaybeDecodeBase16(key, value, &type, &bytes)) {
-    JXL_WARNING("Couldn't parse 'Raw format type' text chunk");
+    JPEGLI_WARNING("Couldn't parse 'Raw format type' text chunk");
     return false;
   }
   if (type == "exif") {
@@ -422,10 +426,10 @@ Status DecodeBlob(const png_text_struct& info, PackedMetadata* metadata) {
       bytes.erase(bytes.begin(), bytes.begin() + kExifPrefix.size());
     }
     if (!metadata->exif.empty()) {
-      JXL_DEBUG_V(2,
-                  "overwriting EXIF (%" PRIuS " bytes) with base16 (%" PRIuS
-                  " bytes)",
-                  metadata->exif.size(), bytes.size());
+      JPEGLI_DEBUG_V(2,
+                     "overwriting EXIF (%" PRIuS " bytes) with base16 (%" PRIuS
+                     " bytes)",
+                     metadata->exif.size(), bytes.size());
     }
     metadata->exif = std::move(bytes);
   } else if (type == "iptc") {
@@ -434,14 +438,14 @@ Status DecodeBlob(const png_text_struct& info, PackedMetadata* metadata) {
     // TODO(jon): Deal with 8bim in some way
   } else if (type == "xmp") {
     if (!metadata->xmp.empty()) {
-      JXL_DEBUG_V(2,
-                  "overwriting XMP (%" PRIuS " bytes) with base16 (%" PRIuS
-                  " bytes)",
-                  metadata->xmp.size(), bytes.size());
+      JPEGLI_DEBUG_V(2,
+                     "overwriting XMP (%" PRIuS " bytes) with base16 (%" PRIuS
+                     " bytes)",
+                     metadata->xmp.size(), bytes.size());
     }
     metadata->xmp = std::move(bytes);
   } else {
-    JXL_DEBUG_V(
+    JPEGLI_DEBUG_V(
         2, "Unknown type in 'Raw format type' text chunk: %s: %" PRIuS " bytes",
         type.c_str(), bytes.size());
   }
@@ -461,7 +465,7 @@ constexpr uint32_t MakeTag(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 struct Pixels {
   // Use array instead of vector to avoid memory initialization.
   uninitialized_vector<uint8_t> pixels_storage =
-      jxl::make_uninitialized_vector<uint8_t>(0);
+      jpegli::make_uninitialized_vector<uint8_t>(0);
   size_t pixels_size = 0;
   std::vector<uint8_t*> rows;
   std::atomic<uint32_t> has_error{0};
@@ -512,7 +516,7 @@ struct Reader {
     constexpr size_t kMaxPNGChunkSize = 1u << 30;  // 1 GB
     // Check first, to avoid overflow.
     if (size > kMaxPNGChunkSize) {
-      JXL_WARNING("APNG chunk size is too big");
+      JPEGLI_WARNING("APNG chunk size is too big");
       return Bytes();
     }
     size_t full_size = size + 12;  // size does not include itself, tag and CRC.
@@ -535,7 +539,7 @@ void ProgressiveRead_OnRow(png_structp png_ptr, png_bytep new_row,
                            png_uint_32 row_num, int pass) {
   Pixels* frame = reinterpret_cast<Pixels*>(png_get_progressive_ptr(png_ptr));
   if (!frame) {
-    JXL_DEBUG_ABORT("Internal logic error");
+    JPEGLI_DEBUG_ABORT("Internal logic error");
     return;
   }
   if (row_num >= frame->rows.size()) {
@@ -704,7 +708,7 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
   bool alpha_channel_used = ((color_type & 4) != 0);
   if (palette_used) {
     if (!color_used || alpha_channel_used) {
-      JXL_DEBUG_V(2, "Unexpected PNG color type");
+      JPEGLI_DEBUG_V(2, "Unexpected PNG color type");
     }
   }
 
@@ -716,7 +720,7 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
   }
   if (color_used) {
     ppf->info.num_color_channels = 3;
-    ppf->color_encoding.color_space = JXL_COLOR_SPACE_RGB;
+    ppf->color_encoding.color_space = JPEGLI_COLOR_SPACE_RGB;
     if (sig_bits) {
       if (sig_bits->red == sig_bits->green &&
           sig_bits->green == sig_bits->blue) {
@@ -724,34 +728,35 @@ void SetColorData(PackedPixelFile* ppf, uint8_t color_type, uint8_t bit_depth,
       } else {
         int maxbps =
             std::max(sig_bits->red, std::max(sig_bits->green, sig_bits->blue));
-        JXL_DEBUG_V(2,
-                    "sBIT chunk: bit depths for R, G, and B are not the same "
-                    "(%i %i %i), while in JPEG XL they have to be the same. "
-                    "Setting RGB bit depth to %i.",
-                    sig_bits->red, sig_bits->green, sig_bits->blue, maxbps);
+        JPEGLI_DEBUG_V(
+            2,
+            "sBIT chunk: bit depths for R, G, and B are not the same "
+            "(%i %i %i), while in JPEGLI they have to be the same. "
+            "Setting RGB bit depth to %i.",
+            sig_bits->red, sig_bits->green, sig_bits->blue, maxbps);
         ppf->info.bits_per_sample = maxbps;
       }
     }
   } else {
     ppf->info.num_color_channels = 1;
-    ppf->color_encoding.color_space = JXL_COLOR_SPACE_GRAY;
+    ppf->color_encoding.color_space = JPEGLI_COLOR_SPACE_GRAY;
     if (sig_bits) ppf->info.bits_per_sample = sig_bits->gray;
   }
   if (alpha_channel_used || has_transparency) {
     ppf->info.alpha_bits = ppf->info.bits_per_sample;
     if (sig_bits && sig_bits->alpha != ppf->info.bits_per_sample) {
-      JXL_DEBUG_V(2,
-                  "sBIT chunk: bit depths for RGBA are inconsistent "
-                  "(%i %i %i %i). Setting A bitdepth to %i.",
-                  sig_bits->red, sig_bits->green, sig_bits->blue,
-                  sig_bits->alpha, ppf->info.bits_per_sample);
+      JPEGLI_DEBUG_V(2,
+                     "sBIT chunk: bit depths for RGBA are inconsistent "
+                     "(%i %i %i %i). Setting A bitdepth to %i.",
+                     sig_bits->red, sig_bits->green, sig_bits->blue,
+                     sig_bits->alpha, ppf->info.bits_per_sample);
     }
   } else {
     ppf->info.alpha_bits = 0;
   }
   ppf->color_encoding.color_space = (ppf->info.num_color_channels == 1)
-                                        ? JXL_COLOR_SPACE_GRAY
-                                        : JXL_COLOR_SPACE_RGB;
+                                        ? JPEGLI_COLOR_SPACE_GRAY
+                                        : JPEGLI_COLOR_SPACE_RGB;
 }
 
 // Color profile chunks: cICP has the highest priority, followed by
@@ -805,12 +810,12 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   ppf->frames.clear();
   ppf->info.exponent_bits_per_sample = 0;
   ppf->info.alpha_exponent_bits = 0;
-  ppf->info.orientation = JXL_ORIENT_IDENTITY;
-  ppf->color_encoding.color_space = JXL_COLOR_SPACE_RGB;
-  ppf->color_encoding.white_point = JXL_WHITE_POINT_D65;
-  ppf->color_encoding.primaries = JXL_PRIMARIES_SRGB;
-  ppf->color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
-  ppf->color_encoding.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
+  ppf->info.orientation = JPEGLI_ORIENT_IDENTITY;
+  ppf->color_encoding.color_space = JPEGLI_COLOR_SPACE_RGB;
+  ppf->color_encoding.white_point = JPEGLI_WHITE_POINT_D65;
+  ppf->color_encoding.primaries = JPEGLI_PRIMARIES_SRGB;
+  ppf->color_encoding.transfer_function = JPEGLI_TRANSFER_FUNCTION_SRGB;
+  ppf->color_encoding.rendering_intent = JPEGLI_RENDERING_INTENT_RELATIVE;
 
   Reader input(bytes);
 
@@ -825,23 +830,23 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   Context ctx;
   Bytes ihdr = input.ReadChunk();
   if (ihdr.size() != ctx.ihdr.size()) {
-    return JXL_FAILURE("Unexpected first chunk payload size");
+    return JPEGLI_FAILURE("Unexpected first chunk payload size");
   }
   memcpy(ctx.ihdr.data(), ihdr.data(), ihdr.size());
   uint32_t id = LoadLE32(ihdr.data() + 4);
   if (id != MakeTag('I', 'H', 'D', 'R')) {
-    return JXL_FAILURE("First chunk is not IHDR");
+    return JPEGLI_FAILURE("First chunk is not IHDR");
   }
   const RectT<uint64_t> image_rect(0, 0, png_get_uint_32(ihdr.data() + 8),
                                    png_get_uint_32(ihdr.data() + 12));
   if (!ValidateViewport(image_rect)) {
-    return JXL_FAILURE("PNG image dimensions are too large");
+    return JPEGLI_FAILURE("PNG image dimensions are too large");
   }
 
   // Chunks we supply to PNG decoder for every animation frame.
   std::vector<Bytes> passthrough_chunks;
   if (!ctx.InitPngDecoder(passthrough_chunks, image_rect)) {
-    return JXL_FAILURE("Failed to initialize PNG decoder");
+    return JPEGLI_FAILURE("Failed to initialize PNG decoder");
   }
 
   // Marker that this PNG is animated.
@@ -860,7 +865,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   bool seen_pixel_data = false;
 
   uint32_t num_channels;
-  JxlPixelFormat format = {};
+  JpegliPixelFormat format = {};
   size_t bytes_per_pixel = 0;
   std::vector<Frame> frames;
   FrameControl current_frame = {/*delay_num=*/1, /*delay_den=*/10, image_rect,
@@ -870,20 +875,20 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
   // TODO(eustas): avoid copying.
   const auto finalize_frame = [&]() -> Status {
     if (!seen_pixel_data) {
-      return JXL_FAILURE("Frame / image without fdAT / IDAT chunks");
+      return JPEGLI_FAILURE("Frame / image without fdAT / IDAT chunks");
     }
     if (!ctx.FinalizeStream(&ppf->metadata)) {
-      return JXL_FAILURE("Failed to finalize PNG substream");
+      return JPEGLI_FAILURE("Failed to finalize PNG substream");
     }
     if (ctx.frameRaw.has_error) {
-      return JXL_FAILURE("Internal error");
+      return JPEGLI_FAILURE("Internal error");
     }
     // Allocates the frame buffer.
     const RectT<uint64_t>& vp = current_frame.viewport;
     size_t xsize = static_cast<size_t>(vp.xsize());
     size_t ysize = static_cast<size_t>(vp.ysize());
-    JXL_ASSIGN_OR_RETURN(PackedImage image,
-                         PackedImage::Create(xsize, ysize, format));
+    JPEGLI_ASSIGN_OR_RETURN(PackedImage image,
+                            PackedImage::Create(xsize, ysize, format));
     for (size_t y = 0; y < ysize; ++y) {
       // TODO(eustas): ensure multiplication is safe
       memcpy(static_cast<uint8_t*>(image.pixels()) + image.stride * y,
@@ -896,11 +901,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
   while (!input.Eof()) {
     if (seen_iend) {
-      return JXL_FAILURE("Exuberant input after IEND chunk");
+      return JPEGLI_FAILURE("Exuberant input after IEND chunk");
     }
     Bytes chunk = input.ReadChunk();
     if (chunk.empty()) {
-      return JXL_FAILURE("Malformed chunk");
+      return JPEGLI_FAILURE("Malformed chunk");
     }
     Bytes type(chunk.data() + 4, 4);
     id = LoadLE32(type.data());
@@ -909,21 +914,21 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
     if (!isAbc(type[0]) || !isAbc(type[1]) || !isAbc(type[2]) ||
         !isAbc(type[3])) {
-      return JXL_FAILURE("Exotic PNG chunk");
+      return JPEGLI_FAILURE("Exotic PNG chunk");
     }
 
     switch (id) {
       case MakeTag('a', 'c', 'T', 'L'):
         if (seen_idat) {
-          JXL_DEBUG_V(2, "aCTL after IDAT ignored");
+          JPEGLI_DEBUG_V(2, "aCTL after IDAT ignored");
           continue;
         }
         if (seen_actl) {
-          JXL_DEBUG_V(2, "Duplicate aCTL chunk ignored");
+          JPEGLI_DEBUG_V(2, "Duplicate aCTL chunk ignored");
           continue;
         }
         seen_actl = true;
-        ppf->info.have_animation = JXL_TRUE;
+        ppf->info.have_animation = JPEGLI_TRUE;
         // TODO(eustas): decode from chunk?
         ppf->info.animation.tps_numerator = 1000;
         ppf->info.animation.tps_denominator = 1;
@@ -931,19 +936,19 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('I', 'E', 'N', 'D'):
         seen_iend = true;
-        JXL_RETURN_IF_ERROR(finalize_frame());
+        JPEGLI_RETURN_IF_ERROR(finalize_frame());
         continue;
 
       case MakeTag('f', 'c', 'T', 'L'): {
         if (payload.size() != 26) {
-          return JXL_FAILURE("Unexpected fcTL payload size: %u",
-                             static_cast<uint32_t>(payload.size()));
+          return JPEGLI_FAILURE("Unexpected fcTL payload size: %u",
+                                static_cast<uint32_t>(payload.size()));
         }
         if (seen_fctl && !seen_idat) {
-          return JXL_FAILURE("More than one fcTL before IDAT");
+          return JPEGLI_FAILURE("More than one fcTL before IDAT");
         }
         if (seen_idat && !seen_actl) {
-          return JXL_FAILURE("fcTL after IDAT, but without acTL");
+          return JPEGLI_FAILURE("fcTL after IDAT, but without acTL");
         }
         seen_fctl = true;
 
@@ -955,11 +960,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
                                      png_get_uint_32(payload.data() + 8));
         uint8_t dispose_op = payload[24];
         if (dispose_op > kLastDisposeOp) {
-          return JXL_FAILURE("Invalid DisposeOp");
+          return JPEGLI_FAILURE("Invalid DisposeOp");
         }
         uint8_t blend_op = payload[25];
         if (blend_op > kLastBlendOp) {
-          return JXL_FAILURE("Invalid BlendOp");
+          return JPEGLI_FAILURE("Invalid BlendOp");
         }
         FrameControl next_frame = {
             /*delay_num=*/png_get_uint_16(payload.data() + 20),
@@ -968,21 +973,21 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
         if (!raw_viewport.Intersection(image_rect).IsSame(raw_viewport)) {
           // Cropping happened.
-          return JXL_FAILURE("PNG frame is outside of image rect");
+          return JPEGLI_FAILURE("PNG frame is outside of image rect");
         }
 
         if (!seen_idat) {
           // "Default" image is the first animation frame. Its viewport must
           // cover the whole image area.
           if (!raw_viewport.IsSame(image_rect)) {
-            return JXL_FAILURE(
+            return JPEGLI_FAILURE(
                 "If the first animation frame is default image, its viewport "
                 "must cover full image");
           }
         } else {
-          JXL_RETURN_IF_ERROR(finalize_frame());
+          JPEGLI_RETURN_IF_ERROR(finalize_frame());
           if (!ctx.InitPngDecoder(passthrough_chunks, next_frame.viewport)) {
-            return JXL_FAILURE("Failed to initialize PNG decoder");
+            return JPEGLI_FAILURE("Failed to initialize PNG decoder");
           }
         }
         current_frame = next_frame;
@@ -991,17 +996,17 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('I', 'D', 'A', 'T'): {
         if (!frames.empty()) {
-          return JXL_FAILURE("IDAT after default image is over");
+          return JPEGLI_FAILURE("IDAT after default image is over");
         }
         if (!seen_idat) {
           // First IDAT means that all metadata is ready.
           seen_idat = true;
-          JXL_ENSURE(image_rect.xsize() ==
-                     png_get_image_width(ctx.png_ptr, ctx.info_ptr));
-          JXL_ENSURE(image_rect.ysize() ==
-                     png_get_image_height(ctx.png_ptr, ctx.info_ptr));
-          JXL_RETURN_IF_ERROR(VerifyDimensions(constraints, image_rect.xsize(),
-                                               image_rect.ysize()));
+          JPEGLI_ENSURE(image_rect.xsize() ==
+                        png_get_image_width(ctx.png_ptr, ctx.info_ptr));
+          JPEGLI_ENSURE(image_rect.ysize() ==
+                        png_get_image_height(ctx.png_ptr, ctx.info_ptr));
+          JPEGLI_RETURN_IF_ERROR(VerifyDimensions(
+              constraints, image_rect.xsize(), image_rect.ysize()));
           ppf->info.xsize = image_rect.xsize();
           ppf->info.ysize = image_rect.ysize();
 
@@ -1015,27 +1020,27 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
               ppf->info.num_color_channels + (ppf->info.alpha_bits ? 1 : 0);
           format = {
               /*num_channels=*/num_channels,
-              /*data_type=*/ppf->info.bits_per_sample > 8 ? JXL_TYPE_UINT16
-                                                          : JXL_TYPE_UINT8,
-              /*endianness=*/JXL_BIG_ENDIAN,
+              /*data_type=*/ppf->info.bits_per_sample > 8 ? JPEGLI_TYPE_UINT16
+                                                          : JPEGLI_TYPE_UINT8,
+              /*endianness=*/JPEGLI_BIG_ENDIAN,
               /*align=*/0,
           };
           bytes_per_pixel =
-              num_channels * (format.data_type == JXL_TYPE_UINT16 ? 2 : 1);
+              num_channels * (format.data_type == JPEGLI_TYPE_UINT16 ? 2 : 1);
           // TODO(eustas): ensure multiplication is safe
           uint64_t row_bytes =
               static_cast<uint64_t>(image_rect.xsize()) * bytes_per_pixel;
           uint64_t max_rows = std::numeric_limits<size_t>::max() / row_bytes;
           if (image_rect.ysize() > max_rows) {
-            return JXL_FAILURE("Image too big.");
+            return JPEGLI_FAILURE("Image too big.");
           }
           // TODO(eustas): drop frameRaw
-          JXL_RETURN_IF_ERROR(
+          JPEGLI_RETURN_IF_ERROR(
               ctx.frameRaw.Resize(row_bytes, image_rect.ysize()));
         }
 
         if (!ctx.FeedChunks(chunk)) {
-          return JXL_FAILURE("Decoding IDAT failed");
+          return JPEGLI_FAILURE("Decoding IDAT failed");
         }
         seen_pixel_data = true;
         continue;
@@ -1043,15 +1048,15 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('f', 'd', 'A', 'T'): {
         if (!seen_idat) {
-          return JXL_FAILURE("fdAT chunk before IDAT");
+          return JPEGLI_FAILURE("fdAT chunk before IDAT");
         }
         if (!seen_actl) {
-          return JXL_FAILURE("fdAT chunk before acTL");
+          return JPEGLI_FAILURE("fdAT chunk before acTL");
         }
         /* The 'fdAT' chunk has... the same structure as an 'IDAT' chunk,
          * except preceded by a sequence number. */
         if (payload.size() < 4) {
-          return JXL_FAILURE("Corrupted fdAT chunk");
+          return JPEGLI_FAILURE("Corrupted fdAT chunk");
         }
         // Turn 'fdAT' to 'IDAT' by cutting sequence number and replacing tag.
         std::array<uint8_t, 8> preamble;
@@ -1060,7 +1065,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         // Cut-off 'size', 'type' and 'sequence_number'
         Bytes chunk_tail(chunk.data() + 12, chunk.size() - 12);
         if (!ctx.FeedChunks(Bytes(preamble), chunk_tail)) {
-          return JXL_FAILURE("Decoding fdAT failed");
+          return JPEGLI_FAILURE("Decoding fdAT failed");
         }
         seen_pixel_data = true;
         continue;
@@ -1068,10 +1073,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('c', 'I', 'C', 'P'):
         if (color_info_type == ColorInfoType::CICP) {
-          JXL_DEBUG_V(2, "Excessive colorspace definition; cICP chunk ignored");
+          JPEGLI_DEBUG_V(2,
+                         "Excessive colorspace definition; cICP chunk ignored");
           continue;
         }
-        JXL_RETURN_IF_ERROR(DecodeCicpChunk(payload, &ppf->color_encoding));
+        JPEGLI_RETURN_IF_ERROR(DecodeCicpChunk(payload, &ppf->color_encoding));
         ppf->icc.clear();
         ppf->primary_color_representation =
             PackedPixelFile::kColorEncodingIsPrimary;
@@ -1080,15 +1086,16 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('i', 'C', 'C', 'P'): {
         if (color_info_type == ColorInfoType::ICCP_OR_SRGB) {
-          return JXL_FAILURE("Repeated iCCP / sRGB chunk");
+          return JPEGLI_FAILURE("Repeated iCCP / sRGB chunk");
         }
         if (color_info_type > ColorInfoType::ICCP_OR_SRGB) {
-          JXL_DEBUG_V(2, "Excessive colorspace definition; iCCP chunk ignored");
+          JPEGLI_DEBUG_V(2,
+                         "Excessive colorspace definition; iCCP chunk ignored");
           continue;
         }
         // Let PNG decoder deal with chunk processing.
         if (!ctx.FeedChunks(chunk)) {
-          return JXL_FAILURE("Corrupt iCCP chunk");
+          return JPEGLI_FAILURE("Corrupt iCCP chunk");
         }
 
         // TODO(jon): catch special case of PQ and synthesize color encoding
@@ -1101,7 +1108,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
             png_get_iCCP(ctx.png_ptr, ctx.info_ptr, &name, &compression_type,
                          &profile, &profile_len);
         if (!ok || !profile_len) {
-          return JXL_FAILURE("Malformed / incomplete iCCP chunk");
+          return JPEGLI_FAILURE("Malformed / incomplete iCCP chunk");
         }
         ppf->icc.assign(profile, profile + profile_len);
         ppf->primary_color_representation = PackedPixelFile::kIccIsPrimary;
@@ -1111,36 +1118,39 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
       case MakeTag('s', 'R', 'G', 'B'):
         if (color_info_type == ColorInfoType::ICCP_OR_SRGB) {
-          return JXL_FAILURE("Repeated iCCP / sRGB chunk");
+          return JPEGLI_FAILURE("Repeated iCCP / sRGB chunk");
         }
         if (color_info_type > ColorInfoType::ICCP_OR_SRGB) {
-          JXL_DEBUG_V(2, "Excessive colorspace definition; sRGB chunk ignored");
+          JPEGLI_DEBUG_V(2,
+                         "Excessive colorspace definition; sRGB chunk ignored");
           continue;
         }
-        JXL_RETURN_IF_ERROR(DecodeSrgbChunk(payload, &ppf->color_encoding));
+        JPEGLI_RETURN_IF_ERROR(DecodeSrgbChunk(payload, &ppf->color_encoding));
         color_info_type = ColorInfoType::ICCP_OR_SRGB;
         continue;
 
       case MakeTag('g', 'A', 'M', 'A'):
         if (color_info_type >= ColorInfoType::GAMA_OR_CHRM) {
-          JXL_DEBUG_V(2, "Excessive colorspace definition; gAMA chunk ignored");
+          JPEGLI_DEBUG_V(2,
+                         "Excessive colorspace definition; gAMA chunk ignored");
           continue;
         }
-        JXL_RETURN_IF_ERROR(DecodeGamaChunk(payload, &ppf->color_encoding));
+        JPEGLI_RETURN_IF_ERROR(DecodeGamaChunk(payload, &ppf->color_encoding));
         color_info_type = ColorInfoType::GAMA_OR_CHRM;
         continue;
 
       case MakeTag('c', 'H', 'R', 'M'):
         if (color_info_type >= ColorInfoType::GAMA_OR_CHRM) {
-          JXL_DEBUG_V(2, "Excessive colorspace definition; cHRM chunk ignored");
+          JPEGLI_DEBUG_V(2,
+                         "Excessive colorspace definition; cHRM chunk ignored");
           continue;
         }
-        JXL_RETURN_IF_ERROR(DecodeChrmChunk(payload, &ppf->color_encoding));
+        JPEGLI_RETURN_IF_ERROR(DecodeChrmChunk(payload, &ppf->color_encoding));
         color_info_type = ColorInfoType::GAMA_OR_CHRM;
         continue;
 
       case MakeTag('c', 'L', 'L', 'i'):
-        JXL_RETURN_IF_ERROR(
+        JPEGLI_RETURN_IF_ERROR(
             DecodeClliChunk(payload, &ppf->info.intensity_target));
         continue;
 
@@ -1153,7 +1163,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
       default:
         // We don't know what is that, just pass through.
         if (!ctx.FeedChunks(chunk)) {
-          return JXL_FAILURE("PNG decoder failed to process chunk");
+          return JPEGLI_FAILURE("PNG decoder failed to process chunk");
         }
         // If it happens before IDAT, we consider it metadata and pass to all
         // sub-decoders.
@@ -1166,10 +1176,10 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
 
   bool color_is_already_set = (color_info_type != ColorInfoType::NONE);
   bool is_gray = (ppf->info.num_color_channels == 1);
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       ApplyColorHints(color_hints, color_is_already_set, is_gray, ppf));
 
-  if (ppf->color_encoding.transfer_function != JXL_TRANSFER_FUNCTION_PQ) {
+  if (ppf->color_encoding.transfer_function != JPEGLI_TRANSFER_FUNCTION_PQ) {
     // Reset intensity target, in case we set it from cLLi but TF is not PQ.
     ppf->info.intensity_target = 0.f;
   }
@@ -1183,8 +1193,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     const auto& pixels = frame.pixels;
     size_t xsize = pixels.xsize;
     size_t ysize = pixels.ysize;
-    JXL_ENSURE(xsize == vp.xsize());
-    JXL_ENSURE(ysize == vp.ysize());
+    JPEGLI_ENSURE(xsize == vp.xsize());
+    JPEGLI_ENSURE(ysize == vp.ysize());
 
     // Before encountering a DISPOSE_OP_NONE frame, the canvas is filled with
     // 0, so DISPOSE_OP_BACKGROUND and DISPOSE_OP_PREVIOUS are equivalent.
@@ -1218,11 +1228,11 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
                  py0 + pys >= y0 + ysize && use_for_next_frame) {
         // If the new frame is contained within the old frame, we can pad the
         // new frame with zeros and not blend.
-        JXL_ASSIGN_OR_RETURN(PackedImage new_data,
-                             PackedImage::Create(pxs, pys, pixels.format));
+        JPEGLI_ASSIGN_OR_RETURN(PackedImage new_data,
+                                PackedImage::Create(pxs, pys, pixels.format));
         memset(new_data.pixels(), 0, new_data.pixels_size);
         for (size_t y = 0; y < ysize; y++) {
-          JXL_RETURN_IF_ERROR(
+          JPEGLI_RETURN_IF_ERROR(
               PackedImage::ValidateDataType(new_data.format.data_type));
           size_t pixel_stride =
               PackedImage::BitsPerChannel(new_data.format.data_type) *
@@ -1242,8 +1252,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         ppf->frames.emplace_back(std::move(new_data));
       } else {
         // If all else fails, insert a placeholder blank frame with kReplace.
-        JXL_ASSIGN_OR_RETURN(PackedImage blank,
-                             PackedImage::Create(pxs, pys, pixels.format));
+        JPEGLI_ASSIGN_OR_RETURN(PackedImage blank,
+                                PackedImage::Create(pxs, pys, pixels.format));
         memset(blank.pixels(), 0, blank.pixels_size);
         ppf->frames.emplace_back(std::move(blank));
         auto& pframe = ppf->frames.back();
@@ -1255,7 +1265,8 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         bool is_full_size = px0 == 0 && py0 == 0 && pxs == ppf->info.xsize &&
                             pys == ppf->info.ysize;
         pframe.frame_info.layer_info.have_crop = is_full_size ? 0 : 1;
-        pframe.frame_info.layer_info.blend_info.blendmode = JXL_BLEND_REPLACE;
+        pframe.frame_info.layer_info.blend_info.blendmode =
+            JPEGLI_BLEND_REPLACE;
         pframe.frame_info.layer_info.blend_info.source = 1;
         pframe.frame_info.layer_info.save_as_reference = 1;
         ppf->frames.emplace_back(std::move(frame.pixels));
@@ -1272,7 +1283,7 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
     pframe.frame_info.duration =
         fc.delay_num * 1000 / (fc.delay_den ? fc.delay_den : 100);
     pframe.frame_info.layer_info.blend_info.blendmode =
-        should_blend ? JXL_BLEND_BLEND : JXL_BLEND_REPLACE;
+        should_blend ? JPEGLI_BLEND_BLEND : JPEGLI_BLEND_REPLACE;
     bool is_full_size = x0 == 0 && y0 == 0 && xsize == ppf->info.xsize &&
                         ysize == ppf->info.ysize;
     pframe.frame_info.layer_info.have_crop = is_full_size ? 0 : 1;
@@ -1284,13 +1295,13 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
         has_nontrivial_background && (fc.dispose_op == DisposeOp::BACKGROUND);
   }
 
-  if (ppf->frames.empty()) return JXL_FAILURE("No frames decoded");
-  ppf->frames.back().frame_info.is_last = JXL_TRUE;
+  if (ppf->frames.empty()) return JPEGLI_FAILURE("No frames decoded");
+  ppf->frames.back().frame_info.is_last = JPEGLI_TRUE;
 
   return true;
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_APNG
+#endif  // JPEGLI_ENABLE_APNG

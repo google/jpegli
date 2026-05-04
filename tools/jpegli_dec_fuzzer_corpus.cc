@@ -46,7 +46,7 @@ std::mutex stderr_mutex;
 std::vector<uint8_t> GetSomeTestImage(size_t xsize, size_t ysize,
                                       size_t num_channels, uint16_t seed) {
   // Cause more significant image difference for successive seeds.
-  jxl::Rng generator(seed);
+  jpegli::Rng generator(seed);
 
   // Returns random integer in interval [0, max_value)
   auto rng = [&generator](size_t max_value) -> size_t {
@@ -247,7 +247,7 @@ bool GenerateFile(const char* output_dir, const ImageSpec& spec,
     compressed.push_back(dis256(mt));
   }
 
-  if (!jpegxl::tools::WriteFile(output_fn, compressed)) {
+  if (!jpegli_tools::WriteFile(output_fn, compressed)) {
     return false;
   }
   if (!quiet) {
@@ -359,16 +359,16 @@ int main(int argc, const char** argv) {
     }
   }
 
-  jpegxl::tools::ThreadPoolInternal pool{num_threads};
+  jpegli_tools::ThreadPoolInternal pool{num_threads};
   const auto generate = [&specs, dest_dir, regenerate, quiet](
                             const uint32_t task,
-                            size_t /* thread */) -> jxl::Status {
+                            size_t /* thread */) -> jpegli::Status {
     const ImageSpec& spec = specs[task];
-    JXL_RETURN_IF_ERROR(GenerateFile(dest_dir, spec, regenerate, quiet));
+    JPEGLI_RETURN_IF_ERROR(GenerateFile(dest_dir, spec, regenerate, quiet));
     return true;
   };
-  if (!RunOnPool(pool.get(), 0, specs.size(), jxl::ThreadPool::NoInit, generate,
-                 "FuzzerCorpus")) {
+  if (!RunOnPool(pool.get(), 0, specs.size(), jpegli::ThreadPool::NoInit,
+                 generate, "FuzzerCorpus")) {
     std::cerr << "Error generating fuzzer corpus\n";
     return EXIT_FAILURE;
   }

@@ -4,11 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_PACKED_IMAGE_H_
-#define LIB_EXTRAS_PACKED_IMAGE_H_
+#ifndef JPEGLI_LIB_EXTRAS_PACKED_IMAGE_H_
+#define JPEGLI_LIB_EXTRAS_PACKED_IMAGE_H_
 
 // Helper class for storing external (int or float, interleaved) images. This is
-// the common format used by other libraries and in the libjxl API.
+// the common format used by other libraries and in the libjpegli API.
 
 #include <cmath>
 #include <cstddef>
@@ -26,28 +26,28 @@
 #include "lib/cms/color_encoding.h"
 #include "lib/extras/codestream_header.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
-static inline void JxlEncoderInitBasicInfo(JxlBasicInfo* info) {
-  info->have_container = JXL_FALSE;
+static inline void JpegliEncoderInitBasicInfo(JpegliBasicInfo* info) {
+  info->have_container = JPEGLI_FALSE;
   info->xsize = 0;
   info->ysize = 0;
   info->bits_per_sample = 8;
   info->exponent_bits_per_sample = 0;
   info->intensity_target = 0.f;
   info->min_nits = 0.f;
-  info->relative_to_max_display = JXL_FALSE;
+  info->relative_to_max_display = JPEGLI_FALSE;
   info->linear_below = 0.f;
-  info->uses_original_profile = JXL_FALSE;
-  info->have_preview = JXL_FALSE;
-  info->have_animation = JXL_FALSE;
-  info->orientation = JXL_ORIENT_IDENTITY;
+  info->uses_original_profile = JPEGLI_FALSE;
+  info->have_preview = JPEGLI_FALSE;
+  info->have_animation = JPEGLI_FALSE;
+  info->orientation = JPEGLI_ORIENT_IDENTITY;
   info->num_color_channels = 3;
   info->num_extra_channels = 0;
   info->alpha_bits = 0;
   info->alpha_exponent_bits = 0;
-  info->alpha_premultiplied = JXL_FALSE;
+  info->alpha_premultiplied = JPEGLI_FALSE;
   info->preview.xsize = 0;
   info->preview.ysize = 0;
   info->intrinsic_xsize = 0;
@@ -55,14 +55,14 @@ static inline void JxlEncoderInitBasicInfo(JxlBasicInfo* info) {
   info->animation.tps_numerator = 10;
   info->animation.tps_denominator = 1;
   info->animation.num_loops = 0;
-  info->animation.have_timecodes = JXL_FALSE;
+  info->animation.have_timecodes = JPEGLI_FALSE;
 }
 
 // Class representing an interleaved image with a bunch of channels.
 class PackedImage {
  public:
   static StatusOr<PackedImage> Create(size_t xsize, size_t ysize,
-                                      const JxlPixelFormat& format);
+                                      const JpegliPixelFormat& format);
 
   StatusOr<PackedImage> Copy() const;
 
@@ -87,32 +87,32 @@ class PackedImage {
   size_t stride;
 
   // Pixel storage format and buffer size of the pixels_ pointer.
-  JxlPixelFormat format;
+  JpegliPixelFormat format;
   size_t pixels_size;
 
   size_t pixel_stride() const { return pixel_stride_; }
 
-  static Status ValidateDataType(JxlDataType data_type);
+  static Status ValidateDataType(JpegliDataType data_type);
 
-  static size_t BitsPerChannel(JxlDataType data_type);
+  static size_t BitsPerChannel(JpegliDataType data_type);
 
   float GetPixelValue(size_t y, size_t x, size_t c) const {
     const uint8_t* data = const_pixels(y, x, c);
     switch (format.data_type) {
-      case JXL_TYPE_UINT8:
+      case JPEGLI_TYPE_UINT8:
         return data[0] * (1.0f / 255);
-      case JXL_TYPE_UINT16: {
+      case JPEGLI_TYPE_UINT16: {
         uint16_t val;
         memcpy(&val, data, 2);
-        return (swap_endianness_ ? JXL_BSWAP16(val) : val) * (1.0f / 65535);
+        return (swap_endianness_ ? JPEGLI_BSWAP16(val) : val) * (1.0f / 65535);
       }
-      case JXL_TYPE_FLOAT: {
+      case JPEGLI_TYPE_FLOAT: {
         float val;
         memcpy(&val, data, 4);
         return swap_endianness_ ? BSwapFloat(val) : val;
       }
       default:
-        JXL_DEBUG_ABORT("Unreachable");
+        JPEGLI_DEBUG_ABORT("Unreachable");
         return 0.0f;
     }
   }
@@ -120,18 +120,18 @@ class PackedImage {
   void SetPixelValue(size_t y, size_t x, size_t c, float val) const {
     uint8_t* data = pixels(y, x, c);
     switch (format.data_type) {
-      case JXL_TYPE_UINT8:
+      case JPEGLI_TYPE_UINT8:
         data[0] = Clamp1(std::round(val * 255), 0.0f, 255.0f);
         break;
-      case JXL_TYPE_UINT16: {
+      case JPEGLI_TYPE_UINT16: {
         uint16_t val16 = Clamp1(std::round(val * 65535), 0.0f, 65535.0f);
         if (swap_endianness_) {
-          val16 = JXL_BSWAP16(val16);
+          val16 = JPEGLI_BSWAP16(val16);
         }
         memcpy(data, &val16, 2);
         break;
       }
-      case JXL_TYPE_FLOAT: {
+      case JPEGLI_TYPE_FLOAT: {
         if (swap_endianness_) {
           val = BSwapFloat(val);
         }
@@ -139,7 +139,7 @@ class PackedImage {
         break;
       }
       default:
-        JXL_DEBUG_ABORT("Unreachable");
+        JPEGLI_DEBUG_ABORT("Unreachable");
     }
   }
 
@@ -147,10 +147,10 @@ class PackedImage {
   Status ShrinkTo(size_t new_xsize, size_t new_ysize);
 
  private:
-  PackedImage(size_t xsize, size_t ysize, const JxlPixelFormat& format,
+  PackedImage(size_t xsize, size_t ysize, const JpegliPixelFormat& format,
               size_t stride);
 
-  static StatusOr<size_t> CalcStride(const JxlPixelFormat& format,
+  static StatusOr<size_t> CalcStride(const JpegliPixelFormat& format,
                                      size_t xsize);
 
   size_t bytes_per_channel_;
@@ -172,7 +172,7 @@ class PackedFrame {
   ~PackedFrame();
 
   static StatusOr<PackedFrame> Create(size_t xsize, size_t ysize,
-                                      const JxlPixelFormat& format);
+                                      const JpegliPixelFormat& format);
 
   StatusOr<PackedFrame> Copy() const;
 
@@ -180,7 +180,7 @@ class PackedFrame {
   Status ShrinkTo(size_t new_xsize, size_t new_ysize);
 
   // The Frame metadata.
-  JxlFrameHeader frame_info = {};
+  JpegliFrameHeader frame_info = {};
   std::string name;
 
   // The pixel data for the color (or grayscale) channels.
@@ -201,15 +201,16 @@ class PackedMetadata {
 
 // The extra channel metadata information.
 struct PackedExtraChannel {
-  JxlExtraChannelInfo ec_info;
+  JpegliExtraChannelInfo ec_info;
   size_t index;
   std::string name;
 };
 
-// Helper class representing a JXL image file as decoded to pixels from the API.
+// Helper class representing a JPEGLI image file as decoded to pixels from the
+// API.
 class PackedPixelFile {
  public:
-  JxlBasicInfo info = {};
+  JpegliBasicInfo info = {};
 
   std::vector<PackedExtraChannel> extra_channels_info;
 
@@ -217,22 +218,21 @@ class PackedPixelFile {
   // `primary_color_representation` indicates whether `color_encoding` or `icc`
   // is the “authoritative” encoding of the colorspace, as opposed to a fallback
   // encoding. For example, if `color_encoding` is the primary one, as would
-  // occur when decoding a jxl file with such a representation, then `enc/jxl`
-  // will use it and ignore the ICC profile, whereas `enc/png` will include the
-  // ICC profile for compatibility.
-  // If `icc` is the primary representation, `enc/jxl` will preserve it when
-  // compressing losslessly, but *may* encode it as a color_encoding when
-  // compressing lossily.
+  // occur when decoding a jpegli file with such a representation, then
+  // `enc/jxl` will use it and ignore the ICC profile, whereas `enc/png` will
+  // include the ICC profile for compatibility. If `icc` is the primary
+  // representation, `enc/jxl` will preserve it when compressing losslessly, but
+  // *may* encode it as a color_encoding when compressing lossily.
   enum {
     kColorEncodingIsPrimary,
     kIccIsPrimary
   } primary_color_representation = kColorEncodingIsPrimary;
-  JxlColorEncoding color_encoding = {};
+  JpegliColorEncoding color_encoding = {};
   std::vector<uint8_t> icc;
   // The icc profile of the original image.
   std::vector<uint8_t> orig_icc;
 
-  JxlBitDepth input_bitdepth = {JXL_BIT_DEPTH_FROM_PIXEL_FORMAT, 0, 0};
+  JpegliBitDepth input_bitdepth = {JPEGLI_BIT_DEPTH_FROM_PIXEL_FORMAT, 0, 0};
 
   std::unique_ptr<PackedFrame> preview_frame;
   std::vector<PackedFrame> frames;
@@ -249,6 +249,6 @@ class PackedPixelFile {
 };
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_PACKED_IMAGE_H_
+#endif  // JPEGLI_LIB_EXTRAS_PACKED_IMAGE_H_

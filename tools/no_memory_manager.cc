@@ -9,16 +9,14 @@
 
 #include "lib/base/memory_manager.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 namespace {
 void* ToolsAlloc(void* /* opaque*/, size_t size) { return malloc(size); }
 void ToolsFree(void* /* opaque*/, void* address) { free(address); }
-JxlMemoryManager kNoMemoryManager{nullptr, &ToolsAlloc, &ToolsFree};
+JpegliMemoryManager kNoMemoryManager{nullptr, &ToolsAlloc, &ToolsFree};
 }  // namespace
 
-JxlMemoryManager* NoMemoryManager() { return &kNoMemoryManager; };
+JpegliMemoryManager* NoMemoryManager() { return &kNoMemoryManager; };
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

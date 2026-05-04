@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_CMS_OPSIN_PARAMS_H_
-#define LIB_JXL_CMS_OPSIN_PARAMS_H_
+#ifndef JPEGLI_LIB_CMS_OPSIN_PARAMS_H_
+#define JPEGLI_LIB_CMS_OPSIN_PARAMS_H_
 
 #include <array>
 #include <cstddef>
@@ -14,7 +14,7 @@
 
 // Constants that define the XYB color space.
 
-namespace jxl {
+namespace jpegli {
 namespace cms {
 
 // Parameters for opsin absorbance.
@@ -158,6 +158,6 @@ constexpr ColorCube3D UnscaledA2BCube() {
 constexpr ColorCube3D kUnscaledA2BCube = UnscaledA2BCube();
 
 }  // namespace cms
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_CMS_OPSIN_PARAMS_H_
+#endif  // JPEGLI_LIB_CMS_OPSIN_PARAMS_H_

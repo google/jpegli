@@ -46,7 +46,7 @@ sudo apt install clang-format clang-tidy curl parallel gcovr
 
 ## Building
 
-The `libjxl` project uses CMake to build. We provide a script that simplifies
+The `jpegli` project uses CMake to build. We provide a script that simplifies
 the invocation. To build and test the project, run
 
 ```bash

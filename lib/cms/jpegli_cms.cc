@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef JPEGXL_ENABLE_SKCMS
-#define JPEGXL_ENABLE_SKCMS 0
+#ifndef JPEGLI_ENABLE_SKCMS
+#define JPEGLI_ENABLE_SKCMS 0
 #endif
 
 #include <algorithm>
@@ -17,7 +17,7 @@
 #include <memory>
 
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "lib/cms/jxl_cms.cc"
+#define HWY_TARGET_INCLUDE "lib/cms/jpegli_cms.cc"
 #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
@@ -28,30 +28,30 @@
 #include "lib/cms/cms.h"
 #include "lib/cms/cms_interface.h"
 #include "lib/cms/color_encoding_internal.h"
-#include "lib/cms/jxl_cms_internal.h"
+#include "lib/cms/jpegli_cms_internal.h"
 #include "lib/cms/transfer_functions-inl.h"
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
 #include "skcms.h"
-#else  // JPEGXL_ENABLE_SKCMS
+#else  // JPEGLI_ENABLE_SKCMS
 #include "lcms2.h"
 #include "lcms2_plugin.h"
 #include "lib/base/span.h"
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
-#define JXL_CMS_VERBOSE 0
+#define JPEGLI_CMS_VERBOSE 0
 
 // Define these only once. We can't use HWY_ONCE here because it is defined as
 // 1 only on the last pass.
-#ifndef LIB_JXL_JXL_CMS_CC
-#define LIB_JXL_JXL_CMS_CC
+#ifndef JPEGLI_LIB_CMS_JPEGLI_CMS_CC
+#define JPEGLI_LIB_CMS_JPEGLI_CMS_CC
 
-namespace jxl {
+namespace jpegli {
 namespace {
 
-using ::jxl::cms::ColorEncoding;
+using ::jpegli::cms::ColorEncoding;
 
-struct JxlCms {
-#if JPEGXL_ENABLE_SKCMS
+struct JpegliCms {
+#if JPEGLI_ENABLE_SKCMS
   IccBytes icc_src, icc_dst;
   skcms_ICCProfile profile_src, profile_dst;
 #else
@@ -78,27 +78,27 @@ struct JxlCms {
   ExtraTF postprocess = ExtraTF::kNone;
 };
 
-Status ApplyHlgOotf(JxlCms* t, float* JXL_RESTRICT buf, size_t xsize,
+Status ApplyHlgOotf(JpegliCms* t, float* JPEGLI_RESTRICT buf, size_t xsize,
                     bool forward);
 }  // namespace
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_JXL_CMS_CC
+#endif  // JPEGLI_LIB_CMS_JPEGLI_CMS_CC
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
 const size_t kX = 0;  // pixel index, multiplied by 3 for RGB
 #endif
 
 // xform_src = UndoGammaCompression(buf_src).
-Status BeforeTransform(JxlCms* t, const float* buf_src, float* xform_src,
+Status BeforeTransform(JpegliCms* t, const float* buf_src, float* xform_src,
                        size_t buf_size) {
   switch (t->preprocess) {
     case ExtraTF::kNone:
-      JXL_ENSURE(false);  // unreachable
+      JPEGLI_ENSURE(false);  // unreachable
       break;
 
     case ExtraTF::kPQ: {
@@ -109,7 +109,7 @@ Status BeforeTransform(JxlCms* t, const float* buf_src, float* xform_src,
         const auto result = tf_pq.DisplayFromEncoded(df, val);
         Store(result, df, xform_src + i);
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("pre in %.4f %.4f %.4f undoPQ %.4f %.4f %.4f\n", buf_src[3 * kX],
              buf_src[3 * kX + 1], buf_src[3 * kX + 2], xform_src[3 * kX],
              xform_src[3 * kX + 1], xform_src[3 * kX + 2]);
@@ -123,10 +123,10 @@ Status BeforeTransform(JxlCms* t, const float* buf_src, float* xform_src,
             TF_HLG_Base::DisplayFromEncoded(static_cast<double>(buf_src[i])));
       }
       if (t->apply_hlg_ootf) {
-        JXL_RETURN_IF_ERROR(
+        JPEGLI_RETURN_IF_ERROR(
             ApplyHlgOotf(t, xform_src, buf_size, /*forward=*/true));
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("pre in %.4f %.4f %.4f undoHLG %.4f %.4f %.4f\n", buf_src[3 * kX],
              buf_src[3 * kX + 1], buf_src[3 * kX + 2], xform_src[3 * kX],
              xform_src[3 * kX + 1], xform_src[3 * kX + 2]);
@@ -140,7 +140,7 @@ Status BeforeTransform(JxlCms* t, const float* buf_src, float* xform_src,
         const auto result = TF_SRGB().DisplayFromEncoded(val);
         Store(result, df, xform_src + i);
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("pre in %.4f %.4f %.4f undoSRGB %.4f %.4f %.4f\n", buf_src[3 * kX],
              buf_src[3 * kX + 1], buf_src[3 * kX + 2], xform_src[3 * kX],
              xform_src[3 * kX + 1], xform_src[3 * kX + 2]);
@@ -151,10 +151,11 @@ Status BeforeTransform(JxlCms* t, const float* buf_src, float* xform_src,
 }
 
 // Applies gamma compression in-place.
-Status AfterTransform(JxlCms* t, float* JXL_RESTRICT buf_dst, size_t buf_size) {
+Status AfterTransform(JpegliCms* t, float* JPEGLI_RESTRICT buf_dst,
+                      size_t buf_size) {
   switch (t->postprocess) {
     case ExtraTF::kNone:
-      JXL_DEBUG_ABORT("Unreachable");
+      JPEGLI_DEBUG_ABORT("Unreachable");
       break;
     case ExtraTF::kPQ: {
       HWY_FULL(float) df;
@@ -164,7 +165,7 @@ Status AfterTransform(JxlCms* t, float* JXL_RESTRICT buf_dst, size_t buf_size) {
         const auto result = tf_pq.EncodedFromDisplay(df, val);
         Store(result, df, buf_dst + i);
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("after PQ enc %.4f %.4f %.4f\n", buf_dst[3 * kX],
              buf_dst[3 * kX + 1], buf_dst[3 * kX + 2]);
 #endif
@@ -172,14 +173,14 @@ Status AfterTransform(JxlCms* t, float* JXL_RESTRICT buf_dst, size_t buf_size) {
     }
     case ExtraTF::kHLG:
       if (t->apply_hlg_ootf) {
-        JXL_RETURN_IF_ERROR(
+        JPEGLI_RETURN_IF_ERROR(
             ApplyHlgOotf(t, buf_dst, buf_size, /*forward=*/false));
       }
       for (size_t i = 0; i < buf_size; ++i) {
         buf_dst[i] = static_cast<float>(
             TF_HLG_Base::EncodedFromDisplay(static_cast<double>(buf_dst[i])));
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("after HLG enc %.4f %.4f %.4f\n", buf_dst[3 * kX],
              buf_dst[3 * kX + 1], buf_dst[3 * kX + 2]);
 #endif
@@ -191,7 +192,7 @@ Status AfterTransform(JxlCms* t, float* JXL_RESTRICT buf_dst, size_t buf_size) {
         const auto result = TF_SRGB().EncodedFromDisplay(df, val);
         Store(result, df, buf_dst + i);
       }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
       printf("after SRGB enc %.4f %.4f %.4f\n", buf_dst[3 * kX],
              buf_dst[3 * kX + 1], buf_dst[3 * kX + 2]);
 #endif
@@ -204,17 +205,17 @@ Status DoColorSpaceTransform(void* cms_data, const size_t thread,
                              const float* buf_src, float* buf_dst,
                              size_t xsize) {
   // No lock needed.
-  JxlCms* t = reinterpret_cast<JxlCms*>(cms_data);
+  JpegliCms* t = reinterpret_cast<JpegliCms*>(cms_data);
 
   const float* xform_src = buf_src;  // Read-only.
   if (t->preprocess != ExtraTF::kNone) {
     float* mutable_xform_src = t->buf_src[thread];  // Writable buffer.
-    JXL_RETURN_IF_ERROR(BeforeTransform(t, buf_src, mutable_xform_src,
-                                        xsize * t->channels_src));
+    JPEGLI_RETURN_IF_ERROR(BeforeTransform(t, buf_src, mutable_xform_src,
+                                           xsize * t->channels_src));
     xform_src = mutable_xform_src;
   }
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
   if (t->channels_src == 1 && !t->skip_lcms) {
     // Expand from 1 to 3 channels, starting from the end in case
     // xform_src == t->buf_src[thread].
@@ -237,7 +238,7 @@ Status DoColorSpaceTransform(void* cms_data, const size_t thread,
   }
 #endif
 
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
   // Save inputs for printing before in-place transforms overwrite them.
   const float in0 = xform_src[3 * kX + 0];
   const float in1 = xform_src[3 * kX + 1];
@@ -249,26 +250,26 @@ Status DoColorSpaceTransform(void* cms_data, const size_t thread,
       memcpy(buf_dst, xform_src, xsize * t->channels_src * sizeof(*buf_dst));
     }  // else: in-place, no need to copy
   } else {
-#if JPEGXL_ENABLE_SKCMS
-    JXL_ENSURE(
+#if JPEGLI_ENABLE_SKCMS
+    JPEGLI_ENSURE(
         skcms_Transform(xform_src,
                         (t->channels_src == 4 ? skcms_PixelFormat_RGBA_ffff
                                               : skcms_PixelFormat_RGB_fff),
                         skcms_AlphaFormat_Opaque, &t->profile_src, buf_dst,
                         skcms_PixelFormat_RGB_fff, skcms_AlphaFormat_Opaque,
                         &t->profile_dst, xsize));
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
     cmsDoTransform(t->lcms_transform, xform_src, buf_dst,
                    static_cast<cmsUInt32Number>(xsize));
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
   }
-#if JXL_CMS_VERBOSE >= 2
+#if JPEGLI_CMS_VERBOSE >= 2
   printf("xform skip%d: %.4f %.4f %.4f (%p) -> (%p) %.4f %.4f %.4f\n",
          t->skip_lcms, in0, in1, in2, xform_src, buf_dst, buf_dst[3 * kX],
          buf_dst[3 * kX + 1], buf_dst[3 * kX + 2]);
 #endif
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
   if (t->channels_dst == 1 && !t->skip_lcms) {
     // Contract back from 3 to 1 channel, this time forward.
     float* grayscale_buf_dst = t->buf_dst[thread];
@@ -280,18 +281,18 @@ Status DoColorSpaceTransform(void* cms_data, const size_t thread,
 #endif
 
   if (t->postprocess != ExtraTF::kNone) {
-    JXL_RETURN_IF_ERROR(AfterTransform(t, buf_dst, xsize * t->channels_dst));
+    JPEGLI_RETURN_IF_ERROR(AfterTransform(t, buf_dst, xsize * t->channels_dst));
   }
   return true;
 }
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-namespace jxl {
+namespace jpegli {
 namespace {
 
 HWY_EXPORT(DoColorSpaceTransform);
@@ -302,11 +303,11 @@ int DoColorSpaceTransform(void* t, size_t thread, const float* buf_src,
 }
 
 // Define to 1 on OS X as a workaround for older LCMS lacking MD5.
-#define JXL_CMS_OLD_VERSION 0
+#define JPEGLI_CMS_OLD_VERSION 0
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
 
-JXL_MUST_USE_RESULT CIExy CIExyFromXYZ(const Color& XYZ) {
+JPEGLI_MUST_USE_RESULT CIExy CIExyFromXYZ(const Color& XYZ) {
   const double factor = 1.0 / static_cast<double>(XYZ[0] + XYZ[1] + XYZ[2]);
   CIExy xy;
   xy.x = XYZ[0] * factor;
@@ -314,23 +315,23 @@ JXL_MUST_USE_RESULT CIExy CIExyFromXYZ(const Color& XYZ) {
   return xy;
 }
 
-#else  // JPEGXL_ENABLE_SKCMS
+#else  // JPEGLI_ENABLE_SKCMS
 // (LCMS interface requires xyY but we omit the Y for white points/primaries.)
 
-JXL_MUST_USE_RESULT CIExy CIExyFromxyY(const cmsCIExyY& xyY) {
+JPEGLI_MUST_USE_RESULT CIExy CIExyFromxyY(const cmsCIExyY& xyY) {
   CIExy xy;
   xy.x = xyY.x;
   xy.y = xyY.y;
   return xy;
 }
 
-JXL_MUST_USE_RESULT CIExy CIExyFromXYZ(const cmsCIEXYZ& XYZ) {
+JPEGLI_MUST_USE_RESULT CIExy CIExyFromXYZ(const cmsCIEXYZ& XYZ) {
   cmsCIExyY xyY;
   cmsXYZ2xyY(/*Dest=*/&xyY, /*Source=*/&XYZ);
   return CIExyFromxyY(xyY);
 }
 
-JXL_MUST_USE_RESULT cmsCIEXYZ D50_XYZ() {
+JPEGLI_MUST_USE_RESULT cmsCIEXYZ D50_XYZ() {
   // Quantized D50 as stored in ICC profiles.
   return {0.96420288, 1.0, 0.82490540};
 }
@@ -353,30 +354,30 @@ struct CurveDeleter {
 using Curve = std::unique_ptr<cmsToneCurve, CurveDeleter>;
 
 Status CreateProfileXYZ(const cmsContext context,
-                        Profile* JXL_RESTRICT profile) {
+                        Profile* JPEGLI_RESTRICT profile) {
   profile->reset(cmsCreateXYZProfileTHR(context));
-  if (profile->get() == nullptr) return JXL_FAILURE("Failed to create XYZ");
+  if (profile->get() == nullptr) return JPEGLI_FAILURE("Failed to create XYZ");
   return true;
 }
 
-#endif  // !JPEGXL_ENABLE_SKCMS
+#endif  // !JPEGLI_ENABLE_SKCMS
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
 // IMPORTANT: icc must outlive profile.
 Status DecodeProfile(const uint8_t* icc, size_t size,
                      skcms_ICCProfile* const profile) {
   if (!skcms_Parse(icc, size, profile)) {
-    return JXL_FAILURE("Failed to parse ICC profile with %" PRIuS " bytes",
-                       size);
+    return JPEGLI_FAILURE("Failed to parse ICC profile with %" PRIuS " bytes",
+                          size);
   }
   return true;
 }
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
 Status DecodeProfile(const cmsContext context, Span<const uint8_t> icc,
                      Profile* profile) {
   profile->reset(cmsOpenProfileFromMemTHR(context, icc.data(), icc.size()));
   if (profile->get() == nullptr) {
-    return JXL_FAILURE("Failed to decode profile");
+    return JPEGLI_FAILURE("Failed to decode profile");
   }
 
   // WARNING: due to the LCMS MD5 issue mentioned above, many existing
@@ -385,9 +386,9 @@ Status DecodeProfile(const cmsContext context, Span<const uint8_t> icc,
 
   return true;
 }
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
 
 ColorSpace ColorSpaceFromProfile(const skcms_ICCProfile& profile) {
   switch (profile.data_color_space) {
@@ -415,11 +416,11 @@ void MatrixProduct(const skcms_Matrix3x3& matrix, const Color& vector_in,
 }
 
 // Returns white point that was specified when creating the profile.
-JXL_MUST_USE_RESULT Status UnadaptedWhitePoint(const skcms_ICCProfile& profile,
-                                               CIExy* out) {
+JPEGLI_MUST_USE_RESULT Status
+UnadaptedWhitePoint(const skcms_ICCProfile& profile, CIExy* out) {
   Color media_white_point_XYZ;
   if (!skcms_GetWTPT(&profile, media_white_point_XYZ.data())) {
-    return JXL_FAILURE("ICC profile does not contain WhitePoint tag");
+    return JPEGLI_FAILURE("ICC profile does not contain WhitePoint tag");
   }
   skcms_Matrix3x3 CHAD;
   if (!skcms_GetCHAD(&profile, &CHAD)) {
@@ -432,7 +433,7 @@ JXL_MUST_USE_RESULT Status UnadaptedWhitePoint(const skcms_ICCProfile& profile,
   // and the adaptation needs to be undone.
   skcms_Matrix3x3 inverse_CHAD;
   if (!skcms_Matrix3x3_invert(&CHAD, &inverse_CHAD)) {
-    return JXL_FAILURE("Non-invertible ChromaticAdaptation matrix");
+    return JPEGLI_FAILURE("Non-invertible ChromaticAdaptation matrix");
   }
   Color unadapted_white_point_XYZ;
   MatrixProduct(inverse_CHAD, media_white_point_XYZ, unadapted_white_point_XYZ);
@@ -447,7 +448,7 @@ Status IdentifyPrimaries(const skcms_ICCProfile& profile,
   skcms_Matrix3x3 CHAD;
   skcms_Matrix3x3 inverse_CHAD;
   if (skcms_GetCHAD(&profile, &CHAD)) {
-    JXL_RETURN_IF_ERROR(skcms_Matrix3x3_invert(&CHAD, &inverse_CHAD));
+    JPEGLI_RETURN_IF_ERROR(skcms_Matrix3x3_invert(&CHAD, &inverse_CHAD));
   } else {
     static constexpr skcms_Matrix3x3 kLMSFromXYZ = {
         {{0.8951, 0.2664, -0.1614},
@@ -459,7 +460,7 @@ Status IdentifyPrimaries(const skcms_ICCProfile& profile,
          {-0.0085287, 0.0400428, 0.9684867}}};
     static constexpr Color kWpD50XYZ{0.96420288, 1.0, 0.82490540};
     Color wp_unadapted_XYZ;
-    JXL_RETURN_IF_ERROR(
+    JPEGLI_RETURN_IF_ERROR(
         CIEXYZFromWhiteCIExy(wp_unadapted.x, wp_unadapted.y, wp_unadapted_XYZ));
     Color wp_D50_LMS;
     Color wp_unadapted_LMS;
@@ -489,7 +490,7 @@ Status IdentifyPrimaries(const skcms_ICCProfile& profile,
 }
 
 bool IsApproximatelyEqual(const skcms_ICCProfile& profile,
-                          const ColorEncoding& JXL_RESTRICT c) {
+                          const ColorEncoding& JPEGLI_RESTRICT c) {
   IccBytes bytes;
   if (!MaybeCreateProfile(c.ToExternal(), &bytes)) {
     return false;
@@ -508,8 +509,8 @@ bool IsApproximatelyEqual(const skcms_ICCProfile& profile,
 }
 
 Status DetectTransferFunction(const skcms_ICCProfile& profile,
-                              ColorEncoding* JXL_RESTRICT c) {
-  JXL_ENSURE(c->color_space != ColorSpace::kXYB);
+                              ColorEncoding* JPEGLI_RESTRICT c) {
+  JPEGLI_ENSURE(c->color_space != ColorSpace::kXYB);
 
   float gamma[3] = {};
   if (profile.has_trc) {
@@ -552,7 +553,7 @@ Status DetectTransferFunction(const skcms_ICCProfile& profile,
   return true;
 }
 
-#else  // JPEGXL_ENABLE_SKCMS
+#else  // JPEGLI_ENABLE_SKCMS
 
 uint32_t Type32(const ColorEncoding& c, bool cmyk) {
   if (cmyk) return TYPE_CMYK_FLT;
@@ -583,10 +584,10 @@ Status ProfileEquivalentToICC(const cmsContext context, const Profile& profile1,
   const uint32_t type_src = Type64(c);
 
   Profile profile2;
-  JXL_RETURN_IF_ERROR(DecodeProfile(context, Bytes(icc), &profile2));
+  JPEGLI_RETURN_IF_ERROR(DecodeProfile(context, Bytes(icc), &profile2));
 
   Profile profile_xyz;
-  JXL_RETURN_IF_ERROR(CreateProfileXYZ(context, &profile_xyz));
+  JPEGLI_RETURN_IF_ERROR(CreateProfileXYZ(context, &profile_xyz));
 
   const uint32_t intent = INTENT_RELATIVE_COLORIMETRIC;
   const uint32_t flags = cmsFLAGS_NOOPTIMIZE | cmsFLAGS_BLACKPOINTCOMPENSATION |
@@ -598,7 +599,7 @@ Status ProfileEquivalentToICC(const cmsContext context, const Profile& profile1,
                                          profile_xyz.get(), TYPE_XYZ_DBL,
                                          intent, flags));
   if (xform1 == nullptr || xform2 == nullptr) {
-    return JXL_FAILURE("Failed to create transform");
+    return JPEGLI_FAILURE("Failed to create transform");
   }
 
   double in[3];
@@ -640,9 +641,9 @@ Status ProfileEquivalentToICC(const cmsContext context, const Profile& profile1,
 // Returns white point that was specified when creating the profile.
 // NOTE: we can't just use cmsSigMediaWhitePointTag because its interpretation
 // differs between ICC versions.
-JXL_MUST_USE_RESULT cmsCIEXYZ UnadaptedWhitePoint(const cmsContext context,
-                                                  const Profile& profile,
-                                                  const ColorEncoding& c) {
+JPEGLI_MUST_USE_RESULT cmsCIEXYZ UnadaptedWhitePoint(const cmsContext context,
+                                                     const Profile& profile,
+                                                     const ColorEncoding& c) {
   const cmsCIEXYZ* white_point = static_cast<const cmsCIEXYZ*>(
       cmsReadTag(profile.get(), cmsSigMediaWhitePointTag));
   if (white_point != nullptr &&
@@ -693,7 +694,7 @@ Status IdentifyPrimaries(const cmsContext context, const Profile& profile,
     // converting from the colorspace.
     Profile profile_xyz;
     if (!CreateProfileXYZ(context, &profile_xyz)) {
-      return JXL_FAILURE("Failed to retrieve colorants");
+      return JPEGLI_FAILURE("Failed to retrieve colorants");
     }
     // Array arguments are one per profile.
     cmsHPROFILE profiles[2] = {profile.get(), profile_xyz.get()};
@@ -706,7 +707,7 @@ Status IdentifyPrimaries(const cmsContext context, const Profile& profile,
     Transform xform(cmsCreateExtendedTransform(
         context, 2, profiles, black_compensation, intents, adaption, nullptr, 0,
         Type64(*c), TYPE_XYZ_DBL, flags));
-    if (!xform) return JXL_FAILURE("Failed to retrieve colorants");
+    if (!xform) return JPEGLI_FAILURE("Failed to retrieve colorants");
 
     const cmsFloat64Number in[9] = {1.0, 0.0, 0.0, 0.0, 1.0,
                                     0.0, 0.0, 0.0, 1.0};
@@ -731,8 +732,8 @@ Status IdentifyPrimaries(const cmsContext context, const Profile& profile,
 }
 
 Status DetectTransferFunction(const cmsContext context, const Profile& profile,
-                              ColorEncoding* JXL_RESTRICT c) {
-  JXL_ENSURE(c->color_space != ColorSpace::kXYB);
+                              ColorEncoding* JPEGLI_RESTRICT c) {
+  JPEGLI_ENSURE(c->color_space != ColorSpace::kXYB);
 
   float gamma = 0;
   if (const auto* gray_trc = reinterpret_cast<const cmsToneCurve*>(
@@ -789,7 +790,7 @@ Status DetectTransferFunction(const cmsContext context, const Profile& profile,
 }
 
 void ErrorHandler(cmsContext context, cmsUInt32Number code, const char* text) {
-  JXL_WARNING("LCMS error %u: %s", code, text);
+  JPEGLI_WARNING("LCMS error %u: %s", code, text);
 }
 
 // Returns a context for the current thread, creating it if necessary.
@@ -797,14 +798,14 @@ cmsContext GetContext() {
   static thread_local void* context_;
   if (context_ == nullptr) {
     context_ = cmsCreateContext(nullptr, nullptr);
-    JXL_DASSERT(context_ != nullptr);
+    JPEGLI_DASSERT(context_ != nullptr);
 
     cmsSetLogErrorHandlerTHR(static_cast<cmsContext>(context_), &ErrorHandler);
   }
   return static_cast<cmsContext>(context_);
 }
 
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
 Status GetPrimariesLuminances(const ColorEncoding& encoding,
                               float luminances[3]) {
@@ -834,16 +835,16 @@ Status GetPrimariesLuminances(const ColorEncoding& encoding,
 
   Color white_XYZ;
   CIExy wp = encoding.GetWhitePoint();
-  JXL_RETURN_IF_ERROR(CIEXYZFromWhiteCIExy(wp.x, wp.y, white_XYZ));
+  JPEGLI_RETURN_IF_ERROR(CIEXYZFromWhiteCIExy(wp.x, wp.y, white_XYZ));
 
   PrimariesCIExy primaries;
-  JXL_RETURN_IF_ERROR(encoding.GetPrimaries(primaries));
+  JPEGLI_RETURN_IF_ERROR(encoding.GetPrimaries(primaries));
   Matrix3x3d chromaticities{
       {{primaries.r.x, primaries.g.x, primaries.b.x},
        {primaries.r.y, primaries.g.y, primaries.b.y},
        {1 - primaries.r.x - primaries.r.y, 1 - primaries.g.x - primaries.g.y,
         1 - primaries.b.x - primaries.b.y}}};
-  JXL_RETURN_IF_ERROR(Inv3x3Matrix(chromaticities));
+  JPEGLI_RETURN_IF_ERROR(Inv3x3Matrix(chromaticities));
   const double ys[3] = {primaries.r.y, primaries.g.y, primaries.b.y};
   for (size_t i = 0; i < 3; ++i) {
     luminances[i] = ys[i] * (chromaticities[i][0] * white_XYZ[0] +
@@ -853,7 +854,7 @@ Status GetPrimariesLuminances(const ColorEncoding& encoding,
   return true;
 }
 
-Status ApplyHlgOotf(JxlCms* t, float* JXL_RESTRICT buf, size_t xsize,
+Status ApplyHlgOotf(JpegliCms* t, float* JPEGLI_RESTRICT buf, size_t xsize,
                     bool forward) {
   if (295 <= t->intensity_target && t->intensity_target <= 305) {
     // The gamma is approximately 1 so this can essentially be skipped.
@@ -901,14 +902,14 @@ Status ApplyHlgOotf(JxlCms* t, float* JXL_RESTRICT buf, size_t xsize,
       break;
 
     default:
-      return JXL_FAILURE("HLG OOTF not implemented for %" PRIuS " channels",
-                         t->hlg_ootf_num_channels);
+      return JPEGLI_FAILURE("HLG OOTF not implemented for %" PRIuS " channels",
+                            t->hlg_ootf_num_channels);
   }
   return true;
 }
 
-bool IsKnownTransferFunction(jxl::cms::TransferFunction tf) {
-  using TF = jxl::cms::TransferFunction;
+bool IsKnownTransferFunction(jpegli::cms::TransferFunction tf) {
+  using TF = jpegli::cms::TransferFunction;
   // All but kUnknown
   return tf == TF::k709 || tf == TF::kLinear || tf == TF::kSRGB ||
          tf == TF::kPQ || tf == TF::kDCI || tf == TF::kHLG;
@@ -917,7 +918,7 @@ bool IsKnownTransferFunction(jxl::cms::TransferFunction tf) {
 constexpr uint8_t kColorPrimariesP3_D65 = 12;
 
 bool IsKnownColorPrimaries(uint8_t color_primaries) {
-  using P = jxl::cms::Primaries;
+  using P = jpegli::cms::Primaries;
   // All but kCustom
   if (color_primaries == kColorPrimariesP3_D65) return true;
   const auto p = static_cast<Primaries>(color_primaries);
@@ -927,7 +928,7 @@ bool IsKnownColorPrimaries(uint8_t color_primaries) {
 bool ApplyCICP(const uint8_t color_primaries,
                const uint8_t transfer_characteristics,
                const uint8_t matrix_coefficients, const uint8_t full_range,
-               ColorEncoding* JXL_RESTRICT c) {
+               ColorEncoding* JPEGLI_RESTRICT c) {
   if (matrix_coefficients != 0) return false;
   if (full_range != 1) return false;
 
@@ -950,29 +951,29 @@ bool ApplyCICP(const uint8_t color_primaries,
   return true;
 }
 
-JXL_BOOL JxlCmsSetFieldsFromICC(void* user_data, const uint8_t* icc_data,
-                                size_t icc_size, JxlColorEncoding* c,
-                                JXL_BOOL* cmyk) {
-  if (c == nullptr) return JXL_FALSE;
-  if (cmyk == nullptr) return JXL_FALSE;
+JPEGLI_BOOL JpegliCmsSetFieldsFromICC(void* user_data, const uint8_t* icc_data,
+                                      size_t icc_size, JpegliColorEncoding* c,
+                                      JPEGLI_BOOL* cmyk) {
+  if (c == nullptr) return JPEGLI_FALSE;
+  if (cmyk == nullptr) return JPEGLI_FALSE;
 
-  *cmyk = JXL_FALSE;
+  *cmyk = JPEGLI_FALSE;
 
   // In case parsing fails, mark the ColorEncoding as invalid.
-  c->color_space = JXL_COLOR_SPACE_UNKNOWN;
-  c->transfer_function = JXL_TRANSFER_FUNCTION_UNKNOWN;
+  c->color_space = JPEGLI_COLOR_SPACE_UNKNOWN;
+  c->transfer_function = JPEGLI_TRANSFER_FUNCTION_UNKNOWN;
 
-  if (icc_size == 0) return JXL_FAILURE("Empty ICC profile");
+  if (icc_size == 0) return JPEGLI_FAILURE("Empty ICC profile");
 
   ColorEncoding c_enc;
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
   if (icc_size < 128) {
-    return JXL_FAILURE("ICC file too small");
+    return JPEGLI_FAILURE("ICC file too small");
   }
 
   skcms_ICCProfile profile;
-  JXL_RETURN_IF_ERROR(skcms_Parse(icc_data, icc_size, &profile));
+  JPEGLI_RETURN_IF_ERROR(skcms_Parse(icc_data, icc_size, &profile));
 
   // skcms does not return the rendering intent, so get it from the file. It
   // should be encoded as big-endian 32-bit integer in bytes 60..63.
@@ -987,15 +988,15 @@ JXL_BOOL JxlCmsSetFieldsFromICC(void* user_data, const uint8_t* icc_data,
   uint32_t candidate_rendering_intent =
       std::min(big_endian_rendering_intent, little_endian_rendering_intent);
   if (candidate_rendering_intent != big_endian_rendering_intent) {
-    JXL_WARNING(
+    JPEGLI_WARNING(
         "Invalid rendering intent bytes: [0x%02X 0x%02X 0x%02X 0x%02X], "
         "assuming %u was meant",
         icc_data[64], icc_data[65], icc_data[66], icc_data[67],
         candidate_rendering_intent);
   }
   if (candidate_rendering_intent > 3) {
-    return JXL_FAILURE("Invalid rendering intent %u\n",
-                       candidate_rendering_intent);
+    return JPEGLI_FAILURE("Invalid rendering intent %u\n",
+                          candidate_rendering_intent);
   }
   // ICC and RenderingIntent have the same values (0..3).
   c_enc.rendering_intent =
@@ -1007,33 +1008,33 @@ JXL_BOOL JxlCmsSetFieldsFromICC(void* user_data, const uint8_t* icc_data,
                 profile.CICP.matrix_coefficients,
                 profile.CICP.video_full_range_flag, &c_enc)) {
     *c = c_enc.ToExternal();
-    return JXL_TRUE;
+    return JPEGLI_TRUE;
   }
 
   c_enc.color_space = ColorSpaceFromProfile(profile);
-  *cmyk = TO_JXL_BOOL(profile.data_color_space == skcms_Signature_CMYK);
+  *cmyk = TO_JPEGLI_BOOL(profile.data_color_space == skcms_Signature_CMYK);
 
   CIExy wp_unadapted;
-  JXL_RETURN_IF_ERROR(UnadaptedWhitePoint(profile, &wp_unadapted));
-  JXL_RETURN_IF_ERROR(c_enc.SetWhitePoint(wp_unadapted));
+  JPEGLI_RETURN_IF_ERROR(UnadaptedWhitePoint(profile, &wp_unadapted));
+  JPEGLI_RETURN_IF_ERROR(c_enc.SetWhitePoint(wp_unadapted));
 
   // Relies on color_space.
-  JXL_RETURN_IF_ERROR(IdentifyPrimaries(profile, wp_unadapted, &c_enc));
+  JPEGLI_RETURN_IF_ERROR(IdentifyPrimaries(profile, wp_unadapted, &c_enc));
 
   // Relies on color_space/white point/primaries being set already.
-  JXL_RETURN_IF_ERROR(DetectTransferFunction(profile, &c_enc));
-#else  // JPEGXL_ENABLE_SKCMS
+  JPEGLI_RETURN_IF_ERROR(DetectTransferFunction(profile, &c_enc));
+#else  // JPEGLI_ENABLE_SKCMS
 
   const cmsContext context = GetContext();
 
   Profile profile;
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       DecodeProfile(context, Bytes(icc_data, icc_size), &profile));
 
   const cmsUInt32Number rendering_intent32 =
       cmsGetHeaderRenderingIntent(profile.get());
   if (rendering_intent32 > 3) {
-    return JXL_FAILURE("Invalid rendering intent %u\n", rendering_intent32);
+    return JPEGLI_FAILURE("Invalid rendering intent %u\n", rendering_intent32);
   }
   // ICC and RenderingIntent have the same values (0..3).
   c_enc.rendering_intent = static_cast<RenderingIntent>(rendering_intent32);
@@ -1047,40 +1048,40 @@ JXL_BOOL JxlCmsSetFieldsFromICC(void* user_data, const uint8_t* icc_data,
       ApplyCICP(cicp_buffer[8], cicp_buffer[9], cicp_buffer[10],
                 cicp_buffer[11], &c_enc)) {
     *c = c_enc.ToExternal();
-    return JXL_TRUE;
+    return JPEGLI_TRUE;
   }
 
   c_enc.color_space = ColorSpaceFromProfile(profile);
   if (cmsGetColorSpace(profile.get()) == cmsSigCmykData) {
-    *cmyk = JXL_TRUE;
+    *cmyk = JPEGLI_TRUE;
     *c = c_enc.ToExternal();
-    return JXL_TRUE;
+    return JPEGLI_TRUE;
   }
 
   const cmsCIEXYZ wp_unadapted = UnadaptedWhitePoint(context, profile, c_enc);
-  JXL_RETURN_IF_ERROR(c_enc.SetWhitePoint(CIExyFromXYZ(wp_unadapted)));
+  JPEGLI_RETURN_IF_ERROR(c_enc.SetWhitePoint(CIExyFromXYZ(wp_unadapted)));
 
   // Relies on color_space.
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       IdentifyPrimaries(context, profile, wp_unadapted, &c_enc));
 
   // Relies on color_space/white point/primaries being set already.
-  JXL_RETURN_IF_ERROR(DetectTransferFunction(context, profile, &c_enc));
+  JPEGLI_RETURN_IF_ERROR(DetectTransferFunction(context, profile, &c_enc));
 
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
   *c = c_enc.ToExternal();
-  return JXL_TRUE;
+  return JPEGLI_TRUE;
 }
 
 }  // namespace
 
 namespace {
 
-void JxlCmsDestroy(void* cms_data) {
+void JpegliCmsDestroy(void* cms_data) {
   if (cms_data == nullptr) return;
-  JxlCms* t = reinterpret_cast<JxlCms*>(cms_data);
-#if !JPEGXL_ENABLE_SKCMS
+  JpegliCms* t = reinterpret_cast<JpegliCms*>(cms_data);
+#if !JPEGLI_ENABLE_SKCMS
   TransformDeleter()(t->lcms_transform);
 #endif
   delete t;
@@ -1101,67 +1102,67 @@ void AllocateBuffer(size_t length, size_t num_threads,
   }
 }
 
-void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
-                 const JxlColorProfile* input, const JxlColorProfile* output,
-                 float intensity_target) {
+void* JpegliCmsInit(void* init_data, size_t num_threads, size_t xsize,
+                    const JpegliColorProfile* input,
+                    const JpegliColorProfile* output, float intensity_target) {
   if (init_data == nullptr) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: init_data is nullptr");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: init_data is nullptr");
     return nullptr;
   }
-  const auto* cms = static_cast<const JxlCmsInterface*>(init_data);
-  auto t = jxl::make_unique<JxlCms>();
+  const auto* cms = static_cast<const JpegliCmsInterface*>(init_data);
+  auto t = jpegli::make_unique<JpegliCms>();
   IccBytes icc_src;
   IccBytes icc_dst;
   if (input->icc.size == 0) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: empty input ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: empty input ICC");
     return nullptr;
   }
   if (output->icc.size == 0) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: empty OUTPUT ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: empty OUTPUT ICC");
     return nullptr;
   }
   icc_src.assign(input->icc.data, input->icc.data + input->icc.size);
   ColorEncoding c_src;
   if (!c_src.SetFieldsFromICC(std::move(icc_src), *cms)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: failed to parse input ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: failed to parse input ICC");
     return nullptr;
   }
   icc_dst.assign(output->icc.data, output->icc.data + output->icc.size);
   ColorEncoding c_dst;
   if (!c_dst.SetFieldsFromICC(std::move(icc_dst), *cms)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: failed to parse output ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: failed to parse output ICC");
     return nullptr;
   }
-#if JXL_CMS_VERBOSE
+#if JPEGLI_CMS_VERBOSE
   printf("%s -> %s\n", Description(c_src).c_str(), Description(c_dst).c_str());
 #endif
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
   if (!DecodeProfile(input->icc.data, input->icc.size, &t->profile_src)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: skcms failed to parse input ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: skcms failed to parse input ICC");
     return nullptr;
   }
   if (!DecodeProfile(output->icc.data, output->icc.size, &t->profile_dst)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: skcms failed to parse output ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: skcms failed to parse output ICC");
     return nullptr;
   }
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
   const cmsContext context = GetContext();
   Profile profile_src, profile_dst;
   if (!DecodeProfile(context, Bytes(c_src.icc), &profile_src)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: lcms failed to parse input ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: lcms failed to parse input ICC");
     return nullptr;
   }
   if (!DecodeProfile(context, Bytes(c_dst.icc), &profile_dst)) {
-    JXL_NOTIFY_ERROR("JxlCmsInit: lcms failed to parse output ICC");
+    JPEGLI_NOTIFY_ERROR("JpegliCmsInit: lcms failed to parse output ICC");
     return nullptr;
   }
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
   t->skip_lcms = false;
   if (c_src.SameColorEncoding(c_dst)) {
     t->skip_lcms = true;
-#if JXL_CMS_VERBOSE
+#if JPEGLI_CMS_VERBOSE
     printf("Skip CMS\n");
 #endif
   }
@@ -1172,8 +1173,8 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
     t->hlg_ootf_num_channels = c_hlg->Channels();
     if (t->hlg_ootf_num_channels == 3 &&
         !GetPrimariesLuminances(*c_hlg, t->hlg_ootf_luminances.data())) {
-      JXL_NOTIFY_ERROR(
-          "JxlCmsInit: failed to compute the luminances of primaries");
+      JPEGLI_NOTIFY_ERROR(
+          "JpegliCmsInit: failed to compute the luminances of primaries");
       return nullptr;
     }
   }
@@ -1188,27 +1189,27 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
     // Construct new profile as if the data were already/still linear.
     ColorEncoding c_linear_src = c_src;
     c_linear_src.tf.SetTransferFunction(TransferFunction::kLinear);
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
     skcms_ICCProfile new_src;
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
     Profile new_src;
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
         // Only enable ExtraTF if profile creation succeeded.
     if (MaybeCreateProfile(c_linear_src.ToExternal(), &icc_src) &&
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
         DecodeProfile(icc_src.data(), icc_src.size(), &new_src)) {
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
         DecodeProfile(context, Bytes(icc_src), &new_src)) {
-#endif  // JPEGXL_ENABLE_SKCMS
-#if JXL_CMS_VERBOSE
+#endif  // JPEGLI_ENABLE_SKCMS
+#if JPEGLI_CMS_VERBOSE
       printf("Special HLG/PQ/sRGB -> linear\n");
 #endif
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
       t->icc_src = std::move(icc_src);
       t->profile_src = new_src;
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
       profile_src.swap(new_src);
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
       t->preprocess = c_src.tf.IsSRGB()
                           ? ExtraTF::kSRGB
                           : (c_src.tf.IsPQ() ? ExtraTF::kPQ : ExtraTF::kHLG);
@@ -1216,12 +1217,12 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
       src_linear = true;
     } else {
       if (t->apply_hlg_ootf) {
-        JXL_NOTIFY_ERROR(
+        JPEGLI_NOTIFY_ERROR(
             "Failed to create extra linear source profile, and HLG OOTF "
             "required");
         return nullptr;
       }
-      JXL_WARNING("Failed to create extra linear destination profile");
+      JPEGLI_WARNING("Failed to create extra linear destination profile");
     }
   }
 
@@ -1229,67 +1230,67 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
       (c_dst.tf.IsSRGB() && src_linear && c_src.SameColorSpace(c_dst))) {
     ColorEncoding c_linear_dst = c_dst;
     c_linear_dst.tf.SetTransferFunction(TransferFunction::kLinear);
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
     skcms_ICCProfile new_dst;
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
     Profile new_dst;
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
     // Only enable ExtraTF if profile creation succeeded.
     if (MaybeCreateProfile(c_linear_dst.ToExternal(), &icc_dst) &&
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
         DecodeProfile(icc_dst.data(), icc_dst.size(), &new_dst)) {
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
         DecodeProfile(context, Bytes(icc_dst), &new_dst)) {
-#endif  // JPEGXL_ENABLE_SKCMS
-#if JXL_CMS_VERBOSE
+#endif  // JPEGLI_ENABLE_SKCMS
+#if JPEGLI_CMS_VERBOSE
       printf("Special linear -> HLG/PQ/sRGB\n");
 #endif
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
       t->icc_dst = std::move(icc_dst);
       t->profile_dst = new_dst;
-#else   // JPEGXL_ENABLE_SKCMS
+#else   // JPEGLI_ENABLE_SKCMS
       profile_dst.swap(new_dst);
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
       t->postprocess = c_dst.tf.IsSRGB()
                            ? ExtraTF::kSRGB
                            : (c_dst.tf.IsPQ() ? ExtraTF::kPQ : ExtraTF::kHLG);
       c_dst = c_linear_dst;
     } else {
       if (t->apply_hlg_ootf) {
-        JXL_NOTIFY_ERROR(
+        JPEGLI_NOTIFY_ERROR(
             "Failed to create extra linear destination profile, and inverse "
             "HLG OOTF required");
         return nullptr;
       }
-      JXL_WARNING("Failed to create extra linear destination profile");
+      JPEGLI_WARNING("Failed to create extra linear destination profile");
     }
   }
 
   if (c_src.SameColorEncoding(c_dst)) {
-#if JXL_CMS_VERBOSE
+#if JPEGLI_CMS_VERBOSE
     printf("Same intermediary linear profiles, skipping CMS\n");
 #endif
     t->skip_lcms = true;
   }
 
-#if JPEGXL_ENABLE_SKCMS
+#if JPEGLI_ENABLE_SKCMS
   if (!skcms_MakeUsableAsDestination(&t->profile_dst)) {
-    JXL_NOTIFY_ERROR(
+    JPEGLI_NOTIFY_ERROR(
         "Failed to make %s usable as a color transform destination",
         ColorEncodingDescription(c_dst.ToExternal()).c_str());
     return nullptr;
   }
-#endif  // JPEGXL_ENABLE_SKCMS
+#endif  // JPEGLI_ENABLE_SKCMS
 
   // Not including alpha channel (copied separately).
   const size_t channels_src = (c_src.cmyk ? 4 : c_src.Channels());
   const size_t channels_dst = c_dst.Channels();
-#if JXL_CMS_VERBOSE
+#if JPEGLI_CMS_VERBOSE
   printf("Channels: %" PRIuS "; Threads: %" PRIuS "\n", channels_src,
          num_threads);
 #endif
 
-#if !JPEGXL_ENABLE_SKCMS
+#if !JPEGLI_ENABLE_SKCMS
   // Type includes color space (XYZ vs RGB), so can be different.
   const uint32_t type_src = Type32(c_src, channels_src == 4);
   const uint32_t type_dst = Type32(c_dst, false);
@@ -1302,10 +1303,10 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
       cmsCreateTransformTHR(context, profile_src.get(), type_src,
                             profile_dst.get(), type_dst, intent, flags);
   if (t->lcms_transform == nullptr) {
-    JXL_NOTIFY_ERROR("Failed to create transform");
+    JPEGLI_NOTIFY_ERROR("Failed to create transform");
     return nullptr;
   }
-#endif  // !JPEGXL_ENABLE_SKCMS
+#endif  // !JPEGLI_ENABLE_SKCMS
 
   // Ideally LCMS would convert directly from External to Image3. However,
   // cmsDoTransformLineStride only accepts 32-bit BytesPerPlaneIn, whereas our
@@ -1317,7 +1318,7 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
   // outputs (or vice versa), we use floating point input/output.
   t->channels_src = channels_src;
   t->channels_dst = channels_dst;
-#if !JPEGXL_ENABLE_SKCMS
+#if !JPEGLI_ENABLE_SKCMS
   size_t actual_channels_src = channels_src;
   size_t actual_channels_dst = channels_dst;
 #else
@@ -1334,13 +1335,13 @@ void* JxlCmsInit(void* init_data, size_t num_threads, size_t xsize,
   return t.release();
 }
 
-float* JxlCmsGetSrcBuf(void* cms_data, size_t thread) {
-  JxlCms* t = reinterpret_cast<JxlCms*>(cms_data);
+float* JpegliCmsGetSrcBuf(void* cms_data, size_t thread) {
+  JpegliCms* t = reinterpret_cast<JpegliCms*>(cms_data);
   return t->buf_src[thread];
 }
 
-float* JxlCmsGetDstBuf(void* cms_data, size_t thread) {
-  JxlCms* t = reinterpret_cast<JxlCms*>(cms_data);
+float* JpegliCmsGetDstBuf(void* cms_data, size_t thread) {
+  JpegliCms* t = reinterpret_cast<JpegliCms*>(cms_data);
   return t->buf_dst[thread];
 }
 
@@ -1348,20 +1349,20 @@ float* JxlCmsGetDstBuf(void* cms_data, size_t thread) {
 
 extern "C" {
 
-JXL_CMS_EXPORT const JxlCmsInterface* JxlGetDefaultCms() {
-  static constexpr JxlCmsInterface kInterface = {
+JPEGLI_CMS_EXPORT const JpegliCmsInterface* JpegliGetDefaultCms() {
+  static constexpr JpegliCmsInterface kInterface = {
       /*set_fields_data=*/nullptr,
-      /*set_fields_from_icc=*/&JxlCmsSetFieldsFromICC,
+      /*set_fields_from_icc=*/&JpegliCmsSetFieldsFromICC,
       /*init_data=*/const_cast<void*>(static_cast<const void*>(&kInterface)),
-      /*init=*/&JxlCmsInit,
-      /*get_src_buf=*/&JxlCmsGetSrcBuf,
-      /*get_dst_buf=*/&JxlCmsGetDstBuf,
+      /*init=*/&JpegliCmsInit,
+      /*get_src_buf=*/&JpegliCmsGetSrcBuf,
+      /*get_dst_buf=*/&JpegliCmsGetDstBuf,
       /*run=*/&DoColorSpaceTransform,
-      /*destroy=*/&JxlCmsDestroy};
+      /*destroy=*/&JpegliCmsDestroy};
   return &kInterface;
 }
 
 }  // extern "C"
 
-}  // namespace jxl
+}  // namespace jpegli
 #endif  // HWY_ONCE

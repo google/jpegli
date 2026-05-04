@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_ENC_JPEGLI_H_
-#define LIB_EXTRAS_ENC_JPEGLI_H_
+#ifndef JPEGLI_LIB_EXTRAS_ENC_JPEGLI_H_
+#define JPEGLI_LIB_EXTRAS_ENC_JPEGLI_H_
 
 // Encodes JPG pixels and metadata in memory using the libjpegli library.
 
@@ -17,7 +17,7 @@
 #include "lib/base/data_parallel.h"
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 class PackedPixelFile;
@@ -50,6 +50,6 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
                   ThreadPool* pool, std::vector<uint8_t>* compressed);
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_ENC_JPEGLI_H_
+#endif  // JPEGLI_LIB_EXTRAS_ENC_JPEGLI_H_

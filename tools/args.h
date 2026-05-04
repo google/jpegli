@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_ARGS_H_
-#define TOOLS_ARGS_H_
+#ifndef JPEGLI_TOOLS_ARGS_H_
+#define JPEGLI_TOOLS_ARGS_H_
 
 // Helpers for parsing command line arguments. No include guard needed.
 
@@ -20,21 +20,20 @@
 #include "lib/extras/dec/color_hints.h"
 #include "tools/file_io.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-static inline bool ParseOverride(const char* arg, jxl::Override* out) {
+static inline bool ParseOverride(const char* arg, jpegli::Override* out) {
   const std::string s_arg(arg);
   if (s_arg == "1") {
-    *out = jxl::Override::kOn;
+    *out = jpegli::Override::kOn;
     return true;
   }
   if (s_arg == "0") {
-    *out = jxl::Override::kOff;
+    *out = jpegli::Override::kOff;
     return true;
   }
   fprintf(stderr, "Invalid flag, %s must be 0 or 1\n", arg);
-  return JXL_FAILURE("Args");
+  return JPEGLI_FAILURE("Args");
 }
 
 template <typename Callback>
@@ -60,16 +59,16 @@ static inline bool IncrementUnsigned(size_t* out) {
 }
 
 struct ColorHintsProxy {
-  jxl::extras::ColorHints target;
+  jpegli::extras::ColorHints target;
   bool operator()(const std::string& key, const std::string& value) {
     if (key == "icc_pathname") {
       std::vector<uint8_t> icc;
-      JXL_RETURN_IF_ERROR(ReadFile(value, &icc));
+      JPEGLI_RETURN_IF_ERROR(ReadFile(value, &icc));
       const char* data = reinterpret_cast<const char*>(icc.data());
       target.Add("icc", std::string(data, data + icc.size()));
     } else if (key == "exif" || key == "xmp" || key == "jumbf") {
       std::vector<uint8_t> metadata;
-      JXL_RETURN_IF_ERROR(ReadFile(value, &metadata));
+      JPEGLI_RETURN_IF_ERROR(ReadFile(value, &metadata));
       const char* data = reinterpret_cast<const char*>(metadata.data());
       target.Add(key, std::string(data, data + metadata.size()));
     } else if (key == "strip") {
@@ -81,7 +80,6 @@ struct ColorHintsProxy {
   }
 };
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_ARGS_H_
+#endif  // JPEGLI_TOOLS_ARGS_H_

@@ -9,7 +9,7 @@
 #include "lib/extras/convolve-inl.h"
 #include "lib/extras/convolve.h"
 
-namespace jxl {
+namespace jpegli {
 
 //------------------------------------------------------------------------------
 // Slow
@@ -20,8 +20,8 @@ namespace {
 StatusOr<float> SlowSeparablePixel(const ImageF& in, const Rect& rect,
                                    const int64_t x, const int64_t y,
                                    const int64_t radius,
-                                   const float* JXL_RESTRICT horz_weights,
-                                   const float* JXL_RESTRICT vert_weights) {
+                                   const float* JPEGLI_RESTRICT horz_weights,
+                                   const float* JPEGLI_RESTRICT vert_weights) {
   const size_t xsize = in.xsize();
   const size_t ysize = in.ysize();
   const WrapMirror wrap;
@@ -30,12 +30,12 @@ StatusOr<float> SlowSeparablePixel(const ImageF& in, const Rect& rect,
   for (int dy = -radius; dy <= radius; ++dy) {
     const float wy = vert_weights[std::abs(dy) * 4];
     const size_t sy = wrap(rect.y0() + y + dy, ysize);
-    JXL_ENSURE(sy < ysize);
-    const float* const JXL_RESTRICT row = in.ConstRow(sy);
+    JPEGLI_ENSURE(sy < ysize);
+    const float* const JPEGLI_RESTRICT row = in.ConstRow(sy);
     for (int dx = -radius; dx <= radius; ++dx) {
       const float wx = horz_weights[std::abs(dx) * 4];
       const size_t sx = wrap(rect.x0() + x + dx, xsize);
-      JXL_ENSURE(sx < xsize);
+      JPEGLI_ENSURE(sx < xsize);
       mul += row[sx] * wx * wy;
     }
   }
@@ -46,10 +46,10 @@ template <int R, typename Weights>
 Status SlowSeparable(const ImageF& in, const Rect& in_rect,
                      const Weights& weights, ThreadPool* pool, ImageF* out,
                      const Rect& out_rect) {
-  JXL_ENSURE(in_rect.xsize() == out_rect.xsize());
-  JXL_ENSURE(in_rect.ysize() == out_rect.ysize());
-  JXL_ENSURE(in_rect.IsInside(Rect(in)));
-  JXL_ENSURE(out_rect.IsInside(Rect(*out)));
+  JPEGLI_ENSURE(in_rect.xsize() == out_rect.xsize());
+  JPEGLI_ENSURE(in_rect.ysize() == out_rect.ysize());
+  JPEGLI_ENSURE(in_rect.IsInside(Rect(in)));
+  JPEGLI_ENSURE(out_rect.IsInside(Rect(*out)));
   const float* horz_weights = &weights.horz[0];
   const float* vert_weights = &weights.vert[0];
 
@@ -57,18 +57,18 @@ Status SlowSeparable(const ImageF& in, const Rect& in_rect,
                                size_t /*thread*/) -> Status {
     const int64_t y = task;
 
-    float* const JXL_RESTRICT row_out = out_rect.Row(out, y);
+    float* const JPEGLI_RESTRICT row_out = out_rect.Row(out, y);
     for (size_t x = 0; x < in_rect.xsize(); ++x) {
-      JXL_ASSIGN_OR_RETURN(row_out[x],
-                           SlowSeparablePixel(in, in_rect, x, y, /*radius=*/R,
-                                              horz_weights, vert_weights));
+      JPEGLI_ASSIGN_OR_RETURN(
+          row_out[x], SlowSeparablePixel(in, in_rect, x, y, /*radius=*/R,
+                                         horz_weights, vert_weights));
     }
     return true;
   };
   const size_t ysize = in_rect.ysize();
-  JXL_RETURN_IF_ERROR(RunOnPool(pool, 0, static_cast<uint32_t>(ysize),
-                                ThreadPool::NoInit, process_row,
-                                "SlowSeparable"));
+  JPEGLI_RETURN_IF_ERROR(RunOnPool(pool, 0, static_cast<uint32_t>(ysize),
+                                   ThreadPool::NoInit, process_row,
+                                   "SlowSeparable"));
   return true;
 }
 
@@ -80,4 +80,4 @@ Status SlowSeparable5(const ImageF& in, const Rect& in_rect,
   return SlowSeparable<2>(in, in_rect, weights, pool, out, out_rect);
 }
 
-}  // namespace jxl
+}  // namespace jpegli

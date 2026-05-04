@@ -12,7 +12,7 @@ set -eux
 
 SELF=$(realpath "$0")
 MYDIR=$(dirname "${SELF}")
-JPEGXL_TEST_DATA_PATH="${MYDIR}/../../testdata"
+JPEGLI_TEST_DATA_PATH="${MYDIR}/../../testdata"
 
 # Temporary files cleanup hooks.
 CLEANUP_FILES=()
@@ -39,7 +39,7 @@ verify_max_bpp() {
 
 # Test that jpeg files created with cjpegli can be decoded with normal djpeg.
 cjpegli_test() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local minscore="$3"
   local maxbpp="$4"
@@ -55,7 +55,7 @@ cjpegli_test() {
 
 # Test full cjpegli/djpegli roundtrip.
 cjpegli_djpegli_test() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local minscore="$3"
   local maxbpp="$4"
@@ -71,7 +71,7 @@ cjpegli_djpegli_test() {
 
 # Test the --target_size command line argument of cjpegli.
 cjpegli_test_target_size() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local target_size="$3"
   local jpgfn="$(mktemp -p "$tmpdir")"
@@ -85,7 +85,7 @@ cjpegli_test_target_size() {
 # Test that jpeg files created with cjpeg binary + jpegli library can be decoded
 # with normal libjpeg.
 cjpeg_test() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local minscore="$3"
   local maxbpp="$4"
@@ -102,7 +102,7 @@ cjpeg_test() {
 
 # Test decoding of jpeg files with the djpegli binary.
 djpegli_test() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local minscore="$3"
   local jpgfn="$(mktemp -p "$tmpdir")"
@@ -143,7 +143,7 @@ djpegli_test() {
 
 # Test decoding of jpeg files with the djpeg binary + jpegli library.
 djpeg_test() {
-  local infn="${JPEGXL_TEST_DATA_PATH}/$1"
+  local infn="${JPEGLI_TEST_DATA_PATH}/$1"
   local encargs="$2"
   local minscore="$3"
   local jpgfn="$(mktemp -p "$tmpdir")"

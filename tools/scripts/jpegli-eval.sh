@@ -13,7 +13,7 @@ BUILD_DIR="${BUILD_DIR:-./build}"
 BUILD_MODE="${BUILD_MODE:-opt}"
 DESC="${DESC:-exp}"
 
-build_libjxl() {
+build_libjpegli() {
   export BUILD_DIR="${BUILD_DIR}"
   export SKIP_TEST=1
   ./ci.sh "${BUILD_MODE}"
@@ -95,7 +95,7 @@ cmd_report() {
     build_mozjpeg
     export LD_LIBRARY_PATH="${HOME}/mozjpeg/build:${LD_LIBRARY_PATH:-}"
   fi
-  build_libjxl
+  build_libjpegli
   create_report "$@"
 }
 
