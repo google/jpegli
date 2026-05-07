@@ -270,7 +270,7 @@ jint JniRegister(JavaVM* vm) {
     return JNI_ERR;
   }
 
-  jclass localClassRef = env->FindClass("org/jpeg/jpegli/wrapper/EncoderJni");
+  jclass localClassRef = env->FindClass("org/jpeg/jpegli/wrapper/Encoder");
   if (localClassRef == nullptr || env->ExceptionCheck()) {
     return JNI_ERR;
   }
