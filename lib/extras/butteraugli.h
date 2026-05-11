@@ -6,8 +6,8 @@
 //
 // Author: Jyrki Alakuijala (jyrki.alakuijala@gmail.com)
 
-#ifndef LIB_EXTRAS_BUTTERAUGLI_H_
-#define LIB_EXTRAS_BUTTERAUGLI_H_
+#ifndef JPEGLI_LIB_EXTRAS_BUTTERAUGLI_H_
+#define JPEGLI_LIB_EXTRAS_BUTTERAUGLI_H_
 
 #include <atomic>
 #include <cstddef>
@@ -24,12 +24,12 @@
 #define BUTTERAUGLI_ENABLE_CHECKS 0
 #endif
 
-#define BUTTERAUGLI_RESTRICT JXL_RESTRICT
+#define BUTTERAUGLI_RESTRICT JPEGLI_RESTRICT
 
 // This is the main interface to butteraugli image similarity
 // analysis function.
 
-namespace jxl {
+namespace jpegli {
 
 struct ButteraugliParams {
   // Multiplier for penalizing new HF artifacts more than blurring away
@@ -128,7 +128,8 @@ double ButteraugliFuzzyInverse(double seek);
 #endif
 
 // Returns a void* pointer which the compiler then assumes is N-byte aligned.
-// Example: float* JXL_RESTRICT aligned = (float*)JXL_ASSUME_ALIGNED(in, 32);
+// Example: float* JPEGLI_RESTRICT aligned = (float*)JPEGLI_ASSUME_ALIGNED(in,
+// 32);
 //
 // The assignment semantics are required by GCC/Clang. ICC provides an in-place
 // __assume_aligned, whereas MSVC's __assume appears unsuitable.
@@ -150,9 +151,9 @@ struct PsychoImage {
 // Hold it here and only allocate on demand to reduce memory usage.
 struct BlurTemp {
   Status GetTransposed(const ImageF &in, ImageF **out) {
-    JxlMemoryManager *memory_manager = in.memory_manager();
+    JpegliMemoryManager* memory_manager = in.memory_manager();
     if (transposed_temp.xsize() == 0) {
-      JXL_ASSIGN_OR_RETURN(
+      JPEGLI_ASSIGN_OR_RETURN(
           transposed_temp,
           ImageF::Create(memory_manager, in.ysize(), in.xsize()));
     }
@@ -220,6 +221,6 @@ StatusOr<Image3F> CreateHeatMapImage(const ImageF &distmap,
                                      double good_threshold,
                                      double bad_threshold);
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_BUTTERAUGLI_H_
+#endif  // JPEGLI_LIB_EXTRAS_BUTTERAUGLI_H_

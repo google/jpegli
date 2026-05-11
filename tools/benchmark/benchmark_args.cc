@@ -19,8 +19,7 @@
 #include "lib/extras/dec/decode.h"
 #include "tools/benchmark/benchmark_codec_jpeg.h"  // for AddCommand..
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 std::vector<std::string> SplitString(const std::string& s, char c) {
   std::vector<std::string> result;
@@ -37,7 +36,7 @@ std::vector<std::string> SplitString(const std::string& s, char c) {
 Status ParseIntParam(const std::string& param, int lower_bound, int upper_bound,
                      int& val) {
   val = strtol(param.substr(1).c_str(), nullptr, 10);
-  JXL_ENSURE(val >= lower_bound && val <= upper_bound);
+  JPEGLI_ENSURE(val >= lower_bound && val <= upper_bound);
   return true;
 }
 
@@ -50,7 +49,7 @@ Status BenchmarkArgs::AddCommandLineOptions() {
   AddString(&input, "input", "File or file pattern matching input files.");
   AddString(&codec, "codec",
             "Comma separated list of image codec descriptions to benchmark.",
-            "jxl");
+            "jpegli");
   AddFlag(&print_details, "print_details",
           "Prints size and distortion for each image. Not safe for "
           "concurrent benchmark runs.",
@@ -77,7 +76,7 @@ Status BenchmarkArgs::AddCommandLineOptions() {
           "If true, doesn't print error messages on compression or"
           " decompression errors. Errors counts are still visible in the"
           " 'Errors' column of the result table. Please note that depending"
-          " depending on the JXL build settings, error messages and asserts"
+          " depending on the JPEGLI build settings, error messages and asserts"
           " from within the codec may be printed irrespective of this flag"
           " anyway, use release build to ensure no messages.",
           false);
@@ -209,10 +208,10 @@ Status BenchmarkArgs::ValidateArgs() {
     fprintf(stderr, "Missing --input filename(s).\n");
     return false;
   }
-  if (jxl::extras::CodecFromPath(output_extension) ==
-      jxl::extras::Codec::kUnknown) {
-    JXL_WARNING("Unrecognized output_extension %s, try .png",
-                output_extension.c_str());
+  if (jpegli::extras::CodecFromPath(output_extension) ==
+      jpegli::extras::Codec::kUnknown) {
+    JPEGLI_WARNING("Unrecognized output_extension %s, try .png",
+                   output_extension.c_str());
     return false;  // already warned
   }
 
@@ -220,20 +219,23 @@ Status BenchmarkArgs::ValidateArgs() {
   // output_description is not empty.
   if (!output_description.empty()) {
     // Validate, but also create the profile (only needs to happen once).
-    JxlColorEncoding output_encoding_external;
-    if (!jxl::ParseDescription(output_description, &output_encoding_external)) {
-      JXL_WARNING("Unrecognized output_description %s, try RGB_D65_SRG_Rel_Lin",
-                  output_description.c_str());
+    JpegliColorEncoding output_encoding_external;
+    if (!jpegli::ParseDescription(output_description,
+                                  &output_encoding_external)) {
+      JPEGLI_WARNING(
+          "Unrecognized output_description %s, try RGB_D65_SRG_Rel_Lin",
+          output_description.c_str());
       return false;  // already warned
     }
-    JXL_RETURN_IF_ERROR(output_encoding.FromExternal(output_encoding_external));
-    JXL_RETURN_IF_ERROR(!output_encoding.ICC().empty());
+    JPEGLI_RETURN_IF_ERROR(
+        output_encoding.FromExternal(output_encoding_external));
+    JPEGLI_RETURN_IF_ERROR(!output_encoding.ICC().empty());
   }
 
   if (print_details_csv) print_details = true;
 
   if (override_bitdepth > 32) {
-    return JXL_FAILURE("override_bitdepth must be <= 32");
+    return JPEGLI_FAILURE("override_bitdepth must be <= 32");
   }
 
   if (!color_hints_string.empty()) {
@@ -241,7 +243,7 @@ Status BenchmarkArgs::ValidateArgs() {
     for (const auto& hint : hints) {
       std::vector<std::string> kv = SplitString(hint, '=');
       if (kv.size() != 2) {
-        return JXL_FAILURE(
+        return JPEGLI_FAILURE(
             "dec-hints key value pairs must have the form 'key=value'");
       }
       color_hints.Add(kv[0], kv[1]);
@@ -251,5 +253,4 @@ Status BenchmarkArgs::ValidateArgs() {
   return true;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

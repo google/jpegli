@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_COMMON_H_
-#define LIB_JXL_BASE_COMMON_H_
+#ifndef JPEGLI_LIB_BASE_COMMON_H_
+#define JPEGLI_LIB_BASE_COMMON_H_
 
 // Shared constants and helper functions.
 
@@ -20,7 +20,7 @@
 
 #include "lib/base/compiler_specific.h"
 
-namespace jxl {
+namespace jpegli {
 // Some enums and typedefs used by more than one header file.
 
 constexpr size_t kBitsPerByte = 8;  // more clear than CHAR_BIT
@@ -33,8 +33,9 @@ constexpr inline size_t RoundUpToBlockDim(size_t dim) {
   return (dim + 7) & ~static_cast<size_t>(7);
 }
 
-static inline bool JXL_MAYBE_UNUSED SafeAdd(const uint64_t a, const uint64_t b,
-                                            uint64_t& sum) {
+static inline bool JPEGLI_MAYBE_UNUSED SafeAdd(const uint64_t a,
+                                               const uint64_t b,
+                                               uint64_t& sum) {
   sum = a + b;
   return sum >= a;  // no need to check b - either sum >= both or < both.
 }
@@ -142,7 +143,7 @@ constexpr auto to_array(T (&&arr)[N]) -> std::array<remove_cv_t<T>, N> {
 }
 
 template <typename T>
-JXL_INLINE T Clamp1(T val, T low, T hi) {
+JPEGLI_INLINE T Clamp1(T val, T low, T hi) {
   return val < low ? low : val > hi ? hi : val;
 }
 
@@ -163,9 +164,9 @@ std::string ToString(T n) {
   return data;
 }
 
-#define JXL_JOIN(x, y) JXL_DO_JOIN(x, y)
-#define JXL_DO_JOIN(x, y) x##y
+#define JPEGLI_JOIN(x, y) JPEGLI_DO_JOIN(x, y)
+#define JPEGLI_DO_JOIN(x, y) x##y
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_COMMON_H_
+#endif  // JPEGLI_LIB_BASE_COMMON_H_

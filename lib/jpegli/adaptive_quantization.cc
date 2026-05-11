@@ -67,7 +67,7 @@ struct FastDivision<float, V> {
   }
 
   V operator()(const V n, const V d) const {
-#if JXL_TRUE  // Faster on SKX
+#if JPEGLI_TRUE  // Faster on SKX
     return Div(n, d);
 #else
     return n * ReciprocalNR(d);
@@ -192,7 +192,7 @@ V ComputeMask(const D d, const V out_val) {
   return Add(kBase, MulAdd(kMul4, v4, MulAdd(kMul2, v2, Mul(kMul3, v3))));
 }
 
-// mul and mul2 represent a scaling difference between jxl and butteraugli.
+// mul and mul2 represent a scaling difference between jpegli and butteraugli.
 const float kSGmul = 226.0480446705883f;
 const float kSGmul2 = 1.0f / 73.377132366608819f;
 
@@ -206,7 +206,7 @@ const float kSGVOffset = 7.14672470003f;
 
 template <bool invert, typename D, typename V>
 V RatioOfDerivativesOfCubicRootToSimpleGamma(const D d, V v) {
-  // The opsin space in jxl is the cubic root of photons, i.e., v * v * v
+  // The opsin space in jpegli is the cubic root of photons, i.e., v * v * v
   // is related to the number of photons.
   //
   // SimpleGamma(v * v * v) is the psychovisual space in butteraugli.
@@ -272,9 +272,10 @@ V GammaModulation(const D d, const size_t x, const size_t y,
   auto overall_ratio = Zero(d);
   const auto bias = Set(d, kBias);
   const auto scale = Set(d, kScale);
-  const float* const JXL_RESTRICT block_start = input.Row(y) + x;
+  const float* const JPEGLI_RESTRICT block_start = input.Row(y) + x;
   for (size_t dy = 0; dy < 8; ++dy) {
-    const float* const JXL_RESTRICT row_in = block_start + dy * input.stride();
+    const float* const JPEGLI_RESTRICT row_in =
+        block_start + dy * input.stride();
     for (size_t dx = 0; dx < 8; dx += Lanes(d)) {
       const auto iny = Add(Load(d, row_in + dx), bias);
       const auto ratio_g =
@@ -303,10 +304,10 @@ V HfModulation(const D d, const size_t x, const size_t y,
   static const float kSumCoeff = -2.0052193233688884f * kInputScaling / 112.0;
   auto sumcoeff = Set(d, kSumCoeff);
 
-  const float* const JXL_RESTRICT block_start = input.Row(y) + x;
+  const float* const JPEGLI_RESTRICT block_start = input.Row(y) + x;
   for (size_t dy = 0; dy < 8; ++dy) {
-    const float* JXL_RESTRICT row_in = block_start + dy * input.stride();
-    const float* JXL_RESTRICT row_in_next =
+    const float* JPEGLI_RESTRICT row_in = block_start + dy * input.stride();
+    const float* JPEGLI_RESTRICT row_in_next =
         dy == 7 ? row_in : row_in + input.stride();
 
     for (size_t dx = 0; dx < 8; dx += Lanes(d)) {
@@ -343,7 +344,7 @@ void PerBlockModulations(const float y_quant_01, const RowBuffer<float>& input,
   for (size_t iy = 0; iy < yblen; iy++) {
     const size_t yb = yb0 + iy;
     const size_t y = yb * 8;
-    float* const JXL_RESTRICT row_out = aq_map->Row(yb);
+    float* const JPEGLI_RESTRICT row_out = aq_map->Row(yb);
     const HWY_CAPPED(float, 8) df;
     for (size_t ix = 0; ix < aq_map->xsize(); ix++) {
       size_t x = ix * 8;
@@ -406,9 +407,9 @@ void FuzzyErosion(const RowBuffer<float>& pre_erosion, const size_t yb0,
   const auto mul3 = Set(d, 0.05f);
   for (size_t iy = 0; iy < 2 * yblen; ++iy) {
     size_t y = 2 * yb0 + iy;
-    const float* JXL_RESTRICT rowt = pre_erosion.Row(y - 1);
-    const float* JXL_RESTRICT rowm = pre_erosion.Row(y);
-    const float* JXL_RESTRICT rowb = pre_erosion.Row(y + 1);
+    const float* JPEGLI_RESTRICT rowt = pre_erosion.Row(y - 1);
+    const float* JPEGLI_RESTRICT rowm = pre_erosion.Row(y);
+    const float* JPEGLI_RESTRICT rowb = pre_erosion.Row(y + 1);
     float* row_out = tmp->Row(y);
     for (int x = 0; x < xsize; x += Lanes(d)) {
       int xm1 = x - 1;
@@ -428,8 +429,8 @@ void FuzzyErosion(const RowBuffer<float>& pre_erosion, const size_t yb0,
       Store(v, d, row_out + x);
     }
     if (iy % 2 == 1) {
-      const float* JXL_RESTRICT row_out0 = tmp->Row(y - 1);
-      float* JXL_RESTRICT aq_out = aq_map->Row(yb0 + iy / 2);
+      const float* JPEGLI_RESTRICT row_out0 = tmp->Row(y - 1);
+      float* JPEGLI_RESTRICT aq_out = aq_map->Row(yb0 + iy / 2);
       for (int bx = 0, x = 0; bx < xsize_blocks; ++bx, x += 2) {
         aq_out[bx] =
             (row_out[x] + row_out[x + 1] + row_out0[x] + row_out0[x + 1]);
@@ -461,7 +462,7 @@ void ComputePreErosion(const RowBuffer<float>& input, const size_t xsize,
     const float* row_in = input.Row(y);
     const float* row_in1 = input.Row(y + 1);
     const float* row_in2 = input.Row(y - 1);
-    float* JXL_RESTRICT row_out = diff_buffer;
+    float* JPEGLI_RESTRICT row_out = diff_buffer;
     const auto match_gamma_offset_v = Set(df, match_gamma_offset);
     const auto quarter = Set(df, 0.25f);
     for (size_t x = 0; x < xsize; x += Lanes(df)) {

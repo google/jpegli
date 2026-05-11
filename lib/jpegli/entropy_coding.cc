@@ -87,7 +87,7 @@ void TokenizeProgressiveDC(const coeff_t* coeffs, int context, int Al,
     temp = -temp;
     temp2--;
   }
-  int nbits = (temp == 0) ? 0 : (jxl::FloorLog2Nonzero<uint32_t>(temp) + 1);
+  int nbits = (temp == 0) ? 0 : (jpegli::FloorLog2Nonzero<uint32_t>(temp) + 1);
   int bits = temp2 & ((1 << nbits) - 1);
   *(*next_token)++ = Token(context, nbits, bits);
 }
@@ -113,7 +113,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
   sti->token_offset = m->total_num_tokens + ta->num_tokens;
   sti->restarts = Allocate<size_t>(cinfo, num_restarts, JPOOL_IMAGE);
   const auto emit_eob_run = [&]() {
-    int nbits = jxl::FloorLog2Nonzero<uint32_t>(eob_run);
+    int nbits = jpegli::FloorLog2Nonzero<uint32_t>(eob_run);
     int symbol = nbits << 4u;
     *m->next_token++ = Token(context, symbol, eob_run & ((1 << nbits) - 1));
     eob_run = 0;
@@ -175,7 +175,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
           *m->next_token++ = Token(context, 0xf0, 0);
           r -= 16;
         }
-        int nbits = jxl::FloorLog2Nonzero<uint32_t>(temp) + 1;
+        int nbits = jpegli::FloorLog2Nonzero<uint32_t>(temp) + 1;
         int symbol = (r << 4u) + nbits;
         *m->next_token++ = Token(context, symbol, temp2 & ((1 << nbits) - 1));
         ++num_nzeros;
@@ -337,7 +337,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
   // "Non-interleaved" means color data comes in separate scans, in other words
   // each scan can contain only one color component.
   const bool is_interleaved = (scan_info->comps_in_scan > 1);
-  const bool is_progressive = FROM_JXL_BOOL(cinfo->progressive_mode);
+  const bool is_progressive = FROM_JPEGLI_BOOL(cinfo->progressive_mode);
   const int Ah = scan_info->Ah;
   const int Al = scan_info->Al;
   HWY_ALIGN constexpr coeff_t kSinkBlock[DCTSIZE2] = {0};
@@ -437,14 +437,14 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
     }
     ta->num_tokens = m->next_token - ta->tokens;
   }
-  JXL_DASSERT(block_idx == sti->num_blocks);
+  JPEGLI_DASSERT(block_idx == sti->num_blocks);
   sti->num_tokens =
       Ah > 0 ? sti->num_blocks
              : m->total_num_tokens + ta->num_tokens - sti->token_offset;
   sti->restarts[restart_idx++] =
       Ah > 0 ? sti->num_blocks : m->total_num_tokens + ta->num_tokens;
   if (Ah == 0 && cinfo->progressive_mode) {
-    JXL_DASSERT(sti->num_blocks == sti->num_tokens);
+    JPEGLI_DASSERT(sti->num_blocks == sti->num_tokens);
   }
 }
 
@@ -501,8 +501,8 @@ void TokenizeJpeg(j_compress_ptr cinfo) {
         new_refinement_bits += sti->num_nonzeros;
       }
     }
-    JXL_DASSERT(m->next_refinement_bit <=
-                refinement_bits + num_refinement_bits);
+    JPEGLI_DASSERT(m->next_refinement_bit <=
+                   refinement_bits + num_refinement_bits);
     num_refinement_bits += new_refinement_bits;
   }
   for (int i = 0; i < cinfo->num_scans; ++i) {

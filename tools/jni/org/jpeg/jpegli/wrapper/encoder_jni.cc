@@ -253,7 +253,7 @@ class Encoder {
 
 char* kEncodeName = const_cast<char*>("nativeEncode");
 char* kEncodeSig =
-    const_cast<char*>("(III[ILjava/nio/channels/WritableByteChannel;)I");
+    const_cast<char*>("(II[I[ILjava/nio/channels/WritableByteChannel;)I");
 
 const JNINativeMethod kEncoderMethods[] = {
     {kEncodeName, kEncodeSig,
@@ -270,7 +270,7 @@ jint JniRegister(JavaVM* vm) {
     return JNI_ERR;
   }
 
-  jclass localClassRef = env->FindClass("org/jpeg/jpegli/wrapper/EncoderJni");
+  jclass localClassRef = env->FindClass("org/jpeg/jpegli/wrapper/Encoder");
   if (localClassRef == nullptr || env->ExceptionCheck()) {
     return JNI_ERR;
   }

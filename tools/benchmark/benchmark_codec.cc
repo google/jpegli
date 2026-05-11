@@ -19,18 +19,17 @@
 #include "tools/benchmark/benchmark_codec_jpeg.h"
 #include "tools/cmdline.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::Image3F;
-using ::jxl::Status;
+using ::jpegli::Image3F;
+using ::jpegli::Status;
 
 Status ImageCodec::ParseParameters(const std::string& parameters) {
   params_ = parameters;
   std::vector<std::string> parts = SplitString(parameters, ':');
   for (const auto& part : parts) {
     if (!ParseParam(part)) {
-      return JXL_FAILURE("Invalid parameter %s", part.c_str());
+      return JPEGLI_FAILURE("Invalid parameter %s", part.c_str());
     }
   }
   return true;
@@ -66,7 +65,7 @@ Status ImageCodec::ParseParam(const std::string& param) {
 }
 
 ImageCodecPtr CreateImageCodec(const std::string& description,
-                               JxlMemoryManager* memory_manager) {
+                               JpegliMemoryManager* memory_manager) {
   std::string name = description;
   std::string parameters;
   size_t colon = description.find(':');
@@ -80,14 +79,13 @@ ImageCodecPtr CreateImageCodec(const std::string& description,
   }
   if (!result.get()) {
     fprintf(stderr, "Unknown image codec: %s", name.c_str());
-    JPEGXL_TOOLS_CHECK(false);
+    JPEGLI_TOOLS_CHECK(false);
   }
   result->set_description(description);
   if (!parameters.empty()) {
-    JPEGXL_TOOLS_CHECK(result->ParseParameters(parameters));
+    JPEGLI_TOOLS_CHECK(result->ParseParameters(parameters));
   }
   return result;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

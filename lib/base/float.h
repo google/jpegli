@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_FLOAT_H_
-#define LIB_JXL_BASE_FLOAT_H_
+#ifndef JPEGLI_LIB_BASE_FLOAT_H_
+#define JPEGLI_LIB_BASE_FLOAT_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -16,11 +16,11 @@
 #include "lib/base/status.h"
 #include "lib/base/types.h"
 
-namespace jxl {
+namespace jpegli {
 
 namespace detail {
 // Based on highway scalar implementation, for testing
-static JXL_INLINE float LoadFloat16(uint16_t bits16) {
+static JPEGLI_INLINE float LoadFloat16(uint16_t bits16) {
   const uint32_t sign = bits16 >> 15;
   const uint32_t biased_exp = (bits16 >> 10) & 0x1F;
   const uint32_t mantissa = bits16 & 0x3FF;
@@ -44,12 +44,12 @@ static JXL_INLINE float LoadFloat16(uint16_t bits16) {
 }  // namespace detail
 
 template <typename SaveFloatAtFn>
-static Status JXL_INLINE LoadFloatRow(const uint8_t* src, size_t count,
-                                      size_t stride, JxlDataType type,
-                                      bool little_endian, float scale,
-                                      SaveFloatAtFn callback) {
+static Status JPEGLI_INLINE LoadFloatRow(const uint8_t* src, size_t count,
+                                         size_t stride, JpegliDataType type,
+                                         bool little_endian, float scale,
+                                         SaveFloatAtFn callback) {
   switch (type) {
-    case JXL_TYPE_FLOAT:
+    case JPEGLI_TYPE_FLOAT:
       if (little_endian) {
         for (size_t i = 0; i < count; ++i) {
           callback(i, LoadLEFloat(src + stride * i));
@@ -61,13 +61,13 @@ static Status JXL_INLINE LoadFloatRow(const uint8_t* src, size_t count,
       }
       return true;
 
-    case JXL_TYPE_UINT8:
+    case JPEGLI_TYPE_UINT8:
       for (size_t i = 0; i < count; ++i) {
         callback(i, src[stride * i] * scale);
       }
       return true;
 
-    case JXL_TYPE_UINT16:
+    case JPEGLI_TYPE_UINT16:
       if (little_endian) {
         for (size_t i = 0; i < count; ++i) {
           callback(i, LoadLE16(src + stride * i) * scale);
@@ -79,7 +79,7 @@ static Status JXL_INLINE LoadFloatRow(const uint8_t* src, size_t count,
       }
       return true;
 
-    case JXL_TYPE_FLOAT16:
+    case JPEGLI_TYPE_FLOAT16:
       if (little_endian) {
         for (size_t i = 0; i < count; ++i) {
           callback(i, detail::LoadFloat16(LoadLE16(src + stride * i)));
@@ -92,10 +92,10 @@ static Status JXL_INLINE LoadFloatRow(const uint8_t* src, size_t count,
       return true;
 
     default:
-      return JXL_FAILURE("Unsupported sample format");
+      return JPEGLI_FAILURE("Unsupported sample format");
   }
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_FLOAT_H_
+#endif  // JPEGLI_LIB_BASE_FLOAT_H_

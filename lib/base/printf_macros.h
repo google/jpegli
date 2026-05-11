@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_PRINTF_MACROS_H_
-#define LIB_JXL_BASE_PRINTF_MACROS_H_
+#ifndef JPEGLI_LIB_BASE_PRINTF_MACROS_H_
+#define JPEGLI_LIB_BASE_PRINTF_MACROS_H_
 
 // Format string macros. These should be included after any other system
 // library since those may unconditionally define these, depending on the
@@ -32,4 +32,4 @@
 #endif
 #endif  // PRIuS
 
-#endif  // LIB_JXL_BASE_PRINTF_MACROS_H_
+#endif  // JPEGLI_LIB_BASE_PRINTF_MACROS_H_

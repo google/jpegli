@@ -4,15 +4,15 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_SIZE_CONSTRAINTS_H_
-#define LIB_JXL_SIZE_CONSTRAINTS_H_
+#ifndef JPEGLI_LIB_EXTRAS_SIZE_CONSTRAINTS_H_
+#define JPEGLI_LIB_EXTRAS_SIZE_CONSTRAINTS_H_
 
 #include <cstdint>
 #include <type_traits>
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 struct SizeConstraints {
   // Upper limit on pixel dimensions/area, enforced by VerifyDimensions
@@ -29,18 +29,18 @@ Status VerifyDimensions(const SizeConstraints* constraints, T xs, T ys) {
   SizeConstraints limit = {};
   if (constraints) limit = *constraints;
 
-  if (xs == 0 || ys == 0) return JXL_FAILURE("Empty image.");
-  if (xs > limit.dec_max_xsize) return JXL_FAILURE("Image too wide.");
-  if (ys > limit.dec_max_ysize) return JXL_FAILURE("Image too tall.");
+  if (xs == 0 || ys == 0) return JPEGLI_FAILURE("Empty image.");
+  if (xs > limit.dec_max_xsize) return JPEGLI_FAILURE("Image too wide.");
+  if (ys > limit.dec_max_ysize) return JPEGLI_FAILURE("Image too tall.");
 
   const uint64_t num_pixels = static_cast<uint64_t>(xs) * ys;
   if (num_pixels > limit.dec_max_pixels) {
-    return JXL_FAILURE("Image too big.");
+    return JPEGLI_FAILURE("Image too big.");
   }
 
   return true;
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_SIZE_CONSTRAINTS_H_
+#endif  // JPEGLI_LIB_EXTRAS_SIZE_CONSTRAINTS_H_

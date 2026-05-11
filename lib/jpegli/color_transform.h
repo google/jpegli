@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_COLOR_TRANSFORM_H_
-#define LIB_JPEGLI_COLOR_TRANSFORM_H_
+#ifndef JPEGLI_LIB_JPEGLI_COLOR_TRANSFORM_H_
+#define JPEGLI_LIB_JPEGLI_COLOR_TRANSFORM_H_
 
 #include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common.h"
@@ -18,4 +18,4 @@ void ChooseColorTransform(j_decompress_ptr cinfo);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_COLOR_TRANSFORM_H_
+#endif  // JPEGLI_LIB_JPEGLI_COLOR_TRANSFORM_H_

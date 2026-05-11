@@ -28,18 +28,18 @@
 #include "lib/jpegli/upsample.h"
 
 #ifdef MEMORY_SANITIZER
-#define JXL_MEMORY_SANITIZER 1
+#define JPEGLI_MEMORY_SANITIZER 1
 #elif defined(__has_feature)
 #if __has_feature(memory_sanitizer)
-#define JXL_MEMORY_SANITIZER 1
+#define JPEGLI_MEMORY_SANITIZER 1
 #else
-#define JXL_MEMORY_SANITIZER 0
+#define JPEGLI_MEMORY_SANITIZER 0
 #endif
 #else
-#define JXL_MEMORY_SANITIZER 0
+#define JPEGLI_MEMORY_SANITIZER 0
 #endif
 
-#if JXL_MEMORY_SANITIZER
+#if JPEGLI_MEMORY_SANITIZER
 #include "sanitizer/msan_interface.h"
 #endif
 
@@ -70,9 +70,10 @@ using DI = HWY_FULL(int32_t);
 constexpr D d;
 constexpr DI di;
 
-void GatherBlockStats(const int16_t* JXL_RESTRICT coeffs,
-                      const size_t coeffs_size, int32_t* JXL_RESTRICT nonzeros,
-                      int32_t* JXL_RESTRICT sumabs) {
+void GatherBlockStats(const int16_t* JPEGLI_RESTRICT coeffs,
+                      const size_t coeffs_size,
+                      int32_t* JPEGLI_RESTRICT nonzeros,
+                      int32_t* JPEGLI_RESTRICT sumabs) {
   for (size_t i = 0; i < coeffs_size; i += Lanes(d)) {
     size_t k = i % DCTSIZE2;
     const Rebind<int16_t, DI> di16;
@@ -105,13 +106,13 @@ void DitherRow(j_decompress_ptr cinfo, float* row, int c, size_t y,
 }
 
 template <typename T>
-void StoreUnsignedRow(float* JXL_RESTRICT input[], size_t x0, size_t len,
+void StoreUnsignedRow(float* JPEGLI_RESTRICT input[], size_t x0, size_t len,
                       size_t num_channels, float multiplier, T* output) {
   const HWY_CAPPED(float, 8) cd;
   auto zero = Zero(cd);
   auto mul = Set(cd, multiplier);
   const Rebind<T, decltype(cd)> cdu;
-#if JXL_MEMORY_SANITIZER
+#if JPEGLI_MEMORY_SANITIZER
   const size_t padding = hwy::RoundUpTo(len, Lanes(cd)) - len;
   for (size_t c = 0; c < num_channels; ++c) {
     __msan_unpoison(input[c] + x0 + len, sizeof(input[c][0]) * padding);
@@ -150,13 +151,13 @@ void StoreUnsignedRow(float* JXL_RESTRICT input[], size_t x0, size_t len,
                         DemoteTo(cdu, NearestInt(v3)), cdu, &output[4 * i]);
     }
   }
-#if JXL_MEMORY_SANITIZER
+#if JPEGLI_MEMORY_SANITIZER
   __msan_poison(output + num_channels * len,
                 sizeof(output[0]) * num_channels * padding);
 #endif
 }
 
-void StoreFloatRow(float* JXL_RESTRICT input[3], size_t x0, size_t len,
+void StoreFloatRow(float* JPEGLI_RESTRICT input[3], size_t x0, size_t len,
                    size_t num_channels, float* output) {
   const HWY_CAPPED(float, 8) cd;
   if (num_channels == 1) {
@@ -197,11 +198,11 @@ float LimitError(float error) {
   return error > 0.0f ? abserror : -abserror;
 }
 
-void WriteToOutput(j_decompress_ptr cinfo, float* JXL_RESTRICT rows[],
+void WriteToOutput(j_decompress_ptr cinfo, float* JPEGLI_RESTRICT rows[],
                    size_t xoffset, size_t len, size_t num_channels,
-                   uint8_t* JXL_RESTRICT output) {
+                   uint8_t* JPEGLI_RESTRICT output) {
   jpeg_decomp_master* m = cinfo->master;
-  uint8_t* JXL_RESTRICT scratch_space = m->output_scratch_;
+  uint8_t* JPEGLI_RESTRICT scratch_space = m->output_scratch_;
   if (cinfo->quantize_colors && m->quant_pass_ == 1) {
     float* error_row[kMaxComponents];
     float* next_error_row[kMaxComponents];
@@ -293,15 +294,16 @@ HWY_EXPORT(GatherBlockStats);
 HWY_EXPORT(WriteToOutput);
 HWY_EXPORT(DecenterRow);
 
-void GatherBlockStats(const int16_t* JXL_RESTRICT coeffs,
-                      const size_t coeffs_size, int32_t* JXL_RESTRICT nonzeros,
-                      int32_t* JXL_RESTRICT sumabs) {
+void GatherBlockStats(const int16_t* JPEGLI_RESTRICT coeffs,
+                      const size_t coeffs_size,
+                      int32_t* JPEGLI_RESTRICT nonzeros,
+                      int32_t* JPEGLI_RESTRICT sumabs) {
   HWY_DYNAMIC_DISPATCH(GatherBlockStats)(coeffs, coeffs_size, nonzeros, sumabs);
 }
 
-void WriteToOutput(j_decompress_ptr cinfo, float* JXL_RESTRICT rows[],
+void WriteToOutput(j_decompress_ptr cinfo, float* JPEGLI_RESTRICT rows[],
                    size_t xoffset, size_t len, size_t num_channels,
-                   uint8_t* JXL_RESTRICT output) {
+                   uint8_t* JPEGLI_RESTRICT output) {
   HWY_DYNAMIC_DISPATCH(WriteToOutput)
   (cinfo, rows, xoffset, len, num_channels, output);
 }
@@ -555,7 +557,7 @@ void PredictSmooth(j_decompress_ptr cinfo, JBLOCKARRAY blocks, int component,
 void PrepareForOutput(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   bool smoothing = do_smoothing(cinfo);
-  m->apply_smoothing = smoothing && FROM_JXL_BOOL(cinfo->do_block_smoothing);
+  m->apply_smoothing = smoothing && FROM_JPEGLI_BOOL(cinfo->do_block_smoothing);
   size_t coeffs_per_block = cinfo->num_components * DCTSIZE2;
   memset(m->nonzeros_, 0, coeffs_per_block * sizeof(m->nonzeros_[0]));
   memset(m->sumabs_, 0, coeffs_per_block * sizeof(m->sumabs_[0]));
@@ -601,7 +603,7 @@ void DecodeCurrentiMCURow(j_decompress_ptr cinfo) {
         if (by >= compinfo.height_in_blocks) {
           continue;
         }
-        int16_t* JXL_RESTRICT coeffs = &blocks[c][iy][0][0];
+        int16_t* JPEGLI_RESTRICT coeffs = &blocks[c][iy][0][0];
         size_t num = compinfo.width_in_blocks * DCTSIZE2;
         GatherBlockStats(coeffs, num, &m->nonzeros_[k0], &m->sumabs_[k0]);
         m->num_processed_blocks_[c] += compinfo.width_in_blocks;
@@ -620,8 +622,8 @@ void DecodeCurrentiMCURow(j_decompress_ptr cinfo) {
         continue;
       }
       size_t dctsize = m->scaled_dct_size[c];
-      int16_t* JXL_RESTRICT row_in = &blocks[c][iy][0][0];
-      float* JXL_RESTRICT row_out = raw_out->Row(by * dctsize);
+      int16_t* JPEGLI_RESTRICT row_in = &blocks[c][iy][0][0];
+      float* JPEGLI_RESTRICT row_out = raw_out->Row(by * dctsize);
       for (size_t bx = 0; bx < compinfo.width_in_blocks; ++bx) {
         if (m->apply_smoothing) {
           PredictSmooth(cinfo, blocks[c], c, bx, iy);
@@ -698,13 +700,13 @@ void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
         size_t yc = y / m->v_factor[c];
         for (int dy = 0; dy < line_groups; ++dy) {
           size_t ymid = yc + dy;
-          const float* JXL_RESTRICT row_mid = raw_out->Row(ymid);
+          const float* JPEGLI_RESTRICT row_mid = raw_out->Row(ymid);
           if (cinfo->do_fancy_upsampling && m->v_factor[c] == 2) {
-            const float* JXL_RESTRICT row_top =
+            const float* JPEGLI_RESTRICT row_top =
                 ymid == 0 ? row_mid : raw_out->Row(ymid - 1);
-            const float* JXL_RESTRICT row_bot = ymid + 1 == m->raw_height_[c]
-                                                    ? row_mid
-                                                    : raw_out->Row(ymid + 1);
+            const float* JPEGLI_RESTRICT row_bot = ymid + 1 == m->raw_height_[c]
+                                                       ? row_mid
+                                                       : raw_out->Row(ymid + 1);
             Upsample2Vertical(row_top, row_mid, row_bot,
                               render_out->Row(2 * dy),
                               render_out->Row(2 * dy + 1), downsampled_width);
@@ -717,8 +719,8 @@ void ProcessOutput(j_decompress_ptr cinfo, size_t* num_output_rows,
           if (m->h_factor[c] > 1) {
             for (int yix = 0; yix < m->v_factor[c]; ++yix) {
               int row_ix = m->v_factor[c] * dy + yix;
-              float* JXL_RESTRICT row = render_out->Row(row_ix);
-              float* JXL_RESTRICT tmp =
+              float* JPEGLI_RESTRICT row = render_out->Row(row_ix);
+              float* JPEGLI_RESTRICT tmp =
                   m->upsample_scratch_ + HWY_ALIGNMENT / sizeof(float);
               if (cinfo->do_fancy_upsampling && m->h_factor[c] == 2) {
                 Upsample2Horizontal(row, tmp, output_width);

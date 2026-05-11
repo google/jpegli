@@ -48,8 +48,7 @@
 extern "C" int _CRT_glob = 0;
 #endif
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 const char kPathSeparator = '/';
 
@@ -91,19 +90,21 @@ Status MakeDir(const std::string& dirname) {
     if (pos == dirname.size() || dirname[pos] == kPathSeparator) {
       std::string subdir = dirname.substr(0, pos + 1);
       if (mkdir(subdir.c_str(), 0777) && errno != EEXIST) {
-        return JXL_FAILURE("Failed to create directory");
+        return JPEGLI_FAILURE("Failed to create directory");
       }
     }
   }
-  if (!IsDirectory(dirname)) return JXL_FAILURE("Failed to create directory");
+  if (!IsDirectory(dirname))
+    return JPEGLI_FAILURE("Failed to create directory");
   return true;  // success
 }
 
 Status DeleteFile(const std::string& fname) {
   if (!IsRegularFile(fname)) {
-    return JXL_FAILURE("Trying to delete non-regular file");
+    return JPEGLI_FAILURE("Trying to delete non-regular file");
   }
-  if (std::remove(fname.c_str())) return JXL_FAILURE("Failed to delete file");
+  if (std::remove(fname.c_str()))
+    return JPEGLI_FAILURE("Failed to delete file");
   return true;
 }
 
@@ -134,7 +135,7 @@ std::string JoinPath(const std::string& first, const std::string& second) {
   if (first_has_separator != second_has_separator) {
     return first + second;
   }
-  JXL_DEBUG_ABORT("Internal logic error");
+  JPEGLI_DEBUG_ABORT("Internal logic error");
   // Alas, both have separator.
   return first + second.substr(1);
 }
@@ -152,7 +153,7 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list) {
     }
   }
   globfree(&g);
-  if (error) return JXL_FAILURE("glob failed for %s", pattern.c_str());
+  if (error) return JPEGLI_FAILURE("glob failed for %s", pattern.c_str());
   return true;
 #else
   std::string dirname = FileDirName(pattern);
@@ -174,7 +175,7 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list) {
       middle.find_first_of("*?[") != std::string::npos ||
       suffix.find_first_of("*?[") != std::string::npos ||
       dirname.find_first_of("*?[") != std::string::npos) {
-    return JXL_FAILURE(
+    return JPEGLI_FAILURE(
         "Only glob patterns with max two '*' in the basename"
         " are supported, e.g. directory/path/*.png or"
         " /directory/path/*heatmap*");
@@ -182,7 +183,8 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list) {
 
   if (pos0 != std::string::npos) {
     DIR* dir = opendir(dirname.c_str());
-    if (!dir) return JXL_FAILURE("directory %s doesn't exist", dirname.c_str());
+    if (!dir)
+      return JPEGLI_FAILURE("directory %s doesn't exist", dirname.c_str());
     for (;;) {
       dirent* ent = readdir(dir);
       if (!ent) break;
@@ -215,7 +217,7 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list) {
       }
     }
     const int err = closedir(dir);
-    JXL_ENSURE(err == 0);
+    JPEGLI_ENSURE(err == 0);
     return true;
   }
   // No *, so a single regular file is intended
@@ -226,5 +228,4 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list) {
 #endif  // HAS_GLOB
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_STATS_H_
-#define TOOLS_BENCHMARK_BENCHMARK_STATS_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_STATS_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_STATS_H_
 
 #include <cstddef>
 #include <string>
@@ -13,8 +13,7 @@
 
 #include "lib/base/status.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 std::string StringPrintf(const char* format, ...);
 
@@ -33,7 +32,7 @@ struct BenchmarkStats {
 
   std::string PrintLine(const std::string& codec_desc) const;
 
-  ::jxl::Status PrintMoreStats() const;
+  ::jpegli::Status PrintMoreStats() const;
 
   size_t total_input_files = 0;
   size_t total_input_pixels = 0;
@@ -53,15 +52,14 @@ struct BenchmarkStats {
   std::vector<float> extra_metrics;
 };
 
-::jxl::StatusOr<std::string> PrintHeader(
+::jpegli::StatusOr<std::string> PrintHeader(
     const std::vector<std::string>& extra_metrics_names);
 
 // Given the rows of all printed statistics, print an aggregate row.
-::jxl::StatusOr<std::string> PrintAggregate(
+::jpegli::StatusOr<std::string> PrintAggregate(
     size_t num_extra_metrics,
     const std::vector<std::vector<ColumnValue>>& aggregate);
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_STATS_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_STATS_H_

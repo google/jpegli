@@ -102,7 +102,7 @@ fi
 
 # Version inferred from the CI variables.
 CI_COMMIT_SHA=${GITHUB_SHA:-}
-JPEGXL_VERSION=${JPEGXL_VERSION:-}
+JPEGLI_VERSION=${JPEGLI_VERSION:-}
 
 # Benchmark parameters
 STORE_IMAGES=${STORE_IMAGES:-1}
@@ -286,7 +286,7 @@ export_env() {
     # We also need our own libraries in the wine path.
     local real_build_dir=$(realpath "${BUILD_DIR}")
     # Some library .dll dependencies are installed in /bin:
-    export WINEPATH="${WINEPATH};${real_build_dir};${real_build_dir}/third_party/brotli;/usr/${BUILD_TARGET}/bin"
+    export WINEPATH="${WINEPATH};${real_build_dir};/usr/${BUILD_TARGET}/bin"
 
     local prefix="${BUILD_DIR}/wineprefix"
     mkdir -p "${prefix}"
@@ -321,18 +321,16 @@ cmake_configure() {
     -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}"
     -DCMAKE_MODULE_LINKER_FLAGS="${CMAKE_MODULE_LINKER_FLAGS}"
     -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}"
-    -DJPEGXL_VERSION="${JPEGXL_VERSION}"
+    -DJPEGLI_VERSION="${JPEGLI_VERSION}"
     -DSANITIZER="${SANITIZER}"
     # These are not enabled by default in cmake.
-    -DJPEGXL_ENABLE_VIEWERS=ON
-    -DJPEGXL_ENABLE_PLUGINS=ON
-    -DJPEGXL_ENABLE_DEVTOOLS=ON
+    -DJPEGLI_ENABLE_DEVTOOLS=ON
     # We always use libfuzzer in the ci.sh wrapper.
-    -DJPEGXL_FUZZER_LINK_FLAGS="-fsanitize=fuzzer"
+    -DJPEGLI_FUZZER_LINK_FLAGS="-fsanitize=fuzzer"
   )
   if [[ "${BUILD_TARGET}" != *mingw32 ]]; then
     args+=(
-      -DJPEGXL_WARNINGS_AS_ERRORS=ON
+      -DJPEGLI_WARNINGS_AS_ERRORS=ON
     )
   fi
   if [[ -n "${BUILD_TARGET}" ]]; then
@@ -507,7 +505,7 @@ cmd_release() {
 
 cmd_opt() {
   CMAKE_BUILD_TYPE="RelWithDebInfo"
-  CMAKE_CXX_FLAGS+=" -DJXL_IS_DEBUG_BUILD"
+  CMAKE_CXX_FLAGS+=" -DJPEGLI_IS_DEBUG_BUILD"
   cmake_configure "$@"
   cmake_build_and_test
 }
@@ -516,7 +514,7 @@ cmd_coverage() {
   # -O0 prohibits stack space reuse -> causes stack-overflow on dozens of tests.
   TEST_STACK_LIMIT="none"
 
-  cmd_release -DJPEGXL_ENABLE_COVERAGE=ON "$@"
+  cmd_release -DJPEGLI_ENABLE_COVERAGE=ON "$@"
 
   if [[ "${SKIP_TEST}" -ne "1" ]]; then
     # If we didn't run the test we also don't print a coverage report.
@@ -531,9 +529,9 @@ cmd_coverage_report() {
     -r "${real_build_dir}"
     --gcov-executable "${LLVM_COV} gcov"
     --gcov-ignore-parse-errors suspicious_hits.warn_once_per_file
-    # Only print coverage information for the libjxl directories. The rest
+    # Only print coverage information for the libjpegli directories. The rest
     # is not part of the code under test.
-    --filter '.*jxl/.*'
+    --filter '.*jpegli/.*'
     --exclude '.*_gbench.cc'
     --exclude '.*_test.cc'
     --exclude '.*_testonly..*'
@@ -571,7 +569,7 @@ cmd_gbench() {
   export_env
   (cd "${BUILD_DIR}"
    export UBSAN_OPTIONS=print_stacktrace=1
-   lib/jxl_gbench \
+   lib/jpegli_gbench \
      --benchmark_counters_tabular=true \
      --benchmark_out_format=json \
      --benchmark_out=gbench.json "$@"
@@ -581,7 +579,7 @@ cmd_gbench() {
 cmd_asanfuzz() {
   CMAKE_CXX_FLAGS+=" -fsanitize=fuzzer-no-link -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1"
   CMAKE_C_FLAGS+=" -fsanitize=fuzzer-no-link -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1"
-  cmd_asan -DJPEGXL_ENABLE_FUZZERS=ON "$@"
+  cmd_asan -DJPEGLI_ENABLE_FUZZERS=ON "$@"
 }
 
 cmd_msanfuzz() {
@@ -597,7 +595,7 @@ cmd_msanfuzz() {
 
   CMAKE_CXX_FLAGS+=" -fsanitize=fuzzer-no-link -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1"
   CMAKE_C_FLAGS+=" -fsanitize=fuzzer-no-link -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1"
-  cmd_msan -DJPEGXL_ENABLE_FUZZERS=ON "$@"
+  cmd_msan -DJPEGLI_ENABLE_FUZZERS=ON "$@"
 }
 
 cmd_asan() {
@@ -607,7 +605,7 @@ cmd_asan() {
   CMAKE_CXX_FLAGS+=" -g -DADDRESS_SANITIZER \
     -fsanitize=address ${UBSAN_FLAGS[@]}"
   strip_dead_code
-  cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
+  cmake_configure "$@" -DJPEGLI_ENABLE_TCMALLOC=OFF
   cmake_build_and_test
 }
 
@@ -621,7 +619,7 @@ cmd_tsan() {
   CMAKE_C_FLAGS+=" ${tsan_args[@]}"
   CMAKE_CXX_FLAGS+=" ${tsan_args[@]}"
 
-  cmake_configure "$@" -DJPEGXL_ENABLE_TCMALLOC=OFF
+  cmake_configure "$@" -DJPEGLI_ENABLE_TCMALLOC=OFF
   cmake_build_and_test
 }
 
@@ -684,9 +682,9 @@ cmd_msan() {
   # TODO(eustas): investigate why fuzzers do not link when MSAN libc++ is used
   cmake_configure "$@" \
     -DCMAKE_CROSSCOMPILING=1 -DRUN_HAVE_STD_REGEX=0 -DRUN_HAVE_POSIX_REGEX=0 \
-    -DJPEGXL_ENABLE_TCMALLOC=OFF -DJPEGXL_WARNINGS_AS_ERRORS=OFF \
+    -DJPEGLI_ENABLE_TCMALLOC=OFF -DJPEGLI_WARNINGS_AS_ERRORS=OFF \
     -DCMAKE_REQUIRED_LINK_OPTIONS="${msan_linker_flags[@]}" \
-    -DJPEGXL_ENABLE_FUZZERS=OFF
+    -DJPEGLI_ENABLE_FUZZERS=OFF
   cmake_build_and_test
 }
 
@@ -798,21 +796,21 @@ _cmd_ossfuzz() {
 
   # Args passed to ninja. These will be evaluated as a string separated by
   # spaces.
-  local jpegxl_extra_args="$@"
+  local jpegli_extra_args="$@"
 
   sudo docker run --rm -i \
-    -e JPEGXL_UID=$(id -u) \
-    -e JPEGXL_GID=$(id -g) \
+    -e JPEGLI_UID=$(id -u) \
+    -e JPEGLI_GID=$(id -g) \
     -e FUZZING_ENGINE="${FUZZING_ENGINE:-libfuzzer}" \
     -e SANITIZER="${sanitizer}" \
     -e ARCHITECTURE=x86_64 \
     -e FUZZING_LANGUAGE=c++ \
     -e MSAN_LIBS_PATH="/work/msan" \
-    -e JPEGXL_EXTRA_ARGS="${jpegxl_extra_args}" \
-    -v "${MYDIR}":/src/libjxl \
+    -e JPEGLI_EXTRA_ARGS="${jpegli_extra_args}" \
+    -v "${MYDIR}":/src/libjpegli \
     -v "${MYDIR}/tools/scripts/ossfuzz-build.sh":/src/build.sh \
     -v "${real_build_dir}":/work \
-    gcr.io/oss-fuzz/libjxl
+    gcr.io/oss-fuzz/libjpegli
 }
 
 cmd_ossfuzz_asan() {
@@ -836,9 +834,9 @@ cmd_ossfuzz_ninja() {
 
   sudo docker run --rm -i \
     --user $(id -u):$(id -g) \
-    -v "${MYDIR}":/src/libjxl \
+    -v "${MYDIR}":/src/libjpegli \
     -v "${real_build_dir}":/work \
-    gcr.io/oss-fuzz/libjxl \
+    gcr.io/oss-fuzz/libjpegli \
     ninja -C /work "$@"
 }
 
@@ -881,7 +879,7 @@ cmd_benchmark() {
 
   tar -xvf "${nikon_corpus_tar}" -C "${corpus_dir}"
 
-  local sem_id="jpegxl_benchmark-$$"
+  local sem_id="jpegli_benchmark-$$"
   local nprocs=$(nproc --all || echo 1)
   images=()
   local filename
@@ -1029,7 +1027,7 @@ _speed_from_output() {
 # Run benchmarks on ARM for the big and little CPUs.
 cmd_arm_benchmark() {
   # Flags used for cjxl encoder with .png inputs
-  local jxl_png_benchmarks=(
+  local jpegli_png_benchmarks=(
     # Lossy options:
     "--epf=0 --distance=1.0 --speed=cheetah"
     "--epf=2 --distance=1.0 --speed=cheetah"
@@ -1051,7 +1049,7 @@ cmd_arm_benchmark() {
 
   # Flags used for cjxl encoder with .jpg inputs. These should do lossless
   # JPEG recompression (of pixels or full jpeg).
-  local jxl_jpeg_benchmarks=(
+  local jpegli_jpeg_benchmarks=(
     "--num_reps=3"
   )
 
@@ -1115,9 +1113,9 @@ cmd_arm_benchmark() {
       # Select the list of flags to use for the current encoder/image pair.
       local img_benchmarks
       if [[ "${src_ext}" == "jpg" ]]; then
-        img_benchmarks=("${jxl_jpeg_benchmarks[@]}")
+        img_benchmarks=("${jpegli_jpeg_benchmarks[@]}")
       else
-        img_benchmarks=("${jxl_png_benchmarks[@]}")
+        img_benchmarks=("${jpegli_png_benchmarks[@]}")
       fi
 
       for flags in "${img_benchmarks[@]}"; do
@@ -1207,7 +1205,7 @@ cmd_fuzz() {
   local nprocs=$(nproc --all || echo 1)
   (
    cd "${TOOLS_DIR}"
-   djxl_fuzzer "${fuzzer_crash_dir}" "${corpus_dir}" \
+   djpegli_fuzzer "${fuzzer_crash_dir}" "${corpus_dir}" \
      -max_total_time="${FUZZER_MAX_TIME}" -jobs=${nprocs} \
      -artifact_prefix="${fuzzer_crash_dir}/"
   )
@@ -1411,8 +1409,8 @@ cmd_debian_build() {
   local srcpkg="${1:-}"
 
   case "${srcpkg}" in
-    jpeg-xl)
-      build_debian_pkg "${MYDIR}" "jpeg-xl"
+    jpegli)
+      build_debian_pkg "${MYDIR}" "jpegli"
       ;;
     highway)
       build_debian_pkg "${MYDIR}/third_party/highway" "highway" "${HWY_PKG_OPTIONS}"
@@ -1441,8 +1439,8 @@ cmd_bump_version() {
   fi
 
   if [[ -z "${newver}" ]]; then
-    local major=$(get_version JPEGXL_MAJOR_VERSION)
-    local minor=$(get_version JPEGXL_MINOR_VERSION)
+    local major=$(get_version JPEGLI_MAJOR_VERSION)
+    local minor=$(get_version JPEGLI_MINOR_VERSION)
     local patch=0
     minor=$(( ${minor}  + 1))
   else
@@ -1460,13 +1458,13 @@ cmd_bump_version() {
 
   echo "Bumping version to ${newver} (${major}.${minor}.${patch})"
   sed -E \
-    -e "s/(set\\(JPEGXL_MAJOR_VERSION) [0-9]+\\)/\\1 ${major})/" \
-    -e "s/(set\\(JPEGXL_MINOR_VERSION) [0-9]+\\)/\\1 ${minor})/" \
-    -e "s/(set\\(JPEGXL_PATCH_VERSION) [0-9]+\\)/\\1 ${patch})/" \
+    -e "s/(set\\(JPEGLI_MAJOR_VERSION) [0-9]+\\)/\\1 ${major})/" \
+    -e "s/(set\\(JPEGLI_MINOR_VERSION) [0-9]+\\)/\\1 ${minor})/" \
+    -e "s/(set\\(JPEGLI_PATCH_VERSION) [0-9]+\\)/\\1 ${patch})/" \
     -i lib/CMakeLists.txt
   sed -E \
-    -e "s/(LIBJXL_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}.${patch}\"/" \
-    -e "s/(LIBJXL_ABI_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}\"/" \
+    -e "s/(LIBJPEGLI_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}.${patch}\"/" \
+    -e "s/(LIBJPEGLI_ABI_VERSION: )\"[0-9.]+\"/\\1\"${major}.${minor}\"/" \
     -i .github/workflows/conformance.yml
 
   # Update lib.gni
@@ -1476,7 +1474,7 @@ cmd_bump_version() {
   DEBCHANGE_RELEASE_HEURISTIC=log dch -M --distribution unstable --release ''
   DEBCHANGE_RELEASE_HEURISTIC=log dch -M \
     --newversion "${newver}" \
-    "Bump JPEG XL version to ${newver}."
+    "Bump JPEGLI version to ${newver}."
 }
 
 # Check that the AUTHORS file contains the email of the committer.
@@ -1536,7 +1534,7 @@ oss-fuzz commands:
  ossfuzz_msan   Build the local source inside oss-fuzz docker with msan.
  ossfuzz_ubsan  Build the local source inside oss-fuzz docker with ubsan.
  ossfuzz_ninja  Run ninja on the BUILD_DIR inside the oss-fuzz docker. Extra
-                parameters are passed to ninja, for example "djxl_fuzzer" will
+                parameters are passed to ninja, for example "djpegli_fuzzer" will
                 only build that ninja target. Use for faster build iteration
                 after one of the ossfuzz_*san commands.
 

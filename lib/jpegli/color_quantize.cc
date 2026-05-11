@@ -271,9 +271,12 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
       static_cast<size_t>(cinfo->output_width) * cinfo->output_height;
   const int max_color_count = std::max<size_t>(num_pixels, 1u << 18);
   const int max_palette_size = cinfo->desired_number_of_colors;
-  auto red_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
-  auto green_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
-  auto blue_storage = jxl::make_uninitialized_vector<uint8_t>(max_color_count);
+  auto red_storage =
+      jpegli::make_uninitialized_vector<uint8_t>(max_color_count);
+  auto green_storage =
+      jpegli::make_uninitialized_vector<uint8_t>(max_color_count);
+  auto blue_storage =
+      jpegli::make_uninitialized_vector<uint8_t>(max_color_count);
   uint8_t* red = red_storage.data();
   uint8_t* green = green_storage.data();
   uint8_t* blue = blue_storage.data();

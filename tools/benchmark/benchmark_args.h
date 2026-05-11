@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_ARGS_H_
-#define TOOLS_BENCHMARK_BENCHMARK_ARGS_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_ARGS_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_ARGS_H_
 
 // Command line parsing and arguments for benchmark_xl
 
@@ -21,12 +21,11 @@
 #include "tools/args.h"
 #include "tools/cmdline.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::ColorEncoding;
-using ::jxl::Override;
-using ::jxl::Status;
+using ::jpegli::ColorEncoding;
+using ::jpegli::Override;
+using ::jpegli::Status;
 
 std::vector<std::string> SplitString(const std::string& s, char c);
 
@@ -34,30 +33,30 @@ Status ParseIntParam(const std::string& param, int lower_bound, int upper_bound,
                      int& val);
 
 struct BenchmarkArgs {
-  using OptionId = jpegxl::tools::CommandLineParser::OptionId;
+  using OptionId = jpegli_tools::CommandLineParser::OptionId;
 
   void AddFlag(bool* field, const char* longName, const char* help,
                bool defaultValue) {
     const char* noName = RememberString_(std::string("no") + longName);
     cmdline.AddOptionFlag('\0', longName, nullptr, field,
-                          &jpegxl::tools::SetBooleanTrue);
+                          &jpegli_tools::SetBooleanTrue);
     cmdline.AddOptionFlag('\0', noName, help, field,
-                          &jpegxl::tools::SetBooleanFalse);
+                          &jpegli_tools::SetBooleanFalse);
     *field = defaultValue;
   }
 
   OptionId AddOverride(Override* field, const char* longName,
                        const char* help) {
     OptionId result = cmdline.AddOptionValue('\0', longName, "0|1", help, field,
-                                             &jpegxl::tools::ParseOverride);
+                                             &jpegli_tools::ParseOverride);
     *field = Override::kDefault;
     return result;
   }
 
   OptionId AddString(std::string* field, const char* longName, const char* help,
                      const std::string& defaultValue = "") {
-    OptionId result = cmdline.AddOptionValue(
-        '\0', longName, "<string>", help, field, &jpegxl::tools::ParseString);
+    OptionId result = cmdline.AddOptionValue('\0', longName, "<string>", help,
+                                             field, &jpegli_tools::ParseString);
     *field = defaultValue;
     return result;
   }
@@ -65,23 +64,23 @@ struct BenchmarkArgs {
   OptionId AddFloat(float* field, const char* longName, const char* help,
                     float defaultValue) {
     OptionId result = cmdline.AddOptionValue('\0', longName, "<scalar>", help,
-                                             field, &jpegxl::tools::ParseFloat);
+                                             field, &jpegli_tools::ParseFloat);
     *field = defaultValue;
     return result;
   }
 
   OptionId AddDouble(double* field, const char* longName, const char* help,
                      double defaultValue) {
-    OptionId result = cmdline.AddOptionValue(
-        '\0', longName, "<scalar>", help, field, &jpegxl::tools::ParseDouble);
+    OptionId result = cmdline.AddOptionValue('\0', longName, "<scalar>", help,
+                                             field, &jpegli_tools::ParseDouble);
     *field = defaultValue;
     return result;
   }
 
   OptionId AddSigned(int* field, const char* longName, const char* help,
                      int defaultValue) {
-    OptionId result = cmdline.AddOptionValue(
-        '\0', longName, "<integer>", help, field, &jpegxl::tools::ParseSigned);
+    OptionId result = cmdline.AddOptionValue('\0', longName, "<integer>", help,
+                                             field, &jpegli_tools::ParseSigned);
     *field = defaultValue;
     return result;
   }
@@ -90,7 +89,7 @@ struct BenchmarkArgs {
                        size_t defaultValue) {
     OptionId result =
         cmdline.AddOptionValue('\0', longName, "<unsigned>", help, field,
-                               &jpegxl::tools::ParseUnsigned);
+                               &jpegli_tools::ParseUnsigned);
     *field = defaultValue;
     return result;
   }
@@ -122,7 +121,7 @@ struct BenchmarkArgs {
   float intensity_target;
 
   std::string color_hints_string;
-  jxl::extras::ColorHints color_hints;
+  jpegli::extras::ColorHints color_hints;
 
   size_t override_bitdepth;
 
@@ -152,7 +151,7 @@ struct BenchmarkArgs {
 
   std::string extra_metrics;
 
-  jpegxl::tools::CommandLineParser cmdline;
+  jpegli_tools::CommandLineParser cmdline;
 
  private:
   const char* RememberString_(const std::string& text) {
@@ -170,7 +169,6 @@ struct BenchmarkArgs {
 // Returns singleton
 BenchmarkArgs* Args();
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_ARGS_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_ARGS_H_

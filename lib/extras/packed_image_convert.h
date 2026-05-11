@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
-#define LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
+#ifndef JPEGLI_LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
+#define JPEGLI_LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
 
 // Helper functions to convert from the external image types.
 
@@ -16,7 +16,7 @@
 #include "lib/extras/image.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 Status GetColorEncoding(const PackedPixelFile& ppf,
@@ -30,9 +30,9 @@ Status ConvertPackedPixelFileToImage3F(const extras::PackedPixelFile& ppf,
                                        ThreadPool* pool = nullptr);
 
 StatusOr<PackedPixelFile> ConvertImage3FToPackedPixelFile(
-    const Image3F& image, const ColorEncoding& c_enc, JxlPixelFormat format,
+    const Image3F& image, const ColorEncoding& c_enc, JpegliPixelFormat format,
     ThreadPool* pool);
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_
+#endif  // JPEGLI_LIB_EXTRAS_PACKED_IMAGE_CONVERT_H_

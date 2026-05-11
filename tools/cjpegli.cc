@@ -24,14 +24,13 @@
 #include "tools/file_io.h"
 #include "tools/speed_stats.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 namespace {
 
 struct Args {
   void AddCommandLineOptions(CommandLineParser* cmdline) {
     std::string input_help("the input can be ");
-    input_help.append(jxl::extras::ListOfDecodeCodecs());
+    input_help.append(jpegli::extras::ListOfDecodeCodecs());
     cmdline->AddPositionalOption("INPUT", /* required = */ true, input_help,
                                  &file_in);
     cmdline->AddPositionalOption("OUTPUT", /* required = */ true,
@@ -115,7 +114,7 @@ struct Args {
   const char* file_out = nullptr;
   bool disable_output = false;
   ColorHintsProxy color_hints_proxy;
-  jxl::extras::JpegSettings settings;
+  jpegli::extras::JpegSettings settings;
   int quality = 90;
   size_t num_reps = 1;
   bool quiet = false;
@@ -126,7 +125,7 @@ struct Args {
 };
 
 bool ValidateArgs(const Args& args) {
-  const jxl::extras::JpegSettings& settings = args.settings;
+  const jpegli::extras::JpegSettings& settings = args.settings;
   if (settings.distance < 0.0 || settings.distance > 25.0) {
     fprintf(stderr, "Invalid --distance argument\n");
     return false;
@@ -152,7 +151,7 @@ bool ValidateArgs(const Args& args) {
 }
 
 bool SetDistance(const Args& args, const CommandLineParser& cmdline,
-                 jxl::extras::JpegSettings* settings) {
+                 jpegli::extras::JpegSettings* settings) {
   bool distance_set = cmdline.GetOption(args.opt_distance_id)->matched();
   bool quality_set = cmdline.GetOption(args.opt_quality_id)->matched();
   int num_quality_settings = (distance_set ? 1 : 0) + (quality_set ? 1 : 0) +
@@ -202,9 +201,9 @@ int CJpegliMain(int argc, const char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  jxl::extras::PackedPixelFile ppf;
-  if (!jxl::extras::DecodeBytes(jxl::Bytes(input_bytes),
-                                args.color_hints_proxy.target, &ppf)) {
+  jpegli::extras::PackedPixelFile ppf;
+  if (!jpegli::extras::DecodeBytes(jpegli::Bytes(input_bytes),
+                                   args.color_hints_proxy.target, &ppf)) {
     fprintf(stderr, "Failed to decode input image %s\n", args.file_in);
     return EXIT_FAILURE;
   }
@@ -219,7 +218,7 @@ int CJpegliMain(int argc, const char* argv[]) {
   }
 
   if (!args.quiet) {
-    const jxl::extras::JpegSettings& s = args.settings;
+    const jpegli::extras::JpegSettings& s = args.settings;
     float calculated_distance =
         cmdline.GetOption(args.opt_quality_id)->matched()
             ? jpegli_quality_to_distance(s.quality)
@@ -231,15 +230,15 @@ int CJpegliMain(int argc, const char* argv[]) {
             s.optimize_coding ? "OPT" : "FIX");
   }
 
-  jpegxl::tools::SpeedStats stats;
+  jpegli_tools::SpeedStats stats;
   std::vector<uint8_t> jpeg_bytes;
   for (size_t num_rep = 0; num_rep < args.num_reps; ++num_rep) {
-    const double t0 = jxl::Now();
-    if (!jxl::extras::EncodeJpeg(ppf, args.settings, nullptr, &jpeg_bytes)) {
+    const double t0 = jpegli::Now();
+    if (!jpegli::extras::EncodeJpeg(ppf, args.settings, nullptr, &jpeg_bytes)) {
       fprintf(stderr, "jpegli encoding failed\n");
       return EXIT_FAILURE;
     }
-    const double t1 = jxl::Now();
+    const double t1 = jpegli::Now();
     stats.NotifyElapsed(t1 - t0);
     stats.SetImageSize(ppf.info.xsize, ppf.info.ysize);
   }
@@ -255,7 +254,8 @@ int CJpegliMain(int argc, const char* argv[]) {
     const double num_pixels =
         static_cast<double>(ppf.info.xsize) * ppf.info.ysize;
     const double bpp =
-        static_cast<double>(jpeg_bytes.size() * jxl::kBitsPerByte) / num_pixels;
+        static_cast<double>(jpeg_bytes.size() * jpegli::kBitsPerByte) /
+        num_pixels;
     fprintf(stderr, "(%.3f bpp).\n", bpp);
     stats.Print(1);
   }
@@ -263,9 +263,8 @@ int CJpegliMain(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
 int main(int argc, const char** argv) {
-  return jpegxl::tools::CJpegliMain(argc, argv);
+  return jpegli_tools::CJpegliMain(argc, argv);
 }

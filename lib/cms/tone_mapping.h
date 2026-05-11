@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_CMS_TONE_MAPPING_H_
-#define LIB_JXL_CMS_TONE_MAPPING_H_
+#ifndef JPEGLI_LIB_CMS_TONE_MAPPING_H_
+#define JPEGLI_LIB_CMS_TONE_MAPPING_H_
 
 #include <algorithm>
 #include <array>
@@ -17,7 +17,7 @@
 #include "lib/base/matrix_ops.h"
 #include "lib/cms/transfer_functions.h"
 
-namespace jxl {
+namespace jpegli {
 
 using Range = std::array<float, 2>;
 
@@ -130,9 +130,9 @@ class HlgOOTF_Base {
   const float blue_Y_;
 };
 
-static JXL_MAYBE_UNUSED void GamutMapScalar(Color& rgb,
-                                            const Vector3& primaries_luminances,
-                                            float preserve_saturation = 0.1f) {
+static JPEGLI_MAYBE_UNUSED void GamutMapScalar(
+    Color& rgb, const Vector3& primaries_luminances,
+    float preserve_saturation = 0.1f) {
   const float luminance = primaries_luminances[0] * rgb[0] +
                           primaries_luminances[1] * rgb[1] +
                           primaries_luminances[2] * rgb[2];
@@ -178,6 +178,6 @@ static JXL_MAYBE_UNUSED void GamutMapScalar(Color& rgb,
   }
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_CMS_TONE_MAPPING_H_
+#endif  // JPEGLI_LIB_CMS_TONE_MAPPING_H_

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_CMDLINE_H_
-#define TOOLS_CMDLINE_H_
+#ifndef JPEGLI_TOOLS_CMDLINE_H_
+#define JPEGLI_TOOLS_CMDLINE_H_
 
 #include <cstdint>
 #include <cstdio>
@@ -16,8 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 class CommandLineParser {
  public:
@@ -437,17 +436,16 @@ static inline bool SetBooleanFalse(bool* out) {
   return true;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#define JPEGXL_TOOLS_ABORT(M)                      \
-  fprintf(stderr, "JPEGXL_TOOLS_ABORT: %s\n", #M); \
+#define JPEGLI_TOOLS_ABORT(M)                      \
+  fprintf(stderr, "JPEGLI_TOOLS_ABORT: %s\n", #M); \
   std::exit(EXIT_FAILURE);
 
-#define JPEGXL_TOOLS_CHECK(C)                        \
+#define JPEGLI_TOOLS_CHECK(C)                        \
   if (!(C)) {                                        \
-    fprintf(stderr, "JPEGXL_TOOLS_CHECK: %s\n", #C); \
+    fprintf(stderr, "JPEGLI_TOOLS_CHECK: %s\n", #C); \
     std::exit(EXIT_FAILURE);                         \
   }
 
-#endif  // TOOLS_CMDLINE_H_
+#endif  // JPEGLI_TOOLS_CMDLINE_H_

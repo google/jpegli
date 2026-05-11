@@ -35,7 +35,7 @@ BUNDLE_DOCS=(doxygen graphviz)
 BUNDLE_EXTRAS=(libgif-dev libjpeg-dev libpng-dev libwebp-dev libilmbase-dev libopenexr-dev)
 BUNDLE_EXTRAS_RUNTIME=(libgif7 libjpeg-turbo8 libpng16-16t64 libwebp7 libopenexr-3-1-30)
 BUNDLE_PLUGINS=(libgdk-pixbuf2.0-dev libgtk2.0-dev)
-BUNDLE_RUNTIME=(libbrotli1)
+BUNDLE_RUNTIME=()
 # BUNDLE_PREINSTALLED=(clang cmake git pkg-config unzip xvfb)
 
 # Handle bundles

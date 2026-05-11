@@ -231,13 +231,13 @@ struct TestConfig {
   float max_diff = 35.0f;
 };
 
-jxl::StatusOr<std::vector<uint8_t>> GetTestJpegData(TestConfig& config) {
+jpegli::StatusOr<std::vector<uint8_t>> GetTestJpegData(TestConfig& config) {
   std::vector<uint8_t> compressed;
   if (!config.fn.empty()) {
-    JXL_ASSIGN_OR_RETURN(compressed, ReadTestData(config.fn));
+    JPEGLI_ASSIGN_OR_RETURN(compressed, ReadTestData(config.fn));
   } else {
     GeneratePixels(&config.input);
-    JXL_RETURN_IF_ERROR(
+    JPEGLI_RETURN_IF_ERROR(
         EncodeWithJpegli(config.input, config.jparams, &compressed));
   }
   if (config.dparams.size_factor < 1.0f) {
@@ -310,7 +310,7 @@ void TestAPIBuffered(const CompressParams& jparams,
   SetDecompressParams(dparams, cinfo);
   jpegli_set_output_format(cinfo, dparams.data_type, dparams.endianness);
   VerifyHeader(jparams, cinfo);
-  bool has_multiple_scans = FROM_JXL_BOOL(jpegli_has_multiple_scans(cinfo));
+  bool has_multiple_scans = FROM_JPEGLI_BOOL(jpegli_has_multiple_scans(cinfo));
   EXPECT_TRUE(jpegli_start_decompress(cinfo));
   // start decompress should not read the whole input in buffered image mode
   EXPECT_FALSE(jpegli_input_complete(cinfo));
@@ -400,8 +400,8 @@ TEST(DecodeAPITest, ReuseCinfo) {
                 expected.Clear();
                 DecodeWithLibjpeg(jparams, dparams, compressed, &expected);
                 output.Clear();
-                cinfo.buffered_image = JXL_FALSE;
-                cinfo.raw_data_out = JXL_FALSE;
+                cinfo.buffered_image = JPEGLI_FALSE;
+                cinfo.raw_data_out = JPEGLI_FALSE;
                 cinfo.scale_num = cinfo.scale_denom = 1;
                 SourceManager src(compressed.data(), compressed.size(),
                                   1u << 12);
@@ -605,8 +605,8 @@ TEST_P(DecodeAPITestParam, TestAPI) {
   TestConfig config = GetParam();
   const DecompressParams& dparams = config.dparams;
   if (dparams.skip_scans) return;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data");
   SourceManager src(compressed.data(), compressed.size(), dparams.chunk_size);
 
   TestImage output1;
@@ -640,8 +640,8 @@ class DecodeAPITestParamBuffered : public ::testing::TestWithParam<TestConfig> {
 TEST_P(DecodeAPITestParamBuffered, TestAPI) {
   TestConfig config = GetParam();
   const DecompressParams& dparams = config.dparams;
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, GetTestJpegData(config),
-                     "Failed to create test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        GetTestJpegData(config), "Failed to create test data.");
   SourceManager src(compressed.data(), compressed.size(), dparams.chunk_size);
 
   std::vector<TestImage> output_progression1;

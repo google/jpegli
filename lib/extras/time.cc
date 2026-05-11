@@ -9,34 +9,34 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "lib/base/os_macros.h"  // for JXL_OS_*
+#include "lib/base/os_macros.h"  // for JPEGLI_OS_*
 
-#if JXL_OS_WIN
+#if JPEGLI_OS_WIN
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif  // NOMINMAX
 #include <windows.h>
-#endif  // JXL_OS_WIN
+#endif  // JPEGLI_OS_WIN
 
-#if JXL_OS_MAC
+#if JPEGLI_OS_MAC
 #include <mach/mach.h>
 #include <mach/mach_time.h>
-#endif  // JXL_OS_MAC
+#endif  // JPEGLI_OS_MAC
 
-#if JXL_OS_HAIKU
+#if JPEGLI_OS_HAIKU
 #include <OS.h>
-#endif  // JXL_OS_HAIKU
+#endif  // JPEGLI_OS_HAIKU
 
-namespace jxl {
+namespace jpegli {
 
 double Now() {
-#if JXL_OS_WIN
+#if JPEGLI_OS_WIN
   LARGE_INTEGER counter;
   (void)QueryPerformanceCounter(&counter);
   LARGE_INTEGER freq;
   (void)QueryPerformanceFrequency(&freq);
   return double(counter.QuadPart) / freq.QuadPart;
-#elif JXL_OS_MAC
+#elif JPEGLI_OS_MAC
   const auto t = mach_absolute_time();
   // On OSX/iOS platform the elapsed time is cpu time unit
   // We have to query the time base information to convert it back
@@ -46,7 +46,7 @@ double Now() {
     (void)mach_timebase_info(&timebase);
   }
   return double(t) * timebase.numer / timebase.denom * 1E-9;  // notypo
-#elif JXL_OS_HAIKU
+#elif JPEGLI_OS_HAIKU
   return double(system_time_nsecs()) * 1E-9;
 #else
   timespec t;
@@ -55,4 +55,4 @@ double Now() {
 #endif
 }
 
-}  // namespace jxl
+}  // namespace jpegli
