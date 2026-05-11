@@ -19,55 +19,53 @@ self=$(realpath "$0")
 mydir=$(dirname "${self}")
 
 main() {
-  # Build the fuzzers in release mode but force the inclusion of JXL_DASSERT
+  # Build the fuzzers in release mode but force the inclusion of JPEGLI_DASSERT
   # checks.
   build_args=(
     -G Ninja
     -DBUILD_TESTING=OFF
     -DBUILD_SHARED_LIBS=OFF
-    -DJPEGXL_ENABLE_BENCHMARK=OFF
-    -DJPEGXL_ENABLE_DEVTOOLS=ON
-    -DJPEGXL_ENABLE_EXAMPLES=OFF
-    -DJPEGXL_ENABLE_FUZZERS=ON
-    -DJPEGXL_ENABLE_MANPAGES=OFF
-    -DJPEGXL_ENABLE_SJPEG=OFF
-    -DJPEGXL_ENABLE_VIEWERS=OFF
+    -DJPEGLI_ENABLE_BENCHMARK=OFF
+    -DJPEGLI_ENABLE_DEVTOOLS=ON
+    -DJPEGLI_ENABLE_FUZZERS=ON
+    -DJPEGLI_ENABLE_MANPAGES=OFF
+    -DJPEGLI_ENABLE_SJPEG=OFF
     -DCMAKE_BUILD_TYPE=Release
   )
-  export CXXFLAGS="${CXXFLAGS} -DJXL_IS_DEBUG_BUILD"
+  export CXXFLAGS="${CXXFLAGS} -DJPEGLI_IS_DEBUG_BUILD"
 
   mkdir -p ${WORK}
   cd ${WORK}
   cmake \
     "${build_args[@]}" \
-    -DJPEGXL_FUZZER_LINK_FLAGS="${LIB_FUZZING_ENGINE}" \
-    "${SRC}/libjxl"
+    -DJPEGLI_FUZZER_LINK_FLAGS="${LIB_FUZZING_ENGINE}" \
+    "${SRC}/libjpegli"
 
   fuzzers=(
     color_encoding_fuzzer
-    djxl_fuzzer
+    djpegli_fuzzer
     fields_fuzzer
     icc_codec_fuzzer
     rans_fuzzer
     transforms_fuzzer
   )
-  if [[ -n "${JPEGXL_EXTRA_ARGS:-}" ]]; then
+  if [[ -n "${JPEGLI_EXTRA_ARGS:-}" ]]; then
     # Extra arguments passed to ci.sh ossfuzz commands are treated as ninja
     # targets. The environment variable is split into individual targets here,
     # which might break if passing paths with spaces, which is an unlikely use
     # case.
-    fuzzers=(${JPEGXL_EXTRA_ARGS})
-    echo "Building with targets: ${JPEGXL_EXTRA_ARGS}"
+    fuzzers=(${JPEGLI_EXTRA_ARGS})
+    echo "Building with targets: ${JPEGLI_EXTRA_ARGS}"
   fi
   ninja "${fuzzers[@]}"
 }
 
 # Build as the regular user if not already running as that user. This avoids
 # having root files in the build directory.
-if [[ -n "${JPEGXL_UID:-}" && "${JPEGXL_UID}" != $(id -u) ]]; then
-  userspec="${JPEGXL_UID}:${JPEGXL_GID}"
-  unset JPEGXL_UID
-  unset JPEGXL_GID
+if [[ -n "${JPEGLI_UID:-}" && "${JPEGLI_UID}" != $(id -u) ]]; then
+  userspec="${JPEGLI_UID}:${JPEGLI_GID}"
+  unset JPEGLI_UID
+  unset JPEGLI_GID
   chroot --skip-chdir --userspec="${userspec}" / "${mydir}" "$@"
   exit $?
 fi

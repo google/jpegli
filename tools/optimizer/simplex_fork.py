@@ -62,7 +62,7 @@ def EvalCacheForget():
 
 g_first_pnorm = None
 
-def RandomizedJxlCodecs():
+def RandomizedJpegliCodecs():
   global g_first_pnorm
   g_first_pnorm = None
   retval = []
@@ -80,7 +80,7 @@ def RandomizedJxlCodecs():
     retval.append("jxl:d%.4f" % mul)
   return ",".join(retval)
 
-g_codecs = RandomizedJxlCodecs()
+g_codecs = RandomizedJpegliCodecs()
 
 def Eval(vec, binary_name, cached=True):
   """Evaluates the objective function by forking a process.
@@ -243,7 +243,7 @@ g_binary = sys.argv[1]
 g_simplex = InitialSimplex([None] + [0.0] * g_dim,
                            g_dim, 7.0 * g_amount)
 best = g_simplex[0][:]
-g_codecs = RandomizedJxlCodecs()
+g_codecs = RandomizedJpegliCodecs()
 g_simplex = InitialSimplex(best, g_dim, g_amount * 2.47)
 best = g_simplex[0][:]
 g_simplex = InitialSimplex(best, g_dim, g_amount)
@@ -258,7 +258,7 @@ for restarts in range(99999):
     Reflect(g_simplex, g_binary)
 
   mulli = 0.1 + 15 * random.random()**2.0
-  g_codecs = RandomizedJxlCodecs()
+  g_codecs = RandomizedJpegliCodecs()
   g_best_val = None # get a new best val
   print("\n\n\nRestart", restarts, "mulli", mulli)
   g_simplex.sort()

@@ -203,7 +203,7 @@ def BuildCleaner(args):
     cmake_text = f.read()
   version = {'major_version': '', 'minor_version': '', 'patch_version': ''}
   for var in version.keys():
-    cmake_var = f'JPEGXL_{var.upper()}'
+    cmake_var = f'JPEGLI_{var.upper()}'
     # TODO(eustas): use `cmake -L`
     # Regexp:
     #   set(_varname_ _capture_decimal_)
@@ -218,12 +218,12 @@ def BuildCleaner(args):
   cmake_parts = lists
   for var in sorted(cmake_parts):
     cmake_chunks.append(FormatCMakeVar(
-        'JPEGXL_INTERNAL_' + var.upper(), cmake_parts[var]))
+        'JPEGLI_INTERNAL_' + var.upper(), cmake_parts[var]))
 
   gni_bzl_parts = version | lists
   gni_bzl_chunks = []
   for var in sorted(gni_bzl_parts):
-    gni_bzl_chunks.append(FormatGniVar('libjxl_' + var, gni_bzl_parts[var]))
+    gni_bzl_chunks.append(FormatGniVar('libjpegli_' + var, gni_bzl_parts[var]))
 
   bzl_chunks = ToHashComment(COPYRIGHT) + [""] + \
       ToDocstringComment(DOC) + [""] + gni_bzl_chunks
@@ -231,8 +231,8 @@ def BuildCleaner(args):
       ToHashComment(DOC) + [""] + gni_bzl_chunks
 
   okay = [
-    MaybeUpdateFile(args, 'lib/jxl_lists.bzl', '\n'.join(bzl_chunks)),
-    MaybeUpdateFile(args, 'lib/jxl_lists.cmake', '\n'.join(cmake_chunks)),
+    MaybeUpdateFile(args, 'lib/jpegli_lists.bzl', '\n'.join(bzl_chunks)),
+    MaybeUpdateFile(args, 'lib/jpegli_lists.cmake', '\n'.join(cmake_chunks)),
     MaybeUpdateFile(args, 'lib/lib.gni', '\n'.join(gni_chunks)),
   ]
   return all(okay)

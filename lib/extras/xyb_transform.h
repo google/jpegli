@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_XYB_TRANSFORM_H_
-#define LIB_EXTRAS_XYB_TRANSFORM_H_
+#ifndef JPEGLI_LIB_EXTRAS_XYB_TRANSFORM_H_
+#define JPEGLI_LIB_EXTRAS_XYB_TRANSFORM_H_
 
 // Converts to XYB color space.
 
@@ -13,11 +13,12 @@
 
 #include "lib/base/compiler_specific.h"
 
-namespace jxl {
+namespace jpegli {
 
-void LinearRGBRowToXYB(float* JXL_RESTRICT row0, float* JXL_RESTRICT row1,
-                       float* JXL_RESTRICT row2,
-                       const float* JXL_RESTRICT premul_absorb, size_t xsize);
+void LinearRGBRowToXYB(float* JPEGLI_RESTRICT row0, float* JPEGLI_RESTRICT row1,
+                       float* JPEGLI_RESTRICT row2,
+                       const float* JPEGLI_RESTRICT premul_absorb,
+                       size_t xsize);
 
 void ComputePremulAbsorb(float intensity_target, float* premul_absorb);
 
@@ -25,6 +26,6 @@ void ComputePremulAbsorb(float intensity_target, float* premul_absorb);
 // interval with an affine transform.
 void ScaleXYBRow(float* row0, float* row1, float* row2, size_t xsize);
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_XYB_TRANSFORM_H_
+#endif  // JPEGLI_LIB_EXTRAS_XYB_TRANSFORM_H_

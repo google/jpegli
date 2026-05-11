@@ -12,8 +12,7 @@
 #include <cstdio>
 #include <string>
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 void SpeedStats::NotifyElapsed(double elapsed_seconds) {
   if (elapsed_seconds > 0.0) {
@@ -119,5 +118,4 @@ bool SpeedStats::Print(size_t worker_threads) {
   return true;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

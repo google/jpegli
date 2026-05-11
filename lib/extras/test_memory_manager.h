@@ -3,17 +3,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIB_EXTRAS_TEST_MEMORY_MANAGER_H_
-#define LIB_EXTRAS_TEST_MEMORY_MANAGER_H_
+#ifndef JPEGLI_LIB_EXTRAS_TEST_MEMORY_MANAGER_H_
+#define JPEGLI_LIB_EXTRAS_TEST_MEMORY_MANAGER_H_
 
 #include "lib/base/memory_manager.h"
 
-namespace jxl {
+namespace jpegli {
 namespace test {
 
-JxlMemoryManager* MemoryManager();
+JpegliMemoryManager* MemoryManager();
 
 }  // namespace test
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_TEST_MEMORY_MANAGER_H_
+#endif  // JPEGLI_LIB_EXTRAS_TEST_MEMORY_MANAGER_H_

@@ -14,9 +14,9 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
-#if !JPEGXL_ENABLE_EXR
+#if !JPEGLI_ENABLE_EXR
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 bool CanDecodeEXR() { return false; }
 
@@ -27,12 +27,12 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
   (void)color_hints;
   (void)ppf;
   (void)constraints;
-  return JXL_FAILURE("EXR is not supported");
+  return JPEGLI_FAILURE("EXR is not supported");
 }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_EXR
+#else  // JPEGLI_ENABLE_EXR
 
 #include <ImfChannelList.h>
 #include <ImfFrameBuffer.h>
@@ -56,12 +56,12 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
 
 #ifdef __EXCEPTIONS
 #include <IexBaseExc.h>
-#define JXL_EXR_THROW_LENGTH_ERROR(M) throw Iex::InputExc(M);
+#define JPEGLI_EXR_THROW_LENGTH_ERROR(M) throw Iex::InputExc(M);
 #else  // __EXCEPTIONS
-#define JXL_EXR_THROW_LENGTH_ERROR(M) JXL_CRASH()
+#define JPEGLI_EXR_THROW_LENGTH_ERROR(M) JPEGLI_CRASH()
 #endif  // __EXCEPTIONS
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 namespace {
@@ -83,10 +83,10 @@ class InMemoryIStream : public OpenEXR::IStream {
   bool isMemoryMapped() const override { return true; }
   char* readMemoryMapped(const int n) override {
     if (pos_ + n < pos_) {
-      JXL_EXR_THROW_LENGTH_ERROR("Overflow");
+      JPEGLI_EXR_THROW_LENGTH_ERROR("Overflow");
     }
     if (pos_ + n > bytes_.size()) {
-      JXL_EXR_THROW_LENGTH_ERROR("Read past end of file");
+      JPEGLI_EXR_THROW_LENGTH_ERROR("Read past end of file");
     }
     char* const result =
         const_cast<char*>(reinterpret_cast<const char*>(bytes_.data() + pos_));
@@ -98,12 +98,12 @@ class InMemoryIStream : public OpenEXR::IStream {
     // when requested amount is not accessible and exception is thrown, all
     // the accessible data is read.
     if (pos_ + n < pos_) {
-      JXL_EXR_THROW_LENGTH_ERROR("Overflow");
+      JPEGLI_EXR_THROW_LENGTH_ERROR("Overflow");
     }
     if (pos_ + n > bytes_.size()) {
       int can_read = static_cast<int>(bytes_.size() - pos_);
       std::copy_n(readMemoryMapped(can_read), can_read, c);
-      JXL_EXR_THROW_LENGTH_ERROR("Read past end of file");
+      JPEGLI_EXR_THROW_LENGTH_ERROR("Read past end of file");
     } else {
       std::copy_n(readMemoryMapped(n), n, c);
     }
@@ -113,7 +113,7 @@ class InMemoryIStream : public OpenEXR::IStream {
   ExrInt64 tellg() override { return pos_; }
   void seekg(const ExrInt64 pos) override {
     if (pos >= bytes_.size()) {
-      JXL_EXR_THROW_LENGTH_ERROR("Seeks past end of file");
+      JPEGLI_EXR_THROW_LENGTH_ERROR("Seeks past end of file");
     }
     pos_ = pos;
   }
@@ -163,7 +163,7 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
 #ifdef __EXCEPTIONS
   std::unique_ptr<OpenEXR::InputFile> input_ptr;
   try {
-    input_ptr = jxl::make_unique<OpenEXR::InputFile>(is);
+    input_ptr = jpegli::make_unique<OpenEXR::InputFile>(is);
   } catch (...) {
     // silently return false if it is not an EXR file
     return false;
@@ -182,10 +182,11 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
        it != channels.end(); ++it) {
     const OpenEXR::Channel& ch = it.channel();
     if (ch.type == OpenEXR::UINT) {
-      return JXL_FAILURE("OpenEXR files with UINT channels are not supported");
+      return JPEGLI_FAILURE(
+          "OpenEXR files with UINT channels are not supported");
     }
     if (ch.xSampling != 1 || ch.ySampling != 1) {
-      return JXL_FAILURE(
+      return JPEGLI_FAILURE(
           "OpenEXR files sub-sampled channels are not supported");
     }
   }
@@ -219,26 +220,27 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
   const int imageHeight = displayWindow.max.y - displayWindow.min.y + 1;
 
   if (!VerifyDimensions<uint32_t>(constraints, imageWidth, imageHeight)) {
-    return JXL_FAILURE("image too big");
+    return JPEGLI_FAILURE("image too big");
   }
 
   ppf->info.xsize = imageWidth;
   ppf->info.ysize = imageHeight;
   ppf->info.num_color_channels = has_rgb ? 3 : 1;
 
-  const JxlDataType data_type =
-      chBase->type == OpenEXR::HALF ? JXL_TYPE_FLOAT16 : JXL_TYPE_FLOAT;
-  const JxlPixelFormat format{
+  const JpegliDataType data_type =
+      chBase->type == OpenEXR::HALF ? JPEGLI_TYPE_FLOAT16 : JPEGLI_TYPE_FLOAT;
+  const JpegliPixelFormat format{
       /*num_channels=*/ppf->info.num_color_channels + (has_alpha ? 1u : 0u),
       /*data_type=*/data_type,
-      /*endianness=*/JXL_NATIVE_ENDIAN,
+      /*endianness=*/JPEGLI_NATIVE_ENDIAN,
       /*align=*/0,
   };
   ppf->frames.clear();
   // Allocates the frame buffer.
   {
-    JXL_ASSIGN_OR_RETURN(PackedFrame frame,
-                         PackedFrame::Create(imageWidth, imageHeight, format));
+    JPEGLI_ASSIGN_OR_RETURN(
+        PackedFrame frame,
+        PackedFrame::Create(imageWidth, imageHeight, format));
     ppf->frames.emplace_back(std::move(frame));
   }
   auto& frame = ppf->frames.back();
@@ -260,9 +262,10 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
     extraPixelBytes += fp16 ? 2 : 4;
     extraChannels.insert(&it.channel());
 
-    const JxlPixelFormat ec_format{1, fp16 ? JXL_TYPE_FLOAT16 : JXL_TYPE_FLOAT,
-                                   JXL_NATIVE_ENDIAN, 0};
-    JXL_ASSIGN_OR_RETURN(
+    const JpegliPixelFormat ec_format{
+        1, fp16 ? JPEGLI_TYPE_FLOAT16 : JPEGLI_TYPE_FLOAT, JPEGLI_NATIVE_ENDIAN,
+        0};
+    JPEGLI_ASSIGN_OR_RETURN(
         PackedImage ec,
         PackedImage::Create(imageWidth, imageHeight, ec_format));
     frame.extra_channels.emplace_back(std::move(ec));
@@ -271,7 +274,7 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
     pec.ec_info.bits_per_sample = fp16 ? 16 : 32;
     pec.ec_info.exponent_bits_per_sample = fp16 ? 5 : 8;
     // TODO: detect channel types (depth etc.) based on naming convention
-    pec.ec_info.type = JXL_CHANNEL_OPTIONAL;
+    pec.ec_info.type = JPEGLI_CHANNEL_OPTIONAL;
     pec.name = name;
     ppf->extra_channels_info.emplace_back(std::move(pec));
   }
@@ -329,16 +332,19 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
     }
 
     // Setup framebuffer: extra channels
-    char* extra_rows_ptr =
-        input_extra_rows.data() -
-        (dataWindow.min.x + start_y * row_size) * extraPixelBytes;
+    char* extra_rows_ptr = input_extra_rows.data();
     for (OpenEXR::ChannelList::ConstIterator it = channels.begin();
          it != channels.end(); ++it) {
       if (extraChannels.find(&it.channel()) == extraChannels.end()) {
         continue;
       }
       const size_t size = it.channel().type == OpenEXR::HALF ? 2 : 4;
-      fb.insert(it.name(), OpenEXR::Slice(it.channel().type, extra_rows_ptr,
+      // Compute per-channel virtual base pointer using per-channel stride (not
+      // extraPixelBytes) to avoid underflow when dataWindow.min.x > 0 with
+      // multiple extra channels.
+      char* ch_base_ptr =
+          extra_rows_ptr - (dataWindow.min.x + start_y * row_size) * size;
+      fb.insert(it.name(), OpenEXR::Slice(it.channel().type, ch_base_ptr,
                                           size, size * row_size));
       extra_rows_ptr += size * row_size * (end_y - start_y + 1);
     }
@@ -348,48 +354,49 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
     input.readPixels(start_y, end_y);
 
     // Copy read data into the result image
-    for (int exr_y = start_y; exr_y <= end_y; ++exr_y) {
-      const int image_y = exr_y - displayWindow.min.y;
-      const char* const JXL_RESTRICT input_row =
-          &input_rows[(exr_y - start_y) * colorPixelBytes * row_size];
-      uint8_t* row = static_cast<uint8_t*>(frame.color.pixels()) +
-                     frame.color.stride * image_y;
+    const int exr_x1 = std::max(dataWindow.min.x, displayWindow.min.x);
+    const int exr_x2 = std::min(dataWindow.max.x, displayWindow.max.x);
+    const int exr_x_span = std::max(0, exr_x2 - exr_x1 + 1);
+    if (exr_x_span > 0) {
+      for (int exr_y = start_y; exr_y <= end_y; ++exr_y) {
+        const int image_y = exr_y - displayWindow.min.y;
+        const char* const JPEGLI_RESTRICT input_row =
+            &input_rows[(exr_y - start_y) * colorPixelBytes * row_size];
+        uint8_t* row = static_cast<uint8_t*>(frame.color.pixels()) +
+                       frame.color.stride * image_y;
 
-      const int exr_x1 = std::max(dataWindow.min.x, displayWindow.min.x);
-      const int exr_x2 = std::min(dataWindow.max.x, displayWindow.max.x);
+        const char* exr_ptr =
+            input_row + (exr_x1 - dataWindow.min.x) * colorPixelBytes;
+        uint8_t* image_ptr =
+            row + (exr_x1 - displayWindow.min.x) * colorPixelBytes;
+        memcpy(image_ptr, exr_ptr, exr_x_span * colorPixelBytes);
 
-      const char* exr_ptr =
-          input_row + (exr_x1 - dataWindow.min.x) * colorPixelBytes;
-      uint8_t* image_ptr =
-          row + (exr_x1 - displayWindow.min.x) * colorPixelBytes;
-      memcpy(image_ptr, exr_ptr, (exr_x2 - exr_x1 + 1) * colorPixelBytes);
+        const char* JPEGLI_RESTRICT input_ec_slice = input_extra_rows.data();
+        for (PackedImage& ec : frame.extra_channels) {
+          const char* const JPEGLI_RESTRICT input_ec_row =
+              input_ec_slice + (exr_y - start_y) * ec.stride;
+          uint8_t* ec_row =
+              static_cast<uint8_t*>(ec.pixels()) + ec.stride * image_y;
+          input_ec_slice += ec.stride * (end_y - start_y + 1);
 
-      const char* JXL_RESTRICT input_ec_slice = input_extra_rows.data();
-      for (PackedImage& ec : frame.extra_channels) {
-        const char* const JXL_RESTRICT input_ec_row =
-            input_ec_slice + (exr_y - start_y) * ec.stride;
-        uint8_t* ec_row =
-            static_cast<uint8_t*>(ec.pixels()) + ec.stride * image_y;
-        input_ec_slice += ec.stride * (end_y - start_y + 1);
-
-        const char* exr_ec_ptr =
-            input_ec_row + (exr_x1 - dataWindow.min.x) * ec.pixel_stride();
-        uint8_t* image_ec_ptr =
-            ec_row + (exr_x1 - displayWindow.min.x) * ec.pixel_stride();
-        memcpy(image_ec_ptr, exr_ec_ptr,
-               (exr_x2 - exr_x1 + 1) * ec.pixel_stride());
+          const char* exr_ec_ptr =
+              input_ec_row + (exr_x1 - dataWindow.min.x) * ec.pixel_stride();
+          uint8_t* image_ec_ptr =
+              ec_row + (exr_x1 - displayWindow.min.x) * ec.pixel_stride();
+          memcpy(image_ec_ptr, exr_ec_ptr, exr_x_span * ec.pixel_stride());
+        }
       }
     }
   }
 
-  ppf->color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+  ppf->color_encoding.transfer_function = JPEGLI_TRANSFER_FUNCTION_LINEAR;
   ppf->color_encoding.color_space =
-      has_rgb ? JXL_COLOR_SPACE_RGB : JXL_COLOR_SPACE_GRAY;
-  ppf->color_encoding.primaries = JXL_PRIMARIES_SRGB;
-  ppf->color_encoding.white_point = JXL_WHITE_POINT_D65;
+      has_rgb ? JPEGLI_COLOR_SPACE_RGB : JPEGLI_COLOR_SPACE_GRAY;
+  ppf->color_encoding.primaries = JPEGLI_PRIMARIES_SRGB;
+  ppf->color_encoding.white_point = JPEGLI_WHITE_POINT_D65;
   if (OpenEXR::hasChromaticities(header)) {
-    ppf->color_encoding.primaries = JXL_PRIMARIES_CUSTOM;
-    ppf->color_encoding.white_point = JXL_WHITE_POINT_CUSTOM;
+    ppf->color_encoding.primaries = JPEGLI_PRIMARIES_CUSTOM;
+    ppf->color_encoding.white_point = JPEGLI_WHITE_POINT_CUSTOM;
     const auto& chromaticities = OpenEXR::chromaticities(header);
     ppf->color_encoding.primaries_red_xy[0] = chromaticities.red.x;
     ppf->color_encoding.primaries_red_xy[1] = chromaticities.red.y;
@@ -407,13 +414,13 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
   if (has_alpha) {
     ppf->info.alpha_bits = chA->type == OpenEXR::HALF ? 16 : 32;
     ppf->info.alpha_exponent_bits = chA->type == OpenEXR::HALF ? 5 : 8;
-    ppf->info.alpha_premultiplied = JXL_TRUE;
+    ppf->info.alpha_premultiplied = JPEGLI_TRUE;
   }
   ppf->info.intensity_target = intensity_target;
   return true;
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_EXR
+#endif  // JPEGLI_ENABLE_EXR

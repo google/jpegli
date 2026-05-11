@@ -28,7 +28,7 @@ namespace {
 
 void Check(bool ok) {
   if (!ok) {
-    JXL_CRASH();
+    JPEGLI_CRASH();
   }
 }
 
@@ -49,10 +49,11 @@ void ReadOutputPass(j_decompress_ptr cinfo, const DecompressParams& dparams,
   output->components = cinfo->out_color_components;
   if (cinfo->quantize_colors) {
     JSAMPLE** colormap = cinfo->colormap;
-    jxl::msan::UnpoisonMemory(reinterpret_cast<void*>(colormap),
-                              cinfo->out_color_components * sizeof(JSAMPLE*));
+    jpegli::msan::UnpoisonMemory(
+        reinterpret_cast<void*>(colormap),
+        cinfo->out_color_components * sizeof(JSAMPLE*));
     for (int c = 0; c < cinfo->out_color_components; ++c) {
-      jxl::msan::UnpoisonMemory(
+      jpegli::msan::UnpoisonMemory(
           reinterpret_cast<void*>(colormap[c]),
           cinfo->actual_number_of_colors * sizeof(JSAMPLE));
     }
@@ -68,7 +69,7 @@ void ReadOutputPass(j_decompress_ptr cinfo, const DecompressParams& dparams,
       JSAMPROW rows[] = {
           reinterpret_cast<JSAMPLE*>(&output->pixels[y * stride])};
       Check(1 == jpeg_read_scanlines(cinfo, rows, 1));
-      jxl::msan::UnpoisonMemory(
+      jpegli::msan::UnpoisonMemory(
           rows[0], sizeof(JSAMPLE) * cinfo->output_components * output->xsize);
       if (cinfo->quantize_colors) {
         J_TEST_UTILS::UnmapColors(rows[0], cinfo->output_width,
@@ -127,7 +128,7 @@ void DecodeWithLibjpeg(const CompressParams& jparams,
     unsigned int icc_len = 0;  // "unpoison" via initialization
     Check(jpeg_read_icc_profile(cinfo, &icc_data, &icc_len));
     Check(icc_data);
-    jxl::msan::UnpoisonMemory(icc_data, icc_len);
+    jpegli::msan::UnpoisonMemory(icc_data, icc_len);
     Check(0 == memcmp(jparams.icc.data(), icc_data, icc_len));
     free(icc_data);
   }
@@ -136,8 +137,8 @@ void DecodeWithLibjpeg(const CompressParams& jparams,
   if (dparams.output_mode == COEFFICIENTS) {
     jvirt_barray_ptr* coef_arrays = jpeg_read_coefficients(cinfo);
     Check(coef_arrays != nullptr);
-    jxl::msan::UnpoisonMemory(coef_arrays,
-                              cinfo->num_components * sizeof(jvirt_barray_ptr));
+    jpegli::msan::UnpoisonMemory(
+        coef_arrays, cinfo->num_components * sizeof(jvirt_barray_ptr));
     J_TEST_UTILS::CopyCoefficients(cinfo, coef_arrays, output);
   } else {
     Check(jpeg_start_decompress(cinfo));
@@ -216,7 +217,7 @@ void DecodeAllScansWithLibjpeg(const CompressParams& jparams,
       if (dparams.output_mode == COEFFICIENTS) {
         jvirt_barray_ptr* coef_arrays = jpeg_read_coefficients(&cinfo);
         Check(coef_arrays != nullptr);
-        jxl::msan::UnpoisonMemory(
+        jpegli::msan::UnpoisonMemory(
             coef_arrays, cinfo.num_components * sizeof(jvirt_barray_ptr));
         J_TEST_UTILS::CopyCoefficients(&cinfo, coef_arrays,
                                        &output_progression->back());
@@ -258,7 +259,7 @@ size_t DecodeWithLibjpeg(const CompressParams& jparams,
     }
     jpeg_mem_src(&cinfo, compressed, len);
     DecodeWithLibjpeg(jparams, dparams, &cinfo, output);
-    jxl::msan::UnpoisonMemory(cinfo.src, sizeof(jpeg_source_mgr));
+    jpegli::msan::UnpoisonMemory(cinfo.src, sizeof(jpeg_source_mgr));
     bytes_read = len - cinfo.src->bytes_in_buffer;
     return true;
   };

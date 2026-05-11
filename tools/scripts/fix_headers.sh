@@ -6,7 +6,7 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 # Helper script to fix includes. Requires clang-tidy 18+.
-# Might need jxl_{threads_}_exports.h copied to includes/jxl
+# Might need jpegli_{threads_}_exports.h copied to includes/jpegli
 # Also might require:
 #   `export CPLUS_INCLUDE_PATH=/usr/lib/llvm-16/lib/clang/16/include/`
 
@@ -29,6 +29,6 @@ echo "Processing ${SRC}"
   -fix-errors \
   --extra-arg=-I${HERE}/lib/include \
   ${SRC}
-sed -i -r 's/#include "(hwy|jxl)\/(.+)"/#include <\1\/\2>/g' ${SRC}
+sed -i -r 's/#include "(hwy|jpegli)\/(.+)"/#include <\1\/\2>/g' ${SRC}
 # TODO(eustas): add post-fixup for unsupported 'no_include' pragmas
 clang-format -i ${SRC}

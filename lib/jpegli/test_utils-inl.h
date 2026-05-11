@@ -52,7 +52,7 @@ using ::jpegli::Check;
 namespace {
 void Check(bool ok) {
   if (!ok) {
-    JXL_CRASH();
+    JPEGLI_CRASH();
   }
 }
 }  // namespace
@@ -273,8 +273,8 @@ void SetScanDecompressParams(const DecompressParams& dparams,
       cinfo->colormap = (*cinfo->mem->alloc_sarray)(
           reinterpret_cast<j_common_ptr>(cinfo), JPOOL_IMAGE,
           cinfo->actual_number_of_colors, 3);
-      jxl::msan::UnpoisonMemory(reinterpret_cast<void*>(cinfo->colormap),
-                                3 * sizeof(JSAMPLE*));
+      jpegli::msan::UnpoisonMemory(reinterpret_cast<void*>(cinfo->colormap),
+                                   3 * sizeof(JSAMPLE*));
       for (int i = 0; i < kTestColorMapNumColors; ++i) {
         cinfo->colormap[0][i] = (kTestColorMap[i] >> 16) & 0xff;
         cinfo->colormap[1][i] = (kTestColorMap[i] >> 8) & 0xff;
@@ -330,8 +330,8 @@ void CheckMarkerPresent(j_decompress_ptr cinfo, uint8_t marker_type) {
   bool marker_found = false;
   for (jpeg_saved_marker_ptr marker = cinfo->marker_list; marker != nullptr;
        marker = marker->next) {
-    jxl::msan::UnpoisonMemory(marker, sizeof(*marker));
-    jxl::msan::UnpoisonMemory(marker->data, marker->data_length);
+    jpegli::msan::UnpoisonMemory(marker, sizeof(*marker));
+    jpegli::msan::UnpoisonMemory(marker->data, marker->data_length);
     if (marker->marker == marker_type &&
         marker->data_length == sizeof(kMarkerData) &&
         memcmp(marker->data, kMarkerData, sizeof(kMarkerData)) == 0) {
@@ -355,7 +355,7 @@ void VerifyHeader(const CompressParams& jparams, j_decompress_ptr cinfo) {
     CheckMarkerPresent(cinfo, kSpecialMarker0);
     CheckMarkerPresent(cinfo, kSpecialMarker1);
   }
-  jxl::msan::UnpoisonMemory(
+  jpegli::msan::UnpoisonMemory(
       cinfo->comp_info, cinfo->num_components * sizeof(cinfo->comp_info[0]));
   int max_h_samp_factor = 1;
   int max_v_samp_factor = 1;
@@ -396,7 +396,7 @@ void VerifyHeader(const CompressParams& jparams, j_decompress_ptr cinfo) {
       continue;
     }
     Check(quant_table != nullptr);
-    jxl::msan::UnpoisonMemory(quant_table, sizeof(*quant_table));
+    jpegli::msan::UnpoisonMemory(quant_table, sizeof(*quant_table));
     for (int k = 0; k < DCTSIZE2; ++k) {
       Check(quant_table->quantval[k] == table.quantval[k]);
     }
@@ -467,7 +467,7 @@ void VerifyScanHeader(const CompressParams& jparams, j_decompress_ptr cinfo) {
     }
     if (jparams.use_flat_dc_luma_code) {
       JHUFF_TBL* tbl = cinfo->dc_huff_tbl_ptrs[0];
-      jxl::msan::UnpoisonMemory(tbl, sizeof(*tbl));
+      jpegli::msan::UnpoisonMemory(tbl, sizeof(*tbl));
       for (int i = 0; i < 15; ++i) {
         Check(tbl->huffval[i] == i);
       }

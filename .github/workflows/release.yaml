@@ -42,7 +42,7 @@ jobs:
     runs-on: [ubuntu-latest]
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
       with:
         egress-policy: audit
 
@@ -56,7 +56,6 @@ jobs:
           cmake \
           doxygen \
           graphviz \
-          libbrotli-dev \
           libgif-dev \
           libgtest-dev \
           libjpeg-dev \
@@ -79,14 +78,12 @@ jobs:
       run: |
         SKIP_TEST=1 \
         ./ci.sh release \
-          -DJPEGXL_DEP_LICENSE_DIR=/usr/share/doc \
-          -DJPEGXL_STATIC=ON \
+          -DJPEGLI_DEP_LICENSE_DIR=/usr/share/doc \
+          -DJPEGLI_STATIC=ON \
           -DBUILD_TESTING=OFF \
-          -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
-          -DJPEGXL_ENABLE_VIEWERS=OFF \
-          -DJPEGXL_ENABLE_PLUGINS=OFF \
-          -DJPEGXL_ENABLE_OPENEXR=OFF \
-          -DJPEGXL_ENABLE_DEVTOOLS=OFF \
+          -DJPEGLI_ENABLE_JPEGLI_LIBJPEG=OFF \
+          -DJPEGLI_ENABLE_OPENEXR=OFF \
+          -DJPEGLI_ENABLE_DEVTOOLS=OFF \
 
     - name: Package release tarball
       run: |
@@ -97,7 +94,7 @@ jobs:
           ${{ runner.workspace }}/jpegli-linux-x86_64-static-${{ github.event.release.tag_name }}.tar.gz
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: jpegli-linux-x86_64-static
         path: ${{ runner.workspace }}/release_file.tar.gz
@@ -132,7 +129,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
       with:
         egress-policy: audit
 
@@ -141,7 +138,7 @@ jobs:
       id: 'env'
       run: |
         matrix_os=${{ matrix.os }}
-        artifact_name="jxl-debs-amd64-${matrix_os/:/-}"
+        artifact_name="jpegli-debs-amd64-${matrix_os/:/-}"
         echo ${artifact_name}
         echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
 
@@ -205,26 +202,26 @@ jobs:
         ./ci.sh debian_build highway
         dpkg -i build/debs/libhwy-dev_*_amd64.deb
 
-    - name: Build libjxl
+    - name: Build libjpegli
       run: |
         apt build-dep -y .
-        EXCLUDE_DEBIAN_PACKAGES="${{ matrix.exclude_debian_packages || '' }}" ./ci.sh debian_build jpeg-xl
+        EXCLUDE_DEBIAN_PACKAGES="${{ matrix.exclude_debian_packages || '' }}" ./ci.sh debian_build jpegli
 
     - name: Stats
       run: |
         ./ci.sh debian_stats
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: ${{ steps.env.outputs.artifact_name }}
         path: |
-          build/debs/*jxl*.*
+          build/debs/*jpegli*.*
 
     - name: Package release tarball
       if: github.event_name == 'release'
       run: |
-        (cd build/debs/; find -maxdepth 1 -name '*jxl*.*') | \
+        (cd build/debs/; find -maxdepth 1 -name '*jpegli*.*') | \
         tar -zcvf release_file.tar.gz -C build/debs/ -T -
         ln -s release_file.tar.gz \
           ${{ steps.env.outputs.artifact_name }}-${{ github.event.release.tag_name }}.tar.gz
@@ -272,7 +269,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
       with:
         egress-policy: audit
 
@@ -282,7 +279,7 @@ jobs:
         submodules: true
         fetch-depth: 2
 
-    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       id: cache-vcpkg
       with:
         path: vcpkg
@@ -324,18 +321,16 @@ jobs:
         set -x
         mkdir build
         cmake -Bbuild -H. ${{ matrix.arch }} \
-          -DJPEGXL_STATIC=${{ matrix.static || 'ON'}} \
-          -DJPEGXL_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
+          -DJPEGLI_STATIC=${{ matrix.static || 'ON'}} \
+          -DJPEGLI_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
           -DBUILD_TESTING=OFF \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DCMAKE_INSTALL_PREFIX=`pwd`/${PREFIX} \
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
-          -DJPEGXL_ENABLE_JPEGLI_LIBJPEG=OFF \
-          -DJPEGXL_ENABLE_OPENEXR=OFF \
-          -DJPEGXL_ENABLE_PLUGINS=OFF \
-          -DJPEGXL_ENABLE_TCMALLOC=OFF \
-          -DJPEGXL_ENABLE_VIEWERS=OFF \
-          -DJPEGXL_ENABLE_DEVTOOLS=${{ matrix.tools || 'ON'}} \
+          -DJPEGLI_ENABLE_JPEGLI_LIBJPEG=OFF \
+          -DJPEGLI_ENABLE_OPENEXR=OFF \
+          -DJPEGLI_ENABLE_TCMALLOC=OFF \
+          -DJPEGLI_ENABLE_DEVTOOLS=${{ matrix.tools || 'ON'}} \
           -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
         #
     - name: Build
@@ -377,7 +372,7 @@ jobs:
 
     - name: Upload release
       if: matrix.upload != 'OFF'
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: jpegli-${{matrix.triplet}}
         path: |

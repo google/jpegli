@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
-#define LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
+#ifndef JPEGLI_LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
+#define JPEGLI_LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
 
 #include "lib/base/data_parallel.h"
 #include "lib/base/rect.h"
@@ -14,15 +14,15 @@
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/image.h"
 
-namespace jxl {
+namespace jpegli {
 
 Status ApplyColorTransform(const ColorEncoding& c_current,
                            float intensity_target, const Image3F& color,
                            const ImageF* black, const Rect& rect,
                            const ColorEncoding& c_desired,
-                           const JxlCmsInterface& cms, ThreadPool* pool,
+                           const JpegliCmsInterface& cms, ThreadPool* pool,
                            Image3F* out);
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_
+#endif  // JPEGLI_LIB_EXTRAS_IMAGE_COLOR_TRANSFORM_H_

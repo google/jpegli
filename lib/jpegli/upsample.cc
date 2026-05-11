@@ -75,8 +75,8 @@ void StoreInterleaved(const DF df, V v0, V v1, T* mem) {
 #endif
 }
 
-void Upsample2Horizontal(float* JXL_RESTRICT row,
-                         float* JXL_RESTRICT scratch_space, size_t len_out) {
+void Upsample2Horizontal(float* JPEGLI_RESTRICT row,
+                         float* JPEGLI_RESTRICT scratch_space, size_t len_out) {
   HWY_FULL(float) df;
   auto threefour = Set(df, 0.75f);
   auto onefour = Set(df, 0.25f);
@@ -94,11 +94,11 @@ void Upsample2Horizontal(float* JXL_RESTRICT row,
   }
 }
 
-void Upsample2Vertical(const float* JXL_RESTRICT row_top,
-                       const float* JXL_RESTRICT row_mid,
-                       const float* JXL_RESTRICT row_bot,
-                       float* JXL_RESTRICT row_out0,
-                       float* JXL_RESTRICT row_out1, size_t len) {
+void Upsample2Vertical(const float* JPEGLI_RESTRICT row_top,
+                       const float* JPEGLI_RESTRICT row_mid,
+                       const float* JPEGLI_RESTRICT row_bot,
+                       float* JPEGLI_RESTRICT row_out0,
+                       float* JPEGLI_RESTRICT row_out1, size_t len) {
   HWY_FULL(float) df;
   auto threefour = Set(df, 0.75f);
   auto onefour = Set(df, 0.25f);
@@ -123,16 +123,16 @@ namespace jpegli {
 HWY_EXPORT(Upsample2Horizontal);
 HWY_EXPORT(Upsample2Vertical);
 
-void Upsample2Horizontal(float* JXL_RESTRICT row,
-                         float* JXL_RESTRICT scratch_space, size_t len_out) {
+void Upsample2Horizontal(float* JPEGLI_RESTRICT row,
+                         float* JPEGLI_RESTRICT scratch_space, size_t len_out) {
   HWY_DYNAMIC_DISPATCH(Upsample2Horizontal)(row, scratch_space, len_out);
 }
 
-void Upsample2Vertical(const float* JXL_RESTRICT row_top,
-                       const float* JXL_RESTRICT row_mid,
-                       const float* JXL_RESTRICT row_bot,
-                       float* JXL_RESTRICT row_out0,
-                       float* JXL_RESTRICT row_out1, size_t len) {
+void Upsample2Vertical(const float* JPEGLI_RESTRICT row_top,
+                       const float* JPEGLI_RESTRICT row_mid,
+                       const float* JPEGLI_RESTRICT row_bot,
+                       float* JPEGLI_RESTRICT row_out0,
+                       float* JPEGLI_RESTRICT row_out1, size_t len) {
   HWY_DYNAMIC_DISPATCH(Upsample2Vertical)
   (row_top, row_mid, row_bot, row_out0, row_out1, len);
 }

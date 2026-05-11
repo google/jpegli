@@ -18,7 +18,7 @@
 #include "lib/base/status.h"
 #include "lib/extras/simd_util.h"
 
-namespace jxl {
+namespace jpegli {
 
 namespace {
 
@@ -30,16 +30,18 @@ void MemoryManagerDefaultFree(void* opaque, void* address) { free(address); }
 
 }  // namespace
 
-void* MemoryManagerAlloc(const JxlMemoryManager* memory_manager, size_t size) {
+void* MemoryManagerAlloc(const JpegliMemoryManager* memory_manager,
+                         size_t size) {
   return memory_manager->alloc(memory_manager->opaque, size);
 }
 
-void MemoryManagerFree(const JxlMemoryManager* memory_manager, void* address) {
+void MemoryManagerFree(const JpegliMemoryManager* memory_manager,
+                       void* address) {
   memory_manager->free(memory_manager->opaque, address);
 }
 
-Status MemoryManagerInit(JxlMemoryManager* self,
-                         const JxlMemoryManager* memory_manager) {
+Status MemoryManagerInit(JpegliMemoryManager* self,
+                         const JpegliMemoryManager* memory_manager) {
   if (memory_manager) {
     *self = *memory_manager;
   } else {
@@ -50,8 +52,8 @@ Status MemoryManagerInit(JxlMemoryManager* self,
   if (is_default_alloc != is_default_free) {
     return false;
   }
-  if (is_default_alloc) self->alloc = jxl::MemoryManagerDefaultAlloc;
-  if (is_default_free) self->free = jxl::MemoryManagerDefaultFree;
+  if (is_default_alloc) self->alloc = jpegli::MemoryManagerDefaultAlloc;
+  if (is_default_free) self->free = jpegli::MemoryManagerDefaultFree;
 
   return true;
 }
@@ -84,28 +86,28 @@ size_t BytesPerRow(const size_t xsize, const size_t sizeof_t) {
     bytes_per_row += align;
   }
 
-  JXL_DASSERT(bytes_per_row % align == 0);
+  JPEGLI_DASSERT(bytes_per_row % align == 0);
   return bytes_per_row;
 }
 
-StatusOr<AlignedMemory> AlignedMemory::Create(JxlMemoryManager* memory_manager,
-                                              size_t size, size_t pre_padding) {
-  JXL_ENSURE(pre_padding <= memory_manager_internal::kAlias);
+StatusOr<AlignedMemory> AlignedMemory::Create(
+    JpegliMemoryManager* memory_manager, size_t size, size_t pre_padding) {
+  JPEGLI_ENSURE(pre_padding <= memory_manager_internal::kAlias);
   size_t allocation_size = size + pre_padding + memory_manager_internal::kAlias;
   if (size > allocation_size) {
-    return JXL_FAILURE("Requested allocation is too large");
+    return JPEGLI_FAILURE("Requested allocation is too large");
   }
-  JXL_ENSURE(memory_manager);
+  JPEGLI_ENSURE(memory_manager);
   void* allocated =
       memory_manager->alloc(memory_manager->opaque, allocation_size);
   if (allocated == nullptr) {
-    return JXL_FAILURE("Allocation failed");
+    return JPEGLI_FAILURE("Allocation failed");
   }
   return AlignedMemory(memory_manager, allocated, pre_padding);
 }
 
-AlignedMemory::AlignedMemory(JxlMemoryManager* memory_manager, void* allocation,
-                             size_t pre_padding)
+AlignedMemory::AlignedMemory(JpegliMemoryManager* memory_manager,
+                             void* allocation, size_t pre_padding)
     : allocation_(allocation), memory_manager_(memory_manager) {
   // Congruence to `offset` (mod kAlias) reduces cache conflicts and load/store
   // stalls, especially with large allocations that would otherwise have similar
@@ -153,4 +155,4 @@ AlignedMemory::~AlignedMemory() {
   memory_manager_->free(memory_manager_->opaque, allocation_);
 }
 
-}  // namespace jxl
+}  // namespace jpegli

@@ -39,7 +39,7 @@ jobs:
             run_bench: true
             test_in_pr: true
             cmake_args: >-
-              -DJPEGXL_TEST_TOOLS=ON
+              -DJPEGLI_TEST_TOOLS=ON
               -DJPEGLI_LIBJPEG_LIBRARY_VERSION="8.2.2"
               -DJPEGLI_LIBJPEG_LIBRARY_SOVERSION="8"
             # Track static stack size on build and check it doesn't exceed 3 kB.
@@ -48,23 +48,17 @@ jobs:
             # Conformance tooling test requires numpy.
             # jpegli tests require imagemagick and libjpeg-turbo-progs
             apt_pkgs: imagemagick libjpeg-turbo-progs python3-numpy
-          - name: lowprecision
-            mode: release
-            run_bench: true
-            test_in_pr: true
-            cmake_args: -DCMAKE_CXX_FLAGS=-DJXL_HIGH_PRECISION=0
           - name: debug
           # Build scalar-only hwy instructions.
           - name: scalar
             mode: release
-            cxxflags: -DHWY_COMPILE_ONLY_SCALAR -DFJXL_ENABLE_AVX2=0 -DFJXL_ENABLE_AVX512=0
+            cxxflags: -DHWY_COMPILE_ONLY_SCALAR
           # Disabling optional features to speed up MSAN build a little bit.
           - name: msan
             os: ubuntu-24.04
             skip_install: true
             cmake_args: >-
-              -DJPEGXL_ENABLE_DEVTOOLS=OFF -DJPEGXL_ENABLE_PLUGINS=OFF
-              -DJPEGXL_ENABLE_VIEWERS=OFF
+              -DJPEGLI_ENABLE_DEVTOOLS=OFF
             cc: clang-18
             cxx: clang++-18
           - name: asan
@@ -75,24 +69,16 @@ jobs:
             skip_install: true
             disable_tests:
               - test_jpegli_jni_wrapper # TODO: why this does not work?
-          # Build with support for decoding to JPEG bytes disabled. Produces a
-          # smaller build if only decoding to pixels is needed.
-          - name: release-nojpeg
-            mode: release
-            cmake_args: >-
-              -DJPEGXL_ENABLE_TRANSCODE_JPEG=OFF
-              -DJPEGXL_ENABLE_PLUGINS=OFF
-              -DJPEGXL_ENABLE_VIEWERS=OFF
-          # Build with jxl_cms based on lcms2 library.
+          # Build with jpegli_cms based on lcms2 library.
           - name: release-lcms2
             mode: release
             cmake_args: >-
-              -DJPEGXL_ENABLE_SKCMS=OFF
+              -DJPEGLI_ENABLE_SKCMS=OFF
           - name: release-system-lcms2
             mode: release
             cmake_args: >-
-              -DJPEGXL_ENABLE_SKCMS=OFF
-              -DJPEGXL_FORCE_SYSTEM_LCMS2=ON
+              -DJPEGLI_ENABLE_SKCMS=OFF
+              -DJPEGLI_FORCE_SYSTEM_LCMS2=ON
             apt_pkgs: liblcms2-dev
             # static build is impossible
             skip_install: true
@@ -102,21 +88,6 @@ jobs:
             mode: release
             run_bench: true
             test_in_pr: true
-          - name: release:arm64-lowprecision
-            os: ubuntu-24.04-arm
-            mode: release
-            run_bench: true
-            test_in_pr: true
-            cmake_args: -DCMAKE_CXX_FLAGS=-DJXL_HIGH_PRECISION=0
-          # Build optimized for binary size, all features not needed for
-          # reconstructing pixels is disabled.
-          - name: release:minimal
-            mode: release
-            cmake_args: >-
-              -DJPEGXL_ENABLE_TRANSCODE_JPEG=OFF
-              -DJPEGXL_ENABLE_BOXES=OFF
-              -DJPEGXL_ENABLE_PLUGINS=OFF
-              -DJPEGXL_ENABLE_VIEWERS=OFF
           # Builds with gcc in release mode
           - name: release:gcc
             os: ubuntu-latest
@@ -124,24 +95,25 @@ jobs:
             cc: gcc
             cxx: g++
             run_bench: true
+            test_in_pr: true
           - name: release:gcc-old
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             mode: release
             cc: gcc
             cxx: g++
           - name: release:gcc-old-old
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             mode: release
             cc: gcc
             cxx: g++
           # Builds with old clang in release mode
           - name: release:clang-old
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             mode: release
             cc: clang
             cxx: clang++
           - name: release:clang-old-old
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             mode: release
             cc: clang
             cxx: clang++
@@ -153,17 +125,19 @@ jobs:
             cxx: clang++-17
             apt_pkgs: lld
             cmake_args: >-
-              -DJPEGXL_ENABLE_LTO=ON
+              -DJPEGLI_ENABLE_LTO=ON
               -DCMAKE_LINKER_TYPE=LLD
             run_bench: true
+            test_in_pr: true
           - name: release_lto:gcc
             os: ubuntu-latest
             mode: release
             cc: gcc
             cxx: g++
             cmake_args: >-
-              -DJPEGXL_ENABLE_LTO=ON
+              -DJPEGLI_ENABLE_LTO=ON
             run_bench: true
+            test_in_pr: true
           # OSX builds
           - name: release:osx
             os: macos-latest
@@ -176,9 +150,9 @@ jobs:
             test_stack_limit: 128
             cmake_args: >-
               -DCMAKE_FIND_FRAMEWORK=NEVER
-          - name: debug:osx-13
-            # The last "free" X86 OSX runnde
-            os: macos-13
+          - name: debug:osx-15
+            # The last "free" X86 OSX runner
+            os: macos-15-intel
             mode: debug
             cmake_args: >-
               -DCMAKE_FIND_FRAMEWORK=NEVER
@@ -189,32 +163,26 @@ jobs:
             skip_install: true
             skip_stats: true
             skip_test: true # can't finish "linking" tests without emulator
-            force_system_brotli: OFF
             cmake_args: >-
               -DANDROID_ABI=arm64-v8a
               -DANDROID_PLATFORM=28
               -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_LATEST_HOME}/build/cmake/android.toolchain.cmake
-              -DJPEGXL_ENABLE_BENCHMARK=OFF
-              -DJPEGXL_ENABLE_OPENEXR=OFF
-              -DJPEGXL_ENABLE_PLUGINS=OFF
-              -DJPEGXL_ENABLE_VIEWERS=OFF
+              -DJPEGLI_ENABLE_BENCHMARK=OFF
+              -DJPEGLI_ENABLE_OPENEXR=OFF
               -DSJPEG_ANDROID_NDK_PATH=${ANDROID_NDK_LATEST_HOME}
-              -DJPEGXL_BUNDLE_LIBPNG=ON
+              -DJPEGLI_BUNDLE_LIBPNG=ON
           - name: release_ios
             os: macos-latest
             mode: release
             skip_install: true
             skip_stats: true
             skip_test: true # can't finish "linking" tests without emulator
-            force_system_brotli: OFF
             cmake_args: >-
               -DCMAKE_SYSTEM_NAME=iOS
               -DCMAKE_OSX_ARCHITECTURES=arm64
-              -DJPEGXL_ENABLE_BENCHMARK=OFF
-              -DJPEGXL_ENABLE_OPENEXR=OFF
-              -DJPEGXL_ENABLE_PLUGINS=OFF
-              -DJPEGXL_ENABLE_VIEWERS=OFF
-              -DJPEGXL_BUNDLE_LIBPNG=ON
+              -DJPEGLI_ENABLE_BENCHMARK=OFF
+              -DJPEGLI_ENABLE_OPENEXR=OFF
+              -DJPEGLI_BUNDLE_LIBPNG=ON
 
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -229,15 +197,22 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
       with:
         egress-policy: audit
+
+    - name: Check workflow configuration
+      run: |
+        if [[ "${{ matrix.run_bench && !matrix.test_in_pr }}" == "true" ]]; then
+          echo "::error title::Configuration Error::'run_bench' requires 'test_in_pr'"
+          exit 1
+        fi
 
     - name: Install build deps MacOS
       if: startsWith(matrix.os, 'macos-')
       run: |
         # Should be already installed:
-        #  brew install brotli giflib jpeg-turbo libpng zlib
+        #  brew install giflib jpeg-turbo libpng zlib
         # Not required, since we skip building documentation
         #  brew install doxygen graphviz
         brew install binutils ccache coreutils googletest libavif ninja openexr sdl2 webp
@@ -269,7 +244,7 @@ jobs:
     - name: Setup the Homebrew prefixes
       if: startsWith(matrix.os, 'macos-')
       run: |
-          CMAKE_PREFIX_PATH=`brew --prefix brotli`:`brew --prefix giflib`:`brew --prefix google-benchmark`:`brew --prefix jpeg-turbo`:`brew --prefix libpng`:`brew --prefix sdl2`:`brew --prefix zlib`
+          CMAKE_PREFIX_PATH=`brew --prefix giflib`:`brew --prefix google-benchmark`:`brew --prefix jpeg-turbo`:`brew --prefix libpng`:`brew --prefix sdl2`:`brew --prefix zlib`
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" >> $GITHUB_ENV
 
     - name: Setup the LLVM source path
@@ -281,7 +256,7 @@ jobs:
 
     - name: Cache LLVM sources
       if: matrix.name == 'msan' && env.WILL_BUILD == 'true'
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ env.LLVM_ROOT }}
         key: llvm
@@ -302,7 +277,7 @@ jobs:
       shell: bash
 
     - name: ccache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ env.CCACHE_DIR }}
         # When the cache hits the key it is not updated, so if this is a rebuild
@@ -323,11 +298,10 @@ jobs:
         [[ -n "${MODE}" ]] || MODE="${{ matrix.name }}"
         SKIP_TEST=1 TARGETS=all CMAKE_CXX_FLAGS='${{ matrix.cxxflags }}' \
         ./ci.sh ${MODE} \
-          -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
           -DCMAKE_C_COMPILER_LAUNCHER=ccache \
           -DBUILD_TESTING=${BUILD_TESTS} \
-          -DJPEGXL_ENABLE_HWY_AVX3_DL=false \
+          -DJPEGLI_ENABLE_HWY_AVX3_DL=false \
           ${{ matrix.cmake_args }}
 
     - name: Build stats
@@ -345,7 +319,7 @@ jobs:
     #    SELECT_BINUTILS="${{ startsWith(matrix.os, 'macos-') && '--binutils `brew --prefix binutils`/bin/' || '' }}"
     #    tools/scripts/build_stats.py --save build/stats.json \
     #      --max-stack ${{ matrix.max_stack || '0' }} ${SELECT_BINUTILS} \
-    #      cjxl djxl libjxl.${SHARED_LIB_EXT} libjxl_dec.${SHARED_LIB_EXT}
+    #      cjpegli djpegli libjpegli.${SHARED_LIB_EXT} libjpegli_dec.${SHARED_LIB_EXT}
 
     # Check that we can build the example project against the installed libs.
     #- name: Install and build examples

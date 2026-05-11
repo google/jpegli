@@ -8,26 +8,26 @@
  */
 
 /**
-@defgroup libjxl JPEG XL library (libjxl)
-@brief The main JPEG XL decoder / encoder library.
+@defgroup libjpegli JPEGLI library (libjpegli)
+@brief The main JPEGLI decoder / encoder library.
 
-@addtogroup libjxl
+@addtogroup libjpegli
 @{
 
-@defgroup libjxl_decoder JPEG XL Decoder API
+@defgroup libjpegli_decoder JPEGLI Decoder API
 
-@defgroup libjxl_encoder JPEG XL Encoder API
+@defgroup libjpegli_encoder JPEGLI Encoder API
 
-@defgroup libjxl_common Common API concepts
+@defgroup libjpegli_common Common API concepts
 
-@defgroup libjxl_metadata Image and frame metadata
+@defgroup libjpegli_metadata Image and frame metadata
 
-@defgroup libjxl_color Color encoding and conversion
+@defgroup libjpegli_color Color encoding and conversion
 
-@defgroup libjxl_cpp C++ helpers
+@defgroup libjpegli_cpp C++ helpers
 
 @}
 
-@defgroup libjxl_threads JPEG XL Multi-thread library (libjxl_threads)
+@defgroup libjpegli_threads JPEGLI Multi-thread library (libjpegli_threads)
 @brief Additional multi-threaded implementations for the parallel runner.
 */

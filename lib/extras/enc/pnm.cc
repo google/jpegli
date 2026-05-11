@@ -23,7 +23,7 @@
 #include "lib/extras/enc/encode.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -33,18 +33,18 @@ class BasePNMEncoder : public Encoder {
  public:
   Status Encode(const PackedPixelFile& ppf, EncodedImage* encoded_image,
                 ThreadPool* pool) const override {
-    JXL_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
+    JPEGLI_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
     if (!ppf.metadata.exif.empty() || !ppf.metadata.iptc.empty() ||
         !ppf.metadata.jumbf.empty() || !ppf.metadata.xmp.empty()) {
-      JXL_WARNING("PNM encoder ignoring metadata - use a different codec");
+      JPEGLI_WARNING("PNM encoder ignoring metadata - use a different codec");
     }
     encoded_image->icc = ppf.icc;
     encoded_image->bitstreams.clear();
     encoded_image->bitstreams.reserve(ppf.frames.size());
     for (const auto& frame : ppf.frames) {
-      JXL_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
+      JPEGLI_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
       encoded_image->bitstreams.emplace_back();
-      JXL_RETURN_IF_ERROR(
+      JPEGLI_RETURN_IF_ERROR(
           EncodeFrame(ppf, frame, &encoded_image->bitstreams.back()));
     }
     for (size_t i = 0; i < ppf.extra_channels_info.size(); ++i) {
@@ -53,9 +53,9 @@ class BasePNMEncoder : public Encoder {
       auto& ec_bitstreams = encoded_image->extra_channel_bitstreams.back();
       for (const auto& frame : ppf.frames) {
         ec_bitstreams.emplace_back();
-        JXL_RETURN_IF_ERROR(EncodeExtraChannel(frame.extra_channels[i],
-                                               ec_info.bits_per_sample,
-                                               &ec_bitstreams.back()));
+        JPEGLI_RETURN_IF_ERROR(EncodeExtraChannel(frame.extra_channels[i],
+                                                  ec_info.bits_per_sample,
+                                                  &ec_bitstreams.back()));
       }
     }
     return true;
@@ -72,9 +72,9 @@ class BasePNMEncoder : public Encoder {
 
 class PNMEncoder : public BasePNMEncoder {
  public:
-  static const std::vector<JxlPixelFormat> kAcceptedFormats;
+  static const std::vector<JpegliPixelFormat> kAcceptedFormats;
 
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
     return kAcceptedFormats;
   }
 
@@ -96,7 +96,7 @@ class PNMEncoder : public BasePNMEncoder {
     size_t header_size =
         snprintf(header, kMaxHeaderSize, "P%c\n%" PRIuS " %" PRIuS "\n%u\n",
                  type, image.xsize, image.ysize, maxval);
-    JXL_RETURN_IF_ERROR(header_size < kMaxHeaderSize);
+    JPEGLI_RETURN_IF_ERROR(header_size < kMaxHeaderSize);
     bytes->resize(header_size + image.pixels_size);
     memcpy(bytes->data(), header, header_size);
     memcpy(bytes->data() + header_size,
@@ -107,32 +107,32 @@ class PNMEncoder : public BasePNMEncoder {
 
 class PGMEncoder : public PNMEncoder {
  public:
-  static const std::vector<JxlPixelFormat> kAcceptedFormats;
+  static const std::vector<JpegliPixelFormat> kAcceptedFormats;
 
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
     return kAcceptedFormats;
   }
 };
 
-const std::vector<JxlPixelFormat> PGMEncoder::kAcceptedFormats = {
-    JxlPixelFormat{1, JXL_TYPE_UINT8, JXL_BIG_ENDIAN, 0},
-    JxlPixelFormat{1, JXL_TYPE_UINT16, JXL_BIG_ENDIAN, 0}};
+const std::vector<JpegliPixelFormat> PGMEncoder::kAcceptedFormats = {
+    JpegliPixelFormat{1, JPEGLI_TYPE_UINT8, JPEGLI_BIG_ENDIAN, 0},
+    JpegliPixelFormat{1, JPEGLI_TYPE_UINT16, JPEGLI_BIG_ENDIAN, 0}};
 
 class PPMEncoder : public PNMEncoder {
  public:
-  static const std::vector<JxlPixelFormat> kAcceptedFormats;
+  static const std::vector<JpegliPixelFormat> kAcceptedFormats;
 
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
     return kAcceptedFormats;
   }
 };
 
-const std::vector<JxlPixelFormat> PPMEncoder::kAcceptedFormats = {
-    JxlPixelFormat{3, JXL_TYPE_UINT8, JXL_BIG_ENDIAN, 0},
-    JxlPixelFormat{3, JXL_TYPE_UINT16, JXL_BIG_ENDIAN, 0}};
+const std::vector<JpegliPixelFormat> PPMEncoder::kAcceptedFormats = {
+    JpegliPixelFormat{3, JPEGLI_TYPE_UINT8, JPEGLI_BIG_ENDIAN, 0},
+    JpegliPixelFormat{3, JPEGLI_TYPE_UINT16, JPEGLI_BIG_ENDIAN, 0}};
 
-const std::vector<JxlPixelFormat> PNMEncoder::kAcceptedFormats = [] {
-  std::vector<JxlPixelFormat> combined = PPMEncoder::kAcceptedFormats;
+const std::vector<JpegliPixelFormat> PNMEncoder::kAcceptedFormats = [] {
+  std::vector<JpegliPixelFormat> combined = PPMEncoder::kAcceptedFormats;
   combined.insert(combined.end(), PGMEncoder::kAcceptedFormats.begin(),
                   PGMEncoder::kAcceptedFormats.end());
   return combined;
@@ -140,14 +140,15 @@ const std::vector<JxlPixelFormat> PNMEncoder::kAcceptedFormats = [] {
 
 class PFMEncoder : public BasePNMEncoder {
  public:
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {1, 3}) {
-      for (JxlEndianness endianness : {JXL_BIG_ENDIAN, JXL_LITTLE_ENDIAN}) {
-        formats.push_back(JxlPixelFormat{/*num_channels=*/num_channels,
-                                         /*data_type=*/JXL_TYPE_FLOAT,
-                                         /*endianness=*/endianness,
-                                         /*align=*/0});
+      for (JpegliEndianness endianness :
+           {JPEGLI_BIG_ENDIAN, JPEGLI_LITTLE_ENDIAN}) {
+        formats.push_back(JpegliPixelFormat{/*num_channels=*/num_channels,
+                                            /*data_type=*/JPEGLI_TYPE_FLOAT,
+                                            /*endianness=*/endianness,
+                                            /*align=*/0});
       }
     }
     return formats;
@@ -165,12 +166,12 @@ class PFMEncoder : public BasePNMEncoder {
   static Status EncodeImage(const PackedImage& image,
                             std::vector<uint8_t>* bytes) {
     char type = image.format.num_channels == 1 ? 'f' : 'F';
-    double scale = image.format.endianness == JXL_LITTLE_ENDIAN ? -1.0 : 1.0;
+    double scale = image.format.endianness == JPEGLI_LITTLE_ENDIAN ? -1.0 : 1.0;
     char header[kMaxHeaderSize];
     size_t header_size =
         snprintf(header, kMaxHeaderSize, "P%c\n%" PRIuS " %" PRIuS "\n%.1f\n",
                  type, image.xsize, image.ysize, scale);
-    JXL_RETURN_IF_ERROR(header_size < kMaxHeaderSize);
+    JPEGLI_RETURN_IF_ERROR(header_size < kMaxHeaderSize);
     bytes->resize(header_size + image.pixels_size);
     memcpy(bytes->data(), header, header_size);
     const uint8_t* in = reinterpret_cast<const uint8_t*>(image.pixels());
@@ -187,14 +188,15 @@ class PFMEncoder : public BasePNMEncoder {
 
 class PAMEncoder : public BasePNMEncoder {
  public:
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {1, 2, 3, 4}) {
-      for (const JxlDataType data_type : {JXL_TYPE_UINT8, JXL_TYPE_UINT16}) {
-        formats.push_back(JxlPixelFormat{/*num_channels=*/num_channels,
-                                         /*data_type=*/data_type,
-                                         /*endianness=*/JXL_BIG_ENDIAN,
-                                         /*align=*/0});
+      for (const JpegliDataType data_type :
+           {JPEGLI_TYPE_UINT8, JPEGLI_TYPE_UINT16}) {
+        formats.push_back(JpegliPixelFormat{/*num_channels=*/num_channels,
+                                            /*data_type=*/data_type,
+                                            /*endianness=*/JPEGLI_BIG_ENDIAN,
+                                            /*align=*/0});
       }
     }
     return formats;
@@ -205,23 +207,23 @@ class PAMEncoder : public BasePNMEncoder {
                      std::vector<uint8_t>* bytes) const override {
     const PackedImage& color = frame.color;
     const auto& ec_info = ppf.extra_channels_info;
-    JXL_RETURN_IF_ERROR(frame.extra_channels.size() == ec_info.size());
+    JPEGLI_RETURN_IF_ERROR(frame.extra_channels.size() == ec_info.size());
     for (const auto& ec : frame.extra_channels) {
       if (ec.xsize != color.xsize || ec.ysize != color.ysize) {
-        return JXL_FAILURE("Extra channel and color size mismatch.");
+        return JPEGLI_FAILURE("Extra channel and color size mismatch.");
       }
       if (ec.format.data_type != color.format.data_type ||
           ec.format.endianness != color.format.endianness) {
-        return JXL_FAILURE("Extra channel and color format mismatch.");
+        return JPEGLI_FAILURE("Extra channel and color format mismatch.");
       }
     }
     if (ppf.info.alpha_bits &&
         (ppf.info.bits_per_sample != ppf.info.alpha_bits)) {
-      return JXL_FAILURE("Alpha bit depth does not match image bit depth");
+      return JPEGLI_FAILURE("Alpha bit depth does not match image bit depth");
     }
     for (const auto& it : ec_info) {
       if (it.ec_info.bits_per_sample != ppf.info.bits_per_sample) {
-        return JXL_FAILURE(
+        return JPEGLI_FAILURE(
             "Extra channel bit depth does not match image bit depth");
       }
     }
@@ -238,21 +240,21 @@ class PAMEncoder : public BasePNMEncoder {
                      color.xsize, color.ysize, depth, maxval,
                      kColorTypes[color.format.num_channels - 1]);
     if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
-      return JXL_FAILURE("PNM header is too long");
+      return JPEGLI_FAILURE("PNM header is too long");
     }
-    JXL_RETURN_IF_ERROR(pos < kMaxHeaderSize);
+    JPEGLI_RETURN_IF_ERROR(pos < kMaxHeaderSize);
     pos += n;
     for (const auto& info : ec_info) {
       n = snprintf(header + pos, kMaxHeaderSize - pos, "TUPLTYPE %s\n",
                    ExtraChannelTypeName(info.ec_info.type).c_str());
       if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
-        return JXL_FAILURE("PNM header is too long");
+        return JPEGLI_FAILURE("PNM header is too long");
       }
       pos += n;
     }
     n = snprintf(header + pos, kMaxHeaderSize - pos, "ENDHDR\n");
     if (n < 0 || static_cast<size_t>(n) >= kMaxHeaderSize - pos) {
-      return JXL_FAILURE("PNM header is too long");
+      return JPEGLI_FAILURE("PNM header is too long");
     }
     pos += n;
     size_t total_size = color.pixels_size;
@@ -275,7 +277,8 @@ class PAMEncoder : public BasePNMEncoder {
           reinterpret_cast<const uint8_t*>(frame.extra_channels[i].pixels());
     }
     uint8_t* out = bytes->data() + pos;
-    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(color.format.data_type));
+    JPEGLI_RETURN_IF_ERROR(
+        PackedImage::ValidateDataType(color.format.data_type));
     size_t pwidth = PackedImage::BitsPerChannel(color.format.data_type) / 8;
     for (size_t y = 0; y < color.ysize; ++y) {
       for (size_t x = 0; x < color.xsize; ++x) {
@@ -297,25 +300,25 @@ class PAMEncoder : public BasePNMEncoder {
   }
 
  private:
-  static std::string ExtraChannelTypeName(JxlExtraChannelType type) {
+  static std::string ExtraChannelTypeName(JpegliExtraChannelType type) {
     switch (type) {
-      case JXL_CHANNEL_ALPHA:
+      case JPEGLI_CHANNEL_ALPHA:
         return std::string("Alpha");
-      case JXL_CHANNEL_DEPTH:
+      case JPEGLI_CHANNEL_DEPTH:
         return std::string("Depth");
-      case JXL_CHANNEL_SPOT_COLOR:
+      case JPEGLI_CHANNEL_SPOT_COLOR:
         return std::string("SpotColor");
-      case JXL_CHANNEL_SELECTION_MASK:
+      case JPEGLI_CHANNEL_SELECTION_MASK:
         return std::string("SelectionMask");
-      case JXL_CHANNEL_BLACK:
+      case JPEGLI_CHANNEL_BLACK:
         return std::string("Black");
-      case JXL_CHANNEL_CFA:
+      case JPEGLI_CHANNEL_CFA:
         return std::string("CFA");
-      case JXL_CHANNEL_THERMAL:
+      case JPEGLI_CHANNEL_THERMAL:
         return std::string("Thermal");
-      case JXL_CHANNEL_UNKNOWN:
+      case JPEGLI_CHANNEL_UNKNOWN:
         return std::string("Unknown");
-      case JXL_CHANNEL_OPTIONAL:
+      case JPEGLI_CHANNEL_OPTIONAL:
         return std::string("Optional");
       default:
         return std::string("UNKNOWN");
@@ -326,24 +329,24 @@ class PAMEncoder : public BasePNMEncoder {
 }  // namespace
 
 std::unique_ptr<Encoder> GetPPMEncoder() {
-  return jxl::make_unique<PPMEncoder>();
+  return jpegli::make_unique<PPMEncoder>();
 }
 
 std::unique_ptr<Encoder> GetPNMEncoder() {
-  return jxl::make_unique<PNMEncoder>();
+  return jpegli::make_unique<PNMEncoder>();
 }
 
 std::unique_ptr<Encoder> GetPFMEncoder() {
-  return jxl::make_unique<PFMEncoder>();
+  return jpegli::make_unique<PFMEncoder>();
 }
 
 std::unique_ptr<Encoder> GetPGMEncoder() {
-  return jxl::make_unique<PGMEncoder>();
+  return jpegli::make_unique<PGMEncoder>();
 }
 
 std::unique_ptr<Encoder> GetPAMEncoder() {
-  return jxl::make_unique<PAMEncoder>();
+  return jpegli::make_unique<PAMEncoder>();
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli

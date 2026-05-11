@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
-#define TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
 
 #include <cstdint>
 #include <memory>
@@ -21,12 +21,11 @@
 #include "tools/speed_stats.h"
 #include "tools/thread_pool_internal.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::Span;
-using ::jxl::Status;
-using ::jxl::extras::PackedPixelFile;
+using ::jpegli::Span;
+using ::jpegli::Status;
+using ::jpegli::extras::PackedPixelFile;
 
 // Thread-compatible.
 class ImageCodec {
@@ -49,12 +48,12 @@ class ImageCodec {
   virtual Status Compress(const std::string& filename,
                           const PackedPixelFile& ppf, ThreadPool* pool,
                           std::vector<uint8_t>* compressed,
-                          jpegxl::tools::SpeedStats* speed_stats) = 0;
+                          jpegli_tools::SpeedStats* speed_stats) = 0;
 
   virtual Status Decompress(const std::string& filename,
                             Span<const uint8_t> compressed, ThreadPool* pool,
                             PackedPixelFile* ppf,
-                            jpegxl::tools::SpeedStats* speed_stats) = 0;
+                            jpegli_tools::SpeedStats* speed_stats) = 0;
 
   virtual void GetMoreStats(BenchmarkStats* stats) {}
 
@@ -64,7 +63,7 @@ class ImageCodec {
   virtual Status RecompressJpeg(const std::string& filename,
                                 const std::vector<uint8_t>& data,
                                 std::vector<uint8_t>* compressed,
-                                jpegxl::tools::SpeedStats* speed_stats) {
+                                jpegli_tools::SpeedStats* speed_stats) {
     return false;
   }
 
@@ -82,13 +81,12 @@ class ImageCodec {
 
 using ImageCodecPtr = std::unique_ptr<ImageCodec>;
 
-// Creates an image codec by name, e.g. "jxl" to get a new instance of the
-// jxl codec. Optionally, behind a colon, parameters can be specified,
+// Creates an image codec by name, e.g. "jpegli" to get a new instance of the
+// jpegli codec. Optionally, behind a colon, parameters can be specified,
 // then ParseParameters of the codec gets called with the part behind the colon.
 ImageCodecPtr CreateImageCodec(const std::string& description,
-                               JxlMemoryManager* memory_manager);
+                               JpegliMemoryManager* memory_manager);
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_CODEC_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_H_

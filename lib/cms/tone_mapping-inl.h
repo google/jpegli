@@ -8,11 +8,11 @@
 
 #include "lib/base/matrix_ops.h"
 
-#if defined(LIB_JXL_CMS_TONE_MAPPING_INL_H_) == defined(HWY_TARGET_TOGGLE)
-#ifdef LIB_JXL_CMS_TONE_MAPPING_INL_H_
-#undef LIB_JXL_CMS_TONE_MAPPING_INL_H_
+#if defined(JPEGLI_LIB_CMS_TONE_MAPPING_INL_H_) == defined(HWY_TARGET_TOGGLE)
+#ifdef JPEGLI_LIB_CMS_TONE_MAPPING_INL_H_
+#undef JPEGLI_LIB_CMS_TONE_MAPPING_INL_H_
 #else
-#define LIB_JXL_CMS_TONE_MAPPING_INL_H_
+#define JPEGLI_LIB_CMS_TONE_MAPPING_INL_H_
 #endif
 
 #include <hwy/highway.h>
@@ -21,7 +21,7 @@
 #include "lib/cms/transfer_functions-inl.h"
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 namespace {
 
@@ -190,7 +190,7 @@ void GamutMap(V* red, V* green, V* blue, const Vector3& primaries_luminances,
 }  // namespace
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
-#endif  // LIB_JXL_CMS_TONE_MAPPING_INL_H_
+#endif  // JPEGLI_LIB_CMS_TONE_MAPPING_INL_H_

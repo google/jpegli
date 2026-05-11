@@ -1,21 +1,21 @@
-cjxl(1)
-=======
+cjpegli(1)
+==========
 :doctype: manpage
 
 Name
 ----
 
-cjxl - compress images to JPEG XL
+cjpegli - compress images to JPEG XL
 
 Synopsis
 --------
 
-*cjxl* ['options'...] 'input' ['output.jxl']
+*cjpegli* ['options'...] 'input' ['output.jpegli']
 
 Description
 -----------
 
-`cjxl` compresses an image or animation to the JPEG XL format. It is intended to
+`cjpegli` compresses an image or animation to the JPEG XL format. It is intended to
 spare users the trouble of determining a set of optimal parameters for each
 individual image. Instead, for a given target quality, it should provide
 consistent visual results across various kinds of images. The defaults have been
@@ -23,9 +23,9 @@ chosen to be sensible, so that the following commands should give satisfactory
 results in most cases:
 
 ----
-cjxl input.png output.jxl
-cjxl input.jpg output.jxl
-cjxl input.gif output.jxl
+cjpegli input.png output.jpegli
+cjpegli input.jpg output.jpegli
+cjpegli input.gif output.jpegli
 ----
 
 Options
@@ -33,7 +33,7 @@ Options
 
 -h::
 --help::
-    Displays the options that `cjxl` supports. On its own, it will only show
+    Displays the options that `cjpegli` supports. On its own, it will only show
     basic options. It can be combined with `-v` or `-v -v` to show increasingly
     advanced options as well.
 
@@ -83,20 +83,20 @@ Examples
 
 ----
 # Compress a PNG file to a high-quality JPEG XL version.
-$ cjxl input.png output.jxl
+$ cjpegli input.png output.jpegli
 
 # Compress it at a slightly lower quality, appropriate for web use.
-$ cjxl -d 2 input.png output.jxl
+$ cjpegli -d 2 input.png output.jpegli
 
 # Compress it losslessly. These are equivalent.
-$ cjxl -d 0   input.png lossless.jxl
-$ cjxl -q 100 input.png lossless.jxl
+$ cjpegli -d 0   input.png lossless.jpegli
+$ cjpegli -q 100 input.png lossless.jpegli
 
 # Compress a JPEG file losslessly.
-$ cjxl input.jpeg lossless-jpeg.jxl
+$ cjpegli input.jpeg lossless-jpeg.jpegli
 ----
 
 See also
 --------
 
-*djxl*(1)
+*djpegli*(1)

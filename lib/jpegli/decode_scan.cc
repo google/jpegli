@@ -163,10 +163,10 @@ int ReadSymbol(const HuffmanTableEntry* table, BitReaderState* br) {
  * The lower half represents the negative DIFFs with an offset.
  */
 int HuffExtend(int x, int s) {
-  JXL_DASSERT(s > 0);
+  JPEGLI_DASSERT(s > 0);
   int half = 1 << (s - 1);
   if (x >= half) {
-    JXL_DASSERT(x < (1 << s));
+    JPEGLI_DASSERT(x < (1 << s));
     return x;
   } else {
     return x - (1 << s) + 1;
@@ -407,9 +407,9 @@ bool FinishScan(j_decompress_ptr cinfo, const uint8_t* data, const size_t len,
   if (data[*pos] == 0xff) {
     // After last br.FinishStream we checked that there is at least 2 bytes
     // in the buffer.
-    JXL_DASSERT(*pos + 1 < len);
+    JPEGLI_DASSERT(*pos + 1 < len);
     // br.FinishStream would have detected an early marker.
-    JXL_DASSERT(data[*pos + 1] == 0);
+    JPEGLI_DASSERT(data[*pos + 1] == 0);
     *pos += 2;
   } else {
     *pos += 1;
@@ -533,8 +533,8 @@ int ProcessScan(j_decompress_ptr cinfo, const uint8_t* const data,
     *bit_pos = new_bit_pos;
     if (!stream_ok) {
       // We hit a marker during parsing.
-      JXL_DASSERT(data[*pos] == 0xff);
-      JXL_DASSERT(data[*pos + 1] != 0);
+      JPEGLI_DASSERT(data[*pos] == 0xff);
+      JPEGLI_DASSERT(data[*pos + 1] != 0);
       RestoreMCUCodingState(cinfo);
       JPEGLI_WARN("Incomplete scan detected.");
       return JPEG_SCAN_COMPLETED;

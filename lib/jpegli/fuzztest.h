@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef LIB_JPEGLI_FUZZTEST_H_
-#define LIB_JPEGLI_FUZZTEST_H_
+#ifndef JPEGLI_LIB_JPEGLI_FUZZTEST_H_
+#define JPEGLI_LIB_JPEGLI_FUZZTEST_H_
 
 #include "lib/base/compiler_specific.h"
 
@@ -16,7 +16,7 @@ struct FuzzTestSink {
   }
 };
 #define FUZZ_TEST(A, B) \
-  const JXL_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
+  const JPEGLI_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
 #endif
 
-#endif  // LIB_JPEGLI_FUZZTEST_H_
+#endif  // JPEGLI_LIB_JPEGLI_FUZZTEST_H_

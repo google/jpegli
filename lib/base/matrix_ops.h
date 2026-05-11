@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_MATRIX_OPS_H_
-#define LIB_JXL_BASE_MATRIX_OPS_H_
+#ifndef JPEGLI_LIB_BASE_MATRIX_OPS_H_
+#define JPEGLI_LIB_BASE_MATRIX_OPS_H_
 
 // 3x3 matrix operations.
 
@@ -15,7 +15,7 @@
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 using Vector3 = std::array<float, 3>;
 using Vector3d = std::array<double, 3>;
@@ -71,7 +71,7 @@ Status Inv3x3Matrix(Matrix& matrix) {
   double det = matrix[0][0] * temp[0][0] + matrix[0][1] * temp[1][0] +
                matrix[0][2] * temp[2][0];
   if (std::abs(det) < 1e-10) {
-    return JXL_FAILURE("Matrix determinant is too close to 0");
+    return JPEGLI_FAILURE("Matrix determinant is too close to 0");
   }
   double idet = 1.0 / det;
   for (size_t j = 0; j < 3; j++) {
@@ -82,6 +82,6 @@ Status Inv3x3Matrix(Matrix& matrix) {
   return true;
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_MATRIX_OPS_H_
+#endif  // JPEGLI_LIB_BASE_MATRIX_OPS_H_

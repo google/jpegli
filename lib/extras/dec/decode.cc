@@ -28,7 +28,7 @@
 #include "lib/extras/dec/pnm.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -49,7 +49,7 @@ std::string GetExtension(const std::string& path) {
 }  // namespace
 
 Codec CodecFromPath(const std::string& path,
-                    size_t* JXL_RESTRICT bits_per_sample,
+                    size_t* JPEGLI_RESTRICT bits_per_sample,
                     std::string* extension) {
   std::string ext = GetExtension(path);
   if (extension) {
@@ -105,7 +105,7 @@ bool CanDecode(Codec codec) {
 }
 
 std::string ListOfDecodeCodecs() {
-  std::string list_of_codecs("JXL, PPM, PNM, PFM, PAM, PGX");
+  std::string list_of_codecs("PPM, PNM, PFM, PAM, PGX");
   if (CanDecode(Codec::kPNG)) list_of_codecs.append(", PNG, APNG");
   if (CanDecode(Codec::kGIF)) list_of_codecs.append(", GIF");
   if (CanDecode(Codec::kJPG)) list_of_codecs.append(", JPEG");
@@ -116,14 +116,14 @@ std::string ListOfDecodeCodecs() {
 Status DecodeBytes(const Span<const uint8_t> bytes,
                    const ColorHints& color_hints, extras::PackedPixelFile* ppf,
                    const SizeConstraints* constraints, Codec* orig_codec,
-                   JxlMemoryManager* memory_manager, bool coalescing) {
-  if (bytes.size() < kMinBytes) return JXL_FAILURE("Too few bytes");
+                   JpegliMemoryManager* memory_manager, bool coalescing) {
+  if (bytes.size() < kMinBytes) return JPEGLI_FAILURE("Too few bytes");
 
   *ppf = extras::PackedPixelFile();
 
   // Default values when not set by decoders.
-  ppf->info.uses_original_profile = JXL_TRUE;
-  ppf->info.orientation = JXL_ORIENT_IDENTITY;
+  ppf->info.uses_original_profile = JPEGLI_TRUE;
+  ppf->info.orientation = JPEGLI_ORIENT_IDENTITY;
 
   Codec codec = DetectCodec(bytes);
   bool ok = false;
@@ -141,7 +141,7 @@ Status DecodeBytes(const Span<const uint8_t> bytes,
       break;
 
     case Codec::kJXL:
-      return JXL_FAILURE("Unsupported codec JXL");
+      return JPEGLI_FAILURE("Unsupported codec JXL");
 
     case Codec::kPGX:
       ok = DecodeImagePGX(bytes, color_hints, ppf, constraints);
@@ -156,11 +156,11 @@ Status DecodeBytes(const Span<const uint8_t> bytes,
       break;
 
     case Codec::kUnknown:
-      return JXL_FAILURE("Unrecognized codec");
+      return JPEGLI_FAILURE("Unrecognized codec");
   }
 
   if (!ok) {
-    return JXL_FAILURE("Codecs failed to decode");
+    return JPEGLI_FAILURE("Codecs failed to decode");
   }
   if (orig_codec) *orig_codec = codec;
 
@@ -231,4 +231,4 @@ Codec DetectCodec(const Span<const uint8_t>& bytes) {
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
