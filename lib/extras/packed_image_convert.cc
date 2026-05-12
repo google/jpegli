@@ -385,7 +385,10 @@ Status ConvertFromExternal(const uint8_t* data, size_t size, size_t xsize,
                            ImageF* channel) {
   size_t bytes_per_channel = JpegliDataTypeBytes(format.data_type);
   size_t bytes_per_pixel = format.num_channels * bytes_per_channel;
-  const size_t last_row_size = xsize * bytes_per_pixel;
+  size_t last_row_size;
+  if (!SafeMul(xsize, bytes_per_pixel, last_row_size)) {
+    return JPEGLI_FAILURE("Image dimensions are too large");
+  }
   const size_t align = format.align;
   const size_t row_size =
       (align > 1 ? jpegli::DivCeil(last_row_size, align) * align
