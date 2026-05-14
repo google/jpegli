@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 
 #include "lib/jpegli/common.h"
@@ -30,7 +29,6 @@ using hwy::HWY_NAMESPACE::ConvertTo;
 using hwy::HWY_NAMESPACE::Div;
 using hwy::HWY_NAMESPACE::Floor;
 using hwy::HWY_NAMESPACE::IfThenElse;
-using hwy::HWY_NAMESPACE::Lanes;
 using hwy::HWY_NAMESPACE::Le;
 using hwy::HWY_NAMESPACE::LoadDup128;
 using hwy::HWY_NAMESPACE::LoadInterleaved2;
@@ -166,9 +164,9 @@ HWY_INLINE V TempLuma_SIMD(D d, V r, V g, V b) {
   return MulAdd(kR, r, MulAdd(kG, g, Mul(kB, b)));
 }
 
-// Vectorized RGBToYCbCr: computes Y, Cb, Cr from gamma-space R, G, B vectors.
+// Vectorized RGBToCbCr: computes Cb, Cr from gamma-space R, G, B vectors.
 template <class D, class V>
-HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
+HWY_INLINE void RGBToCbCr_SIMD(D d, V r, V g, V b, V* cb, V* cr) {
   const auto kR = Set(d, 0.299f);
   const auto kG = Set(d, 0.587f);
   const auto kB = Set(d, 0.114f);
@@ -177,7 +175,6 @@ HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
   const auto v128 = Set(d, 128.0f);
 
   auto y_base = MulAdd(kR, r, MulAdd(kG, g, Mul(kB, b)));
-  *y = y_base;
   // cb = (b - y_base) * kNormB + 128
   *cb = MulAdd(Sub(b, y_base), kNormB, v128);
   // cr = (r - y_base) * kNormR + 128
@@ -185,12 +182,12 @@ HWY_INLINE void RGBToYCbCr_SIMD(D d, V r, V g, V b, V* y, V* cb, V* cr) {
 }
 
 // Box-averages a 2x2 block of linear-light RGB pixels and converts to
-// gamma-space YCbCr, writing only the Cb and Cr chroma values.
+// gamma-space Cb and Cr chroma values.
 HWY_INLINE void BoxDownsampleRow(const float* lin_r0, const float* lin_g0,
                                  const float* lin_b0, const float* lin_r1,
                                  const float* lin_g1, const float* lin_b1,
-                                 size_t down_width, size_t xsize_padded,
-                                 float* out_cb, float* out_cr) {
+                                 size_t down_width, float* out_cb,
+                                 float* out_cr) {
   const size_t N = hwy::HWY_NAMESPACE::Lanes(d);
   const auto quarter = Set(d, 0.25f);
   size_t x = 0;
@@ -223,16 +220,13 @@ HWY_INLINE void BoxDownsampleRow(const float* lin_r0, const float* lin_g0,
     auto avg_g = LinearToGamma_SIMD(d, Mul(sum_g, quarter));
     auto avg_b = LinearToGamma_SIMD(d, Mul(sum_b, quarter));
 
-    Vec<D> vy;
     Vec<D> vcb;
     Vec<D> vcr;
-    RGBToYCbCr_SIMD(d, avg_r, avg_g, avg_b, &vy, &vcb, &vcr);
+    RGBToCbCr_SIMD(d, avg_r, avg_g, avg_b, &vcb, &vcr);
 
     StoreU(vcb, d, out_cb + x);
     StoreU(vcr, d, out_cr + x);
   }
-
-
 }
 
 // 2x tent-filter upsample of one downsampled chroma row into two
@@ -269,8 +263,6 @@ HWY_INLINE void TentUpsampleRow(const float* prev_row, const float* cur_row,
     StoreInterleaved2(val_tl, val_tr, d, out0 + 2 * x);
     StoreInterleaved2(val_bl, val_br, d, out1 + 2 * x);
   }
-
-
 }
 
 void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
@@ -378,7 +370,6 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       StoreU(lin_g, d, lg_out + x);
       StoreU(lin_b, d, lb_out + x);
     }
-
   }
 
   // Box-average downsample of linear RGB to target Cb/Cr.
@@ -392,17 +383,11 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
     float* dcb = target_cb_ws->Row(y);
     float* dcr = target_cr_ws->Row(y);
 
-    BoxDownsampleRow(r0, g0, b0, r1, g1, b1, down_width, xsize_padded, dcb,
-                     dcr);
+    BoxDownsampleRow(r0, g0, b0, r1, g1, b1, down_width, dcb, dcr);
 
     // Also initialize best_cb/cr = target_cb/cr
     memcpy(best_cb_ws->Row(y), dcb, down_width * sizeof(float));
     memcpy(best_cr_ws->Row(y), dcr, down_width * sizeof(float));
-  }
-
-  for (size_t y = 0; y < actual_down_height; ++y) {
-    best_cb_ws->PadRow(y, down_width, 1);
-    best_cr_ws->PadRow(y, down_width, 1);
   }
 
   const auto vmin = Set(d, 0.0f);
@@ -466,7 +451,6 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
           StoreU(lin_g, d, row_lin_g + x);
           StoreU(lin_b, d, row_lin_b + x);
         }
-
       }
 
       float* row_best_cb = best_cb_ws->Row(y);
@@ -479,7 +463,7 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
       BoxDownsampleRow(lin_r_ws->Row(y * 2 + 0), lin_g_ws->Row(y * 2 + 0),
                        lin_b_ws->Row(y * 2 + 0), lin_r_ws->Row(y * 2 + 1),
                        lin_g_ws->Row(y * 2 + 1), lin_b_ws->Row(y * 2 + 1),
-                       down_width, xsize_padded, row_err_cb, row_err_cr);
+                       down_width, row_err_cb, row_err_cr);
 
       size_t x = 0;
       for (; x + N <= down_width; x += N) {
@@ -492,7 +476,6 @@ void ApplySharpYuvDownsampleImpl(j_compress_ptr cinfo) {
         StoreU(Add(bcb, Sub(tcb, dcb)), d, row_best_cb + x);
         StoreU(Add(bcr, Sub(tcr, dcr)), d, row_best_cr + x);
       }
-
     }
     diff_y_sum += ReduceSum(d, acc_y);
 
