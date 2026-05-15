@@ -6,14 +6,12 @@
 
 #include "tools/tool_version.h"
 
-#ifdef JPEGXL_VERSION_FROM_GIT
+#ifdef JPEGLI_VERSION_FROM_GIT
 #include "tool_version_git.h"
 #endif
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-const char* kJpegxlVersion = JPEGXL_VERSION;
+const char* kJpegliVersion = JPEGLI_VERSION;
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

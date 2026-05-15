@@ -27,7 +27,7 @@
 #include "lib/extras/test_memory_manager.h"
 #include "lib/extras/test_utils.h"
 
-namespace jxl {
+namespace jpegli {
 
 // Use for floating-point images with fairly large numbers; tolerates small
 // absolute errors and/or small relative errors.
@@ -37,7 +37,7 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
                          const double threshold_relative,
                          std::stringstream& failures, const intptr_t border = 0,
                          const int c = 0) {
-  JXL_ENSURE(SameSize(expected, actual));
+  JPEGLI_ENSURE(SameSize(expected, actual));
   const intptr_t xsize = expected.xsize();
   const intptr_t ysize = expected.ysize();
 
@@ -47,8 +47,8 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
   double max_relative = -1;
   bool any_bad = false;
   for (intptr_t y = border; y < ysize - border; ++y) {
-    const T* const JXL_RESTRICT row_expected = expected.Row(y);
-    const T* const JXL_RESTRICT row_actual = actual.Row(y);
+    const T* const JPEGLI_RESTRICT row_expected = expected.Row(y);
+    const T* const JPEGLI_RESTRICT row_actual = actual.Row(y);
     for (intptr_t x = border; x < xsize - border; ++x) {
       const double l1 = std::abs(row_expected[x] - row_actual[x]);
 
@@ -87,7 +87,7 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
       ysize <= kMaxTestDumpSize + 2 * border) {
     fprintf(stderr, "Expected image:\n");
     for (intptr_t y = border; y < ysize - border; ++y) {
-      const T* const JXL_RESTRICT row_expected = expected.Row(y);
+      const T* const JPEGLI_RESTRICT row_expected = expected.Row(y);
       for (intptr_t x = border; x < xsize - border; ++x) {
         fprintf(stderr, "%10lf ", static_cast<double>(row_expected[x]));
       }
@@ -96,8 +96,8 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
 
     fprintf(stderr, "Actual image:\n");
     for (intptr_t y = border; y < ysize - border; ++y) {
-      const T* const JXL_RESTRICT row_expected = expected.Row(y);
-      const T* const JXL_RESTRICT row_actual = actual.Row(y);
+      const T* const JPEGLI_RESTRICT row_expected = expected.Row(y);
+      const T* const JPEGLI_RESTRICT row_actual = actual.Row(y);
       for (intptr_t x = border; x < xsize - border; ++x) {
         const double l1 = std::abs(row_expected[x] - row_actual[x]);
 
@@ -119,8 +119,8 @@ bool VerifyRelativeError(const Plane<T>& expected, const Plane<T>& actual,
 
   // Find first failing x for further debugging.
   for (intptr_t y = border; y < ysize - border; ++y) {
-    const T* const JXL_RESTRICT row_expected = expected.Row(y);
-    const T* const JXL_RESTRICT row_actual = actual.Row(y);
+    const T* const JPEGLI_RESTRICT row_expected = expected.Row(y);
+    const T* const JPEGLI_RESTRICT row_actual = actual.Row(y);
 
     for (intptr_t x = border; x < xsize - border; ++x) {
       const double l1 = std::abs(row_expected[x] - row_actual[x]);
@@ -163,7 +163,7 @@ bool VerifyRelativeError(const Image3<T>& expected, const Image3<T>& actual,
 template <typename T, typename U = T>
 void GenerateImage(Rng& rng, Plane<T>* image, U begin, U end) {
   for (size_t y = 0; y < image->ysize(); ++y) {
-    T* const JXL_RESTRICT row = image->Row(y);
+    T* const JPEGLI_RESTRICT row = image->Row(y);
     for (size_t x = 0; x < image->xsize(); ++x) {
       if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
         row[x] = rng.UniformF(begin, end);
@@ -191,7 +191,7 @@ typename std::enable_if<std::is_integral<T>::value>::type RandomFillImage(
                 static_cast<int64_t>(std::numeric_limits<T>::max()) + 1);
 }
 
-JXL_INLINE void RandomFillImage(Plane<float>* image) {
+JPEGLI_INLINE void RandomFillImage(Plane<float>* image) {
   Rng rng(129);
   GenerateImage(rng, image, 0.0f, std::numeric_limits<float>::max());
 }
@@ -211,7 +211,7 @@ typename std::enable_if<std::is_integral<T>::value>::type RandomFillImage(
                 static_cast<int64_t>(std::numeric_limits<T>::max()) + 1);
 }
 
-JXL_INLINE void RandomFillImage(Image3F* image) {
+JPEGLI_INLINE void RandomFillImage(Image3F* image) {
   Rng rng(129);
   GenerateImage(rng, image, 0.0f, std::numeric_limits<float>::max());
 }
@@ -223,8 +223,8 @@ void RandomFillImage(Image3<T>* image, const U begin, const U end,
   GenerateImage(rng, image, begin, end);
 }
 
-void ExtrapolateBorders(const float* const JXL_RESTRICT row_in,
-                        float* const JXL_RESTRICT row_out, const int xsize,
+void ExtrapolateBorders(const float* const JPEGLI_RESTRICT row_in,
+                        float* const JPEGLI_RESTRICT row_out, const int xsize,
                         const int radius) {
   const int lastcol = xsize - 1;
   for (int x = 1; x <= radius; ++x) {
@@ -238,13 +238,13 @@ void ExtrapolateBorders(const float* const JXL_RESTRICT row_in,
 
 ImageF ConvolveXAndTranspose(const ImageF& in,
                              const std::vector<float>& kernel) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
   EXPECT_TRUE(kernel.size() % 2 == 1);
-  JXL_TEST_ASSIGN_OR_DIE(
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       ImageF out, ImageF::Create(memory_manager, in.ysize(), in.xsize()));
   const int r = kernel.size() / 2;
   std::vector<float> row_tmp(in.xsize() + 2 * r);
-  float* const JXL_RESTRICT rowp = &row_tmp[r];
+  float* const JPEGLI_RESTRICT rowp = &row_tmp[r];
   std::vector<float> padded_k = kernel;
   padded_k.resize(padded_k.size());
   const float* const kernelp = &padded_k[r];
@@ -358,13 +358,13 @@ TEST(GaussBlurTest, ImpulseResponse) {
 // Higher-precision version for accuracy test.
 ImageF ConvolveAndTransposeF64(const ImageF& in,
                                const std::vector<double>& kernel) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
   EXPECT_TRUE(kernel.size() % 2 == 1);
-  JXL_TEST_ASSIGN_OR_DIE(
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       ImageF out, ImageF::Create(memory_manager, in.ysize(), in.xsize()));
   const int r = kernel.size() / 2;
   std::vector<float> row_tmp(in.xsize() + 2 * r);
-  float* const JXL_RESTRICT rowp = &row_tmp[r];
+  float* const JPEGLI_RESTRICT rowp = &row_tmp[r];
   const double* const kernelp = &kernel[r];
   for (size_t y = 0; y < in.ysize(); ++y) {
     ExtrapolateBorders(in.Row(y), rowp, in.xsize(), r);
@@ -404,17 +404,17 @@ std::vector<T> GaussianKernel(int radius, T sigma) {
 }
 
 void TestDirac2D(size_t xsize, size_t ysize, double sigma) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
-  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF in,
+                            ImageF::Create(memory_manager, xsize, ysize));
   ZeroFillImage(&in);
   // We anyway ignore the border below, so might as well choose the middle.
   in.Row(ysize / 2)[xsize / 2] = 1.0f;
 
-  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
-                         ImageF::Create(memory_manager, xsize, ysize));
-  JXL_TEST_ASSIGN_OR_DIE(ImageF out,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF temp,
+                            ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF out,
+                            ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
   ASSERT_TRUE(FastGaussian(
       memory_manager, rg, xsize, ysize,
@@ -429,7 +429,7 @@ void TestDirac2D(size_t xsize, size_t ysize, double sigma) {
   const double max_l1 = sigma < 1.5 ? 5E-3 : 6E-4;
   const size_t border = 2 * sigma;
 
-  JXL_TEST_ASSERT_OK(
+  JPEGLI_TEST_ASSERT_OK(
       VerifyRelativeError(expected, out, max_l1, 1E-8, _, border));
 }
 
@@ -447,7 +447,7 @@ TEST(GaussBlurTest, Test2D) {
 
 // Slow (44 sec). To run, remove the disabled prefix.
 TEST(GaussBlurTest, DISABLED_SlowTestDirac1D) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
   const double sigma = 7.0;
   const auto rg = CreateRecursiveGaussian(sigma);
 
@@ -456,17 +456,17 @@ TEST(GaussBlurTest, DISABLED_SlowTestDirac1D) {
   const std::vector<double> kernel = GaussianKernel(radius, sigma);
 
   const size_t length = 16384;
-  JXL_TEST_ASSIGN_OR_DIE(ImageF inputs,
-                         ImageF::Create(memory_manager, length, 1));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF inputs,
+                            ImageF::Create(memory_manager, length, 1));
   ZeroFillImage(&inputs);
 
-  JXL_TEST_ASSIGN_OR_DIE(
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       AlignedMemory outputs_mem,
       AlignedMemory::Create(memory_manager, length * sizeof(float)));
   float* outputs = outputs_mem.address<float>();
 
   // One per center position
-  JXL_TEST_ASSIGN_OR_DIE(
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       AlignedMemory sum_abs_err_mem,
       AlignedMemory::Create(memory_manager, length * sizeof(double)));
   double* sum_abs_err = sum_abs_err_mem.address<double>();
@@ -498,13 +498,13 @@ void SetBorder(const size_t thickness, const T value, Plane<T>* image) {
   const size_t ysize = image->ysize();
   // Top: fill entire row
   for (size_t y = 0; y < std::min(thickness, ysize); ++y) {
-    T* const JXL_RESTRICT row = image->Row(y);
+    T* const JPEGLI_RESTRICT row = image->Row(y);
     std::fill(row, row + xsize, value);
   }
 
   // Bottom: fill entire row
   for (size_t y = ysize - thickness; y < ysize; ++y) {
-    T* const JXL_RESTRICT row = image->Row(y);
+    T* const JPEGLI_RESTRICT row = image->Row(y);
     std::fill(row, row + xsize, value);
   }
 
@@ -512,7 +512,7 @@ void SetBorder(const size_t thickness, const T value, Plane<T>* image) {
   // big enough that they don't already belong to the top/bottom rows.
   if (ysize >= 2 * thickness) {
     for (size_t y = thickness; y < ysize - thickness; ++y) {
-      T* const JXL_RESTRICT row = image->Row(y);
+      T* const JPEGLI_RESTRICT row = image->Row(y);
       std::fill(row, row + thickness, value);
       std::fill(row + xsize - thickness, row + xsize, value);
     }
@@ -521,21 +521,21 @@ void SetBorder(const size_t thickness, const T value, Plane<T>* image) {
 
 void TestRandom(size_t xsize, size_t ysize, float min, float max, double sigma,
                 double max_l1, double max_rel) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
   printf("%4" PRIuS " x %4" PRIuS " %4.1f %4.1f sigma %.1f\n", xsize, ysize,
          min, max, sigma);
-  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF in,
+                            ImageF::Create(memory_manager, xsize, ysize));
   RandomFillImage(&in, min, max,
                   static_cast<uint64_t>(65537) + xsize * 129 + ysize);
   // FastGaussian/Convolve handle borders differently, so keep those pixels 0.
   const size_t border = 4 * sigma;
   SetBorder(border, 0.0f, &in);
 
-  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
-                         ImageF::Create(memory_manager, xsize, ysize));
-  JXL_TEST_ASSIGN_OR_DIE(ImageF out,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF temp,
+                            ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF out,
+                            ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
   ASSERT_TRUE(FastGaussian(
       memory_manager, rg, in.xsize(), in.ysize(),
@@ -547,7 +547,7 @@ void TestRandom(size_t xsize, size_t ysize, float min, float max, double sigma,
       GaussianKernel(static_cast<int>(4 * sigma), static_cast<float>(sigma));
   const ImageF expected = Convolve(in, kernel);
 
-  JXL_TEST_ASSERT_OK(
+  JPEGLI_TEST_ASSERT_OK(
       VerifyRelativeError(expected, out, max_l1, max_rel, _, border));
 }
 
@@ -576,11 +576,11 @@ TEST(GaussBlurTest, TestRandom) {
 }
 
 TEST(GaussBlurTest, TestSign) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
   const size_t xsize = 500;
   const size_t ysize = 606;
-  JXL_TEST_ASSIGN_OR_DIE(ImageF in,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF in,
+                            ImageF::Create(memory_manager, xsize, ysize));
 
   ZeroFillImage(&in);
   const float center[33 * 33] = {
@@ -769,18 +769,18 @@ TEST(GaussBlurTest, TestSign) {
   const size_t xtest = xsize / 2;
   const size_t ytest = ysize / 2;
 
-  for (intptr_t dy = -16; dy <= 16; ++dy) {
+  for (ptrdiff_t dy = -16; dy <= 16; ++dy) {
     float* row = in.Row(ytest + dy);
-    for (intptr_t dx = -16; dx <= 16; ++dx)
+    for (ptrdiff_t dx = -16; dx <= 16; ++dx)
       row[xtest + dx] = center[(dy + 16) * 33 + (dx + 16)];
   }
 
   const double sigma = 7.155933;
 
-  JXL_TEST_ASSIGN_OR_DIE(ImageF temp,
-                         ImageF::Create(memory_manager, xsize, ysize));
-  JXL_TEST_ASSIGN_OR_DIE(ImageF out_rg,
-                         ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF temp,
+                            ImageF::Create(memory_manager, xsize, ysize));
+  JPEGLI_TEST_ASSIGN_OR_DIE(ImageF out_rg,
+                            ImageF::Create(memory_manager, xsize, ysize));
   const auto rg = CreateRecursiveGaussian(sigma);
   ASSERT_TRUE(FastGaussian(
       memory_manager, rg, in.xsize(), in.ysize(),
@@ -800,4 +800,4 @@ TEST(GaussBlurTest, TestSign) {
          out_old.Row(ytest)[xtest]);
 }
 
-}  // namespace jxl
+}  // namespace jpegli

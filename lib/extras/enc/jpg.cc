@@ -10,15 +10,15 @@
 
 #include "lib/extras/enc/encode.h"
 
-#if !JPEGXL_ENABLE_JPEG
+#if !JPEGLI_ENABLE_JPEG
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 std::unique_ptr<Encoder> GetJPEGEncoder() { return nullptr; }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_JPEG
+#else  // JPEGLI_ENABLE_JPEG
 
 #include <algorithm>
 #include <array>
@@ -28,7 +28,6 @@ std::unique_ptr<Encoder> GetJPEGEncoder() { return nullptr; }
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -45,12 +44,12 @@ std::unique_ptr<Encoder> GetJPEGEncoder() { return nullptr; }
 #include "lib/extras/exif.h"
 #include "lib/extras/packed_image.h"
 
-#if JPEGXL_ENABLE_SJPEG
+#if JPEGLI_ENABLE_SJPEG
 #include "sjpeg.h"
 #include "sjpegi.h"
 #endif
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -185,7 +184,7 @@ Status SetJpegProgression(int progressive_id,
   constexpr auto kNumScans = to_array<size_t>(
       {kNumScans1, kNumScans2, kNumScans3, kNumScans4, kNumScans5, kNumScans6});
   if (progressive_id > static_cast<int>(kNumScans.size())) {
-    return JXL_FAILURE("Unknown jpeg scan script id %d", progressive_id);
+    return JPEGLI_FAILURE("Unknown jpeg scan script id %d", progressive_id);
   }
   const jpeg_scan_info* scan_script = kScanScripts[progressive_id - 1];
   const size_t num_scans = kNumScans[progressive_id - 1];
@@ -281,12 +280,12 @@ struct JpegParams {
   bool enable_adaptive_quant = true;
 };
 
-Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
+Status EncodeWithLibJpeg(const PackedImage& image, const JpegliBasicInfo& info,
                          const std::vector<uint8_t>& icc,
                          std::vector<uint8_t> exif, const JpegParams& params,
                          std::vector<uint8_t>* bytes) {
   if (BITS_IN_JSAMPLE != 8 || sizeof(JSAMPLE) != 1) {
-    return JXL_FAILURE("Only 8 bit JSAMPLE is supported.");
+    return JPEGLI_FAILURE("Only 8 bit JSAMPLE is supported.");
   }
   jpeg_compress_struct cinfo = {};
   jpeg_error_mgr jerr;
@@ -306,7 +305,7 @@ Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
   jpeg_set_defaults(&cinfo);
   cinfo.optimize_coding = static_cast<boolean>(params.optimize_coding);
   if (cinfo.input_components == 3) {
-    JXL_RETURN_IF_ERROR(
+    JPEGLI_RETURN_IF_ERROR(
         SetChromaSubsampling(params.chroma_subsampling, &cinfo));
   }
   if (params.is_xyb) {
@@ -315,7 +314,7 @@ Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
   }
   jpeg_set_quality(&cinfo, params.quality, TRUE);
   std::vector<jpeg_scan_info> scan_infos;
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       SetJpegProgression(params.progressive_id, &scan_infos, &cinfo));
   jpeg_start_compress(&cinfo, TRUE);
   if (!icc.empty()) {
@@ -326,18 +325,18 @@ Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
     WriteExif(&cinfo, exif);
   }
   if (cinfo.input_components > 3 || cinfo.input_components < 0)
-    return JXL_FAILURE("invalid numbers of components");
+    return JPEGLI_FAILURE("invalid numbers of components");
 
   std::vector<uint8_t> row_bytes(image.stride);
   const uint8_t* pixels = reinterpret_cast<const uint8_t*>(image.pixels());
   if (cinfo.num_components == static_cast<int>(image.format.num_channels) &&
-      image.format.data_type == JXL_TYPE_UINT8) {
+      image.format.data_type == JPEGLI_TYPE_UINT8) {
     for (size_t y = 0; y < info.ysize; ++y) {
       memcpy(row_bytes.data(), pixels + y * image.stride, image.stride);
       JSAMPROW row[] = {row_bytes.data()};
       jpeg_write_scanlines(&cinfo, row, 1);
     }
-  } else if (image.format.data_type == JXL_TYPE_UINT8) {
+  } else if (image.format.data_type == JPEGLI_TYPE_UINT8) {
     for (size_t y = 0; y < info.ysize; ++y) {
       const uint8_t* image_row = pixels + y * image.stride;
       for (size_t x = 0; x < info.xsize; ++x) {
@@ -373,16 +372,16 @@ Status EncodeWithLibJpeg(const PackedImage& image, const JxlBasicInfo& info,
   return true;
 }
 
-#if !JPEGXL_ENABLE_SJPEG
+#if !JPEGLI_ENABLE_SJPEG
 
-Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
+Status EncodeWithSJpeg(const PackedImage& image, const JpegliBasicInfo& info,
                        const std::vector<uint8_t>& icc,
                        std::vector<uint8_t> exif, const JpegParams& params,
                        std::vector<uint8_t>* bytes) {
-  return JXL_FAILURE("JPEG XL was built without sjpeg support");
+  return JPEGLI_FAILURE("JPEGLI was built without sjpeg support");
 }
 
-#else  //  JPEGXL_ENABLE_SJPEG
+#else  //  JPEGLI_ENABLE_SJPEG
 
 struct MySearchHook : public sjpeg::SearchHook {
   uint8_t base_tables[2][64];
@@ -455,15 +454,15 @@ struct MySearchHook : public sjpeg::SearchHook {
   ~MySearchHook() override = default;
 };
 
-Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
+Status EncodeWithSJpeg(const PackedImage& image, const JpegliBasicInfo& info,
                        const std::vector<uint8_t>& icc,
                        std::vector<uint8_t> exif, const JpegParams& params,
                        std::vector<uint8_t>* bytes) {
-  if (image.format.data_type != JXL_TYPE_UINT8) {
-    return JXL_FAILURE("Unsupported pixel data type");
+  if (image.format.data_type != JPEGLI_TYPE_UINT8) {
+    return JPEGLI_FAILURE("Unsupported pixel data type");
   }
   if (info.alpha_bits > 0) {
-    return JXL_FAILURE("alpha is not supported");
+    return JPEGLI_FAILURE("alpha is not supported");
   }
   sjpeg::EncoderParam param(params.quality);
   if (!icc.empty()) {
@@ -480,7 +479,8 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
   } else if (params.chroma_subsampling == "420sharp") {
     param.yuv_mode = SJPEG_YUV_SHARP;
   } else {
-    return JXL_FAILURE("sjpeg does not support this chroma subsampling mode");
+    return JPEGLI_FAILURE(
+        "sjpeg does not support this chroma subsampling mode");
   }
   param.adaptive_quantization = params.enable_adaptive_quant;
   std::unique_ptr<MySearchHook> hook;
@@ -489,8 +489,8 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
     libjpeg_params.quality = params.libjpeg_quality;
     libjpeg_params.chroma_subsampling = params.libjpeg_chroma_subsampling;
     std::vector<uint8_t> libjpeg_bytes;
-    JXL_RETURN_IF_ERROR(EncodeWithLibJpeg(image, info, icc, exif,
-                                          libjpeg_params, &libjpeg_bytes));
+    JPEGLI_RETURN_IF_ERROR(EncodeWithLibJpeg(image, info, icc, exif,
+                                             libjpeg_params, &libjpeg_bytes));
     param.target_mode = sjpeg::EncoderParam::TARGET_SIZE;
     param.target_value = libjpeg_bytes.size();
   }
@@ -503,7 +503,7 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
     param.tolerance = params.search_tolerance;
     param.qmin = params.search_q_min;
     param.qmax = params.search_q_max;
-    hook = jxl::make_unique<MySearchHook>();
+    hook = jpegli::make_unique<MySearchHook>();
     hook->ReadBaseTables(params.custom_base_quant_fn);
     hook->q_start = params.search_q_start;
     hook->q_precision = params.search_q_precision;
@@ -513,7 +513,7 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
   size_t stride = info.xsize * 3;
   const uint8_t* pixels = reinterpret_cast<const uint8_t*>(image.pixels());
   std::string output;
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       sjpeg::Encode(pixels, image.xsize, image.ysize, stride, param, &output));
   bytes->assign(
       reinterpret_cast<const uint8_t*>(output.data()),
@@ -521,62 +521,63 @@ Status EncodeWithSJpeg(const PackedImage& image, const JxlBasicInfo& info,
   return true;
 }
 
-#endif  // JPEGXL_ENABLE_SJPEG
+#endif  // JPEGLI_ENABLE_SJPEG
 
-Status EncodeImageJPG(const PackedImage& image, const JxlBasicInfo& info,
+Status EncodeImageJPG(const PackedImage& image, const JpegliBasicInfo& info,
                       const std::vector<uint8_t>& icc,
                       std::vector<uint8_t> exif, JpegEncoder encoder,
                       const JpegParams& params, ThreadPool* pool,
                       std::vector<uint8_t>* bytes) {
   if (params.quality > 100) {
-    return JXL_FAILURE("please specify a 0-100 JPEG quality");
+    return JPEGLI_FAILURE("please specify a 0-100 JPEG quality");
   }
 
   switch (encoder) {
     case JpegEncoder::kLibJpeg:
-      JXL_RETURN_IF_ERROR(
+      JPEGLI_RETURN_IF_ERROR(
           EncodeWithLibJpeg(image, info, icc, std::move(exif), params, bytes));
       break;
     case JpegEncoder::kSJpeg:
-      JXL_RETURN_IF_ERROR(
+      JPEGLI_RETURN_IF_ERROR(
           EncodeWithSJpeg(image, info, icc, std::move(exif), params, bytes));
       break;
     default:
-      return JXL_FAILURE("tried to use an unknown JPEG encoder");
+      return JPEGLI_FAILURE("tried to use an unknown JPEG encoder");
   }
 
   return true;
 }
 
 class JPEGEncoder : public Encoder {
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {1, 2, 3, 4}) {
-      for (JxlEndianness endianness : {JXL_BIG_ENDIAN, JXL_LITTLE_ENDIAN}) {
-        formats.push_back(JxlPixelFormat{/*num_channels=*/num_channels,
-                                         /*data_type=*/JXL_TYPE_UINT8,
-                                         /*endianness=*/endianness,
-                                         /*align=*/0});
+      for (JpegliEndianness endianness :
+           {JPEGLI_BIG_ENDIAN, JPEGLI_LITTLE_ENDIAN}) {
+        formats.push_back(JpegliPixelFormat{/*num_channels=*/num_channels,
+                                            /*data_type=*/JPEGLI_TYPE_UINT8,
+                                            /*endianness=*/endianness,
+                                            /*align=*/0});
       }
-      formats.push_back(JxlPixelFormat{/*num_channels=*/num_channels,
-                                       /*data_type=*/JXL_TYPE_UINT16,
-                                       /*endianness=*/JXL_BIG_ENDIAN,
-                                       /*align=*/0});
+      formats.push_back(JpegliPixelFormat{/*num_channels=*/num_channels,
+                                          /*data_type=*/JPEGLI_TYPE_UINT16,
+                                          /*endianness=*/JPEGLI_BIG_ENDIAN,
+                                          /*align=*/0});
     }
     return formats;
   }
   Status Encode(const PackedPixelFile& ppf, EncodedImage* encoded_image,
                 ThreadPool* pool) const override {
-    JXL_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
+    JPEGLI_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
     JpegEncoder jpeg_encoder = JpegEncoder::kLibJpeg;
     JpegParams params;
     for (const auto& it : options()) {
       if (it.first == "q") {
         std::istringstream is(it.second);
-        JXL_RETURN_IF_ERROR(static_cast<bool>(is >> params.quality));
+        JPEGLI_RETURN_IF_ERROR(static_cast<bool>(is >> params.quality));
       } else if (it.first == "libjpeg_quality") {
         std::istringstream is(it.second);
-        JXL_RETURN_IF_ERROR(static_cast<bool>(is >> params.libjpeg_quality));
+        JPEGLI_RETURN_IF_ERROR(static_cast<bool>(is >> params.libjpeg_quality));
       } else if (it.first == "chroma_subsampling") {
         params.chroma_subsampling = it.second;
       } else if (it.first == "libjpeg_chroma_subsampling") {
@@ -587,11 +588,12 @@ class JPEGEncoder : public Encoder {
         } else if (it.second == "sjpeg") {
           jpeg_encoder = JpegEncoder::kSJpeg;
         } else {
-          return JXL_FAILURE("unknown jpeg encoder \"%s\"", it.second.c_str());
+          return JPEGLI_FAILURE("unknown jpeg encoder \"%s\"",
+                                it.second.c_str());
         }
       } else if (it.first == "progressive") {
         std::istringstream is(it.second);
-        JXL_RETURN_IF_ERROR(static_cast<bool>(is >> params.progressive_id));
+        JPEGLI_RETURN_IF_ERROR(static_cast<bool>(is >> params.progressive_id));
       } else if (it.first == "optimize" && it.second == "OFF") {
         params.optimize_coding = false;
       } else if (it.first == "adaptive_q" && it.second == "OFF") {
@@ -616,13 +618,13 @@ class JPEGEncoder : public Encoder {
         params.search_first_iter_slope = std::stof(it.second);
       }
     }
-    params.is_xyb = (ppf.color_encoding.color_space == JXL_COLOR_SPACE_XYB);
+    params.is_xyb = (ppf.color_encoding.color_space == JPEGLI_COLOR_SPACE_XYB);
     encoded_image->bitstreams.clear();
     encoded_image->bitstreams.reserve(ppf.frames.size());
     for (const auto& frame : ppf.frames) {
-      JXL_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
+      JPEGLI_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
       encoded_image->bitstreams.emplace_back();
-      JXL_RETURN_IF_ERROR(EncodeImageJPG(
+      JPEGLI_RETURN_IF_ERROR(EncodeImageJPG(
           frame.color, ppf.info, ppf.icc, ppf.metadata.exif, jpeg_encoder,
           params, pool, &encoded_image->bitstreams.back()));
     }
@@ -633,10 +635,10 @@ class JPEGEncoder : public Encoder {
 }  // namespace
 
 std::unique_ptr<Encoder> GetJPEGEncoder() {
-  return jxl::make_unique<JPEGEncoder>();
+  return jpegli::make_unique<JPEGEncoder>();
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_JPEG
+#endif  // JPEGLI_ENABLE_JPEG

@@ -6,23 +6,25 @@
 
 # Tools are added conditionally below.
 set(TOOL_BINARIES)
-# Tools that depend on jxl internal functions.
+# Tools that depend on jpegli internal functions.
 set(INTERNAL_TOOL_BINARIES)
 set(FUZZER_CORPUS_BINARIES)
 
-add_library(jxl_tool STATIC EXCLUDE_FROM_ALL
+add_library(jpegli_tool STATIC EXCLUDE_FROM_ALL
   cmdline.cc
   no_memory_manager.cc
   speed_stats.cc
   tool_version.cc
   tracking_memory_manager.cc
 )
-target_compile_options(jxl_tool PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
-target_include_directories(jxl_tool PUBLIC "${PROJECT_SOURCE_DIR}")
-target_link_libraries(jxl_tool PUBLIC jxl_base hwy)
+# JPEGLI_INTERNAL_FLAGS is set inside lib/
+# target_compile_options(jpegli_tool PUBLIC "${JPEGLI_INTERNAL_FLAGS}")
+target_compile_options(jpegli_tool PRIVATE -DJPEGLI_COMPILER_ID="${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+target_include_directories(jpegli_tool PUBLIC "${PROJECT_SOURCE_DIR}")
+target_link_libraries(jpegli_tool PUBLIC jpegli_base hwy)
 
-# The JPEGXL_VERSION is set from the builders.
-if(NOT DEFINED JPEGXL_VERSION OR JPEGXL_VERSION STREQUAL "")
+# The JPEGLI_VERSION is set from the builders.
+if(NOT DEFINED JPEGLI_VERSION OR JPEGLI_VERSION STREQUAL "")
   find_package(Git QUIET)
   execute_process(
       COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
@@ -31,81 +33,81 @@ if(NOT DEFINED JPEGXL_VERSION OR JPEGXL_VERSION STREQUAL "")
       ERROR_QUIET)
   string(STRIP "${GIT_REV}" GIT_REV)
   if(GIT_REV STREQUAL "")
-    set(JPEGXL_VERSION "(unknown)")
+    set(JPEGLI_VERSION "(unknown)")
   endif()
 endif()
 
-if(NOT DEFINED JPEGXL_VERSION OR JPEGXL_VERSION STREQUAL "")
+if(NOT DEFINED JPEGLI_VERSION OR JPEGLI_VERSION STREQUAL "")
   # We are building from a git environment and the user didn't set
-  # JPEGXL_VERSION. Make a target that computes the GIT_REV at build-time always
+  # JPEGLI_VERSION. Make a target that computes the GIT_REV at build-time always
   # but only updates the file if it changed. This allows rebuilds without
-  # modifying cmake files to update the JPEGXL_VERSION.
-  message(STATUS "Building with JPEGXL_VERSION=${GIT_REV} (auto-updated)")
+  # modifying cmake files to update the JPEGLI_VERSION.
+  message(STATUS "Building with JPEGLI_VERSION=${GIT_REV} (auto-updated)")
   add_custom_target(
     tool_version_git
     ${CMAKE_COMMAND}
-      -D JPEGXL_ROOT_DIR=${CMAKE_SOURCE_DIR}
+      -D JPEGLI_ROOT_DIR=${CMAKE_SOURCE_DIR}
       -D DST=${CMAKE_CURRENT_BINARY_DIR}/tool_version_git.h
       -P ${CMAKE_CURRENT_SOURCE_DIR}/git_version.cmake
     BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/tool_version_git.h"
   )
-  add_dependencies(jxl_tool tool_version_git)
+  add_dependencies(jpegli_tool tool_version_git)
 
   set_source_files_properties(tool_version.cc PROPERTIES
-    COMPILE_DEFINITIONS JPEGXL_VERSION_FROM_GIT=1)
-  target_include_directories(jxl_tool PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-  # Note: Ninja looks for dependencies on the jxl_tool target before running
+    COMPILE_DEFINITIONS JPEGLI_VERSION_FROM_GIT=1)
+  target_include_directories(jpegli_tool PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+  # Note: Ninja looks for dependencies on the jpegli_tool target before running
   # the tool_version_git targets, so when updating the tool_version_git.h the
-  # jxl_tool target is not rebuilt. This forces to generate it at configure time
+  # jpegli_tool target is not rebuilt. This forces to generate it at configure time
   # if needed.
   execute_process(
     COMMAND ${CMAKE_COMMAND}
-      -D JPEGXL_ROOT_DIR=${CMAKE_SOURCE_DIR}
+      -D JPEGLI_ROOT_DIR=${CMAKE_SOURCE_DIR}
       -D DST=${CMAKE_CURRENT_BINARY_DIR}/tool_version_git.h
       -P ${CMAKE_CURRENT_SOURCE_DIR}/git_version.cmake)
 else()
-  message(STATUS "Building with JPEGXL_VERSION=${JPEGXL_VERSION}")
+  message(STATUS "Building with JPEGLI_VERSION=${JPEGLI_VERSION}")
   set_source_files_properties(tool_version.cc PROPERTIES
-    COMPILE_DEFINITIONS JPEGXL_VERSION=\"${JPEGXL_VERSION}\")
+    COMPILE_DEFINITIONS JPEGLI_VERSION=\"${JPEGLI_VERSION}\")
 endif()
 
-add_library(jxl_gauss_blur STATIC #EXCLUDE_FROM_ALL
+add_library(jpegli_gauss_blur STATIC #EXCLUDE_FROM_ALL
   gauss_blur.cc
 )
-target_compile_options(jxl_gauss_blur PUBLIC "${JPEGXL_INTERNAL_FLAGS}")
-target_include_directories(jxl_gauss_blur PUBLIC "${PROJECT_SOURCE_DIR}")
-target_link_libraries(jxl_gauss_blur PUBLIC hwy)
+target_compile_options(jpegli_gauss_blur PUBLIC "${JPEGLI_INTERNAL_FLAGS}")
+target_include_directories(jpegli_gauss_blur PUBLIC "${PROJECT_SOURCE_DIR}")
+target_link_libraries(jpegli_gauss_blur PUBLIC hwy)
 
-if(JPEGXL_ENABLE_TOOLS)
-  # Depends on parts of jxl_extras that are only built if libjpeg is found and
+if(JPEGLI_ENABLE_TOOLS)
+  # Depends on parts of jpegli_extras that are only built if libjpeg is found and
   # jpegli is enabled.
   add_executable(cjpegli cjpegli.cc)
   target_link_libraries(cjpegli jpegli-static)
   add_executable(djpegli djpegli.cc)
   target_link_libraries(djpegli jpegli-static)
   list(APPEND INTERNAL_TOOL_BINARIES cjpegli djpegli)
-endif()  # JPEGXL_ENABLE_TOOLS
+endif()  # JPEGLI_ENABLE_TOOLS
 
 # Other developer tools.
-if(JPEGXL_ENABLE_DEVTOOLS)
+if(JPEGLI_ENABLE_DEVTOOLS)
   list(APPEND INTERNAL_TOOL_BINARIES
     ssimulacra2
   )
 
   add_executable(ssimulacra2 ssimulacra2_main.cc ssimulacra2.cc)
-  target_link_libraries(ssimulacra2 jxl_gauss_blur)
+  target_link_libraries(ssimulacra2 jpegli_gauss_blur)
 
   list(APPEND FUZZER_CORPUS_BINARIES jpegli_dec_fuzzer_corpus)
   add_executable(jpegli_dec_fuzzer_corpus jpegli_dec_fuzzer_corpus.cc)
   target_link_libraries(jpegli_dec_fuzzer_corpus
     jpegli-static
-    jxl_tool
-    jxl_threads
+    jpegli_tool
+    jpegli_threads
   )
-endif()  # JPEGXL_ENABLE_DEVTOOLS
+endif()  # JPEGLI_ENABLE_DEVTOOLS
 
 # Benchmark tools.
-if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
+if(JPEGLI_ENABLE_BENCHMARK AND JPEGLI_ENABLE_TOOLS)
   list(APPEND INTERNAL_TOOL_BINARIES
     benchmark_xl
   )
@@ -124,21 +126,21 @@ if(JPEGXL_ENABLE_BENCHMARK AND JPEGXL_ENABLE_TOOLS)
     ../third_party/dirent.cc
   )
   target_link_libraries(benchmark_xl Threads::Threads)
-  target_link_libraries(benchmark_xl jxl_gauss_blur) # for ssimulacra
+  target_link_libraries(benchmark_xl jpegli_gauss_blur) # for ssimulacra
 
 if(MINGW)
   # MINGW doesn't support glob.h.
   target_compile_definitions(benchmark_xl PRIVATE "-DHAS_GLOB=0")
   endif() # MINGW
-endif()  # JPEGXL_ENABLE_BENCHMARK
+endif()  # JPEGLI_ENABLE_BENCHMARK
 
-# All tool binaries depend on "jxl" library and the tool helpers.
+# All tool binaries depend on "jpegli" library and the tool helpers.
 foreach(BINARY IN LISTS INTERNAL_TOOL_BINARIES)
   target_link_libraries("${BINARY}"
-    jxl_extras-internal
-    jxl_threads
-    jxl_tool
-    jxl_cms
+    jpegli_extras-internal
+    jpegli_threads
+    jpegli_tool
+    jpegli_cms
   )
 endforeach()
 
@@ -146,19 +148,22 @@ list(APPEND TOOL_BINARIES ${INTERNAL_TOOL_BINARIES} ${FUZZER_CORPUS_BINARIES})
 
 foreach(BINARY IN LISTS TOOL_BINARIES)
   if(EMSCRIPTEN)
-    set(JXL_WASM_TOOLS_LINK_FLAGS "\
+    set(JPEGLI_WASM_TOOLS_LINK_FLAGS "\
       -s USE_LIBPNG=1 \
       -s ALLOW_MEMORY_GROWTH=1 \
     ")
-    if (JPEGXL_ENABLE_WASM_THREADS)
-      set(JXL_WASM_TOOLS_LINK_FLAGS "${JXL_WASM_TOOLS_LINK_FLAGS} \
+    if (JPEGLI_ENABLE_WASM_THREADS)
+      set(JPEGLI_WASM_TOOLS_LINK_FLAGS "${JPEGLI_WASM_TOOLS_LINK_FLAGS} \
         -s USE_PTHREADS=1 \
         -s PTHREAD_POOL_SIZE=16 \
       ")
     endif()
-    set_target_properties(${BINARY} PROPERTIES LINK_FLAGS "${JXL_WASM_TOOLS_LINK_FLAGS}")
+    set_target_properties(${BINARY} PROPERTIES LINK_FLAGS "${JPEGLI_WASM_TOOLS_LINK_FLAGS}")
   endif()
-  
+
+  # Tools are CLI.
+  set_target_properties(${BINARY} PROPERTIES MACOSX_BUNDLE OFF)
+
   # Attach manifest that tells Windows to use UTF-8 for eg. fopen
   if(WIN32)
     # Accommodate cl, clang-cl and clang with GNU-like command
@@ -175,27 +180,27 @@ endforeach()
 install(TARGETS ${TOOL_BINARIES} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 message(STATUS "Building tools: ${TOOL_BINARIES}")
 
-# jpegli_dec_fuzzer builds even when not JPEGXL_ENABLE_TOOLS
+# jpegli_dec_fuzzer builds even when not JPEGLI_ENABLE_TOOLS
 set(FUZZER_BINARIES jpegli_dec_fuzzer)
 
 # Fuzzers.
 foreach(FUZZER IN LISTS FUZZER_BINARIES)
-  if(JPEGXL_ENABLE_FUZZERS)
+  if(JPEGLI_ENABLE_FUZZERS)
     set(BINARY "${FUZZER}")
     add_executable("${BINARY}" "${BINARY}.cc")
-    target_link_libraries("${BINARY}" ${JPEGXL_FUZZER_LINK_FLAGS})
+    target_link_libraries("${BINARY}" ${JPEGLI_FUZZER_LINK_FLAGS})
   else()
     # When not enabled we want a lightweight alternative for regular fuzzers
     # that just run the target.
     set(BINARY "${FUZZER}_runner")
     add_executable("${BINARY}" EXCLUDE_FROM_ALL
         "fuzzer_stub.cc" "${FUZZER}.cc")
-  endif()  # JPEGXL_ENABLE_FUZZERS
+  endif()  # JPEGLI_ENABLE_FUZZERS
   target_include_directories("${BINARY}" PRIVATE "${CMAKE_SOURCE_DIR}")
   target_link_libraries("${BINARY}" jpegli-static)
 endforeach()
 
-if(JPEGXL_ENABLE_JNI)
+if(JPEGLI_ENABLE_JNI)
 find_package(JNI QUIET)
 find_package(Java QUIET)
 
@@ -236,12 +241,12 @@ if (JNI_FOUND AND Java_FOUND)
               -Dorg.jpeg.jpegli.wrapper.lib=$<TARGET_FILE:jpegli_jni>
               org.jpeg.jpegli.wrapper.EncoderTest
     )
-  endif()  # JPEGXL_ENABLE_FUZZERS
+  endif()  # JPEGLI_ENABLE_FUZZERS
 endif()  # JNI_FOUND & Java_FOUND
-endif()  # JPEGXL_ENABLE_JNI
+endif()  # JPEGLI_ENABLE_JNI
 
 # End-to-end tests for the tools
-if(JPEGXL_TEST_TOOLS)
+if(JPEGLI_TEST_TOOLS)
 find_program (BASH_PROGRAM bash)
 if (BASH_PROGRAM)
   set(TEST_SCRIPTS)
@@ -255,4 +260,4 @@ if (BASH_PROGRAM)
       ${CMAKE_BINARY_DIR})
   endforeach()
 endif()  # BASH_PROGRAM
-endif()  # JPEGXL_TEST_TOOLS
+endif()  # JPEGLI_TEST_TOOLS

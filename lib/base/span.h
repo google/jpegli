@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_SPAN_H_
-#define LIB_JXL_BASE_SPAN_H_
+#ifndef JPEGLI_LIB_BASE_SPAN_H_
+#define JPEGLI_LIB_BASE_SPAN_H_
 
 // Span (array view) is a non-owning container that provides cheap "cut"
 // operations and could be used as "ArrayLike" data source for PaddedBytes.
@@ -17,7 +17,7 @@
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 template <typename T>
 class Span {
@@ -61,7 +61,7 @@ class Span {
   }
 
   Status remove_prefix(size_t n) noexcept {
-    JXL_ENSURE(size() >= n);
+    JPEGLI_ENSURE(size() >= n);
     ptr_ += n;
     len_ -= n;
     return true;
@@ -78,8 +78,8 @@ class Span {
   size_t len_;
 };
 
-typedef Span<const uint8_t> Bytes;
+using Bytes = Span<const uint8_t>;
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_SPAN_H_
+#endif  // JPEGLI_LIB_BASE_SPAN_H_

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_HUFFMAN_H_
-#define LIB_JPEGLI_HUFFMAN_H_
+#ifndef JPEGLI_LIB_JPEGLI_HUFFMAN_H_
+#define JPEGLI_LIB_JPEGLI_HUFFMAN_H_
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -56,4 +56,4 @@ void AddStandardHuffmanTables(j_common_ptr cinfo, bool is_dc);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_HUFFMAN_H_
+#endif  // JPEGLI_LIB_JPEGLI_HUFFMAN_H_

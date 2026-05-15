@@ -26,7 +26,6 @@
 #include <unistd.h>
 
 #include <cstdio>
-#include <cstdlib>
 #include <utility>
 
 #ifdef __APPLE__
@@ -36,8 +35,7 @@
 extern char** environ;  // NOLINT
 #endif
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 TemporaryFile::TemporaryFile(std::string basename, std::string extension) {
   const auto extension_size = 1 + extension.size();
   temp_filename_ = std::move(basename) + "_XXXXXX." + std::move(extension);
@@ -56,7 +54,7 @@ TemporaryFile::~TemporaryFile() {
 }
 
 Status TemporaryFile::GetFileName(std::string* const output) const {
-  JXL_RETURN_IF_ERROR(ok_);
+  JPEGLI_RETURN_IF_ERROR(ok_);
   *output = temp_filename_;
   return true;
 }
@@ -87,37 +85,34 @@ Status RunCommand(const std::string& command,
     posix_spawn_file_actions_addclose(&file_actions, STDOUT_FILENO);
     posix_spawn_file_actions_addclose(&file_actions, STDERR_FILENO);
   }
-  JXL_RETURN_IF_ERROR(posix_spawnp(&pid, command.c_str(), &file_actions,
-                                   nullptr, args.data(), environ) == 0);
+  JPEGLI_RETURN_IF_ERROR(posix_spawnp(&pid, command.c_str(), &file_actions,
+                                      nullptr, args.data(), environ) == 0);
   int wstatus;
   waitpid(pid, &wstatus, 0);
   posix_spawn_file_actions_destroy(&file_actions);
   return WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == EXIT_SUCCESS;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
 #else
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 TemporaryFile::TemporaryFile(std::string basename, std::string extension) {}
 TemporaryFile::~TemporaryFile() {}
 Status TemporaryFile::GetFileName(std::string* const output) const {
   (void)ok_;
-  return JXL_FAILURE("Not supported on this build");
+  return JPEGLI_FAILURE("Not supported on this build");
 }
 
 std::string GetBaseName(std::string filename) { return filename; }
 
 Status RunCommand(const std::string& command,
                   const std::vector<std::string>& arguments, bool quiet) {
-  return JXL_FAILURE("Not supported on this build");
+  return JPEGLI_FAILURE("Not supported on this build");
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
 #endif  // _MSC_VER

@@ -4,20 +4,18 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_
-#define TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_
 
 #include "lib/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
 #include "tools/benchmark/benchmark_codec.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 ImageCodec* CreateNewJPEGCodec(const BenchmarkArgs& args);
 
 // Registers the jpeg-specific command line options.
 Status AddCommandLineOptionsJPEGCodec(BenchmarkArgs* args);
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_CODEC_JPEG_H_

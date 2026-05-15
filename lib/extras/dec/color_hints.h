@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_COLOR_HINTS_H_
-#define LIB_EXTRAS_COLOR_HINTS_H_
+#ifndef JPEGLI_LIB_EXTRAS_COLOR_HINTS_H_
+#define JPEGLI_LIB_EXTRAS_COLOR_HINTS_H_
 
 // Not all the formats implemented in the extras lib support bundling color
 // information into the file, and those that support it may not have it.
@@ -21,7 +21,7 @@
 #include "lib/base/status.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 class ColorHints {
@@ -42,7 +42,7 @@ class ColorHints {
     for (const KeyValue& kv : kv_) {
       Status ok = func(kv.key, kv.value);
       if (!ok) {
-        return JXL_FAILURE("ColorHints::Foreach returned false");
+        return JPEGLI_FAILURE("ColorHints::Foreach returned false");
       }
     }
     return true;
@@ -68,6 +68,6 @@ Status ApplyColorHints(const ColorHints& color_hints, bool color_already_set,
                        bool is_gray, PackedPixelFile* ppf);
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_COLOR_HINTS_H_
+#endif  // JPEGLI_LIB_EXTRAS_COLOR_HINTS_H_

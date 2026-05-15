@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_TEST_UTILS_H_
-#define LIB_JPEGLI_TEST_UTILS_H_
+#ifndef JPEGLI_LIB_JPEGLI_TEST_UTILS_H_
+#define JPEGLI_LIB_JPEGLI_TEST_UTILS_H_
 
 #include <csetjmp>
 #include <cstddef>
@@ -63,7 +63,8 @@ void UnmapColors(uint8_t* row, size_t xsize, int components,
                  JSAMPARRAY colormap, size_t num_colors);
 
 std::string GetTestDataPath(const std::string& filename);
-jxl::StatusOr<std::vector<uint8_t>> ReadTestData(const std::string& filename);
+jpegli::StatusOr<std::vector<uint8_t>> ReadTestData(
+    const std::string& filename);
 
 class PNMParser {
  public:
@@ -92,7 +93,7 @@ bool ReadPNM(const std::vector<uint8_t>& data, size_t* xsize, size_t* ysize,
              size_t* num_channels, size_t* bitdepth,
              std::vector<uint8_t>* pixels);
 
-jxl::Status SetNumChannels(J_COLOR_SPACE colorspace, size_t* channels);
+jpegli::Status SetNumChannels(J_COLOR_SPACE colorspace, size_t* channels);
 
 void ConvertToGrayscale(TestImage* img);
 
@@ -126,4 +127,4 @@ void Check(bool ok);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_TEST_UTILS_H_
+#endif  // JPEGLI_LIB_JPEGLI_TEST_UTILS_H_

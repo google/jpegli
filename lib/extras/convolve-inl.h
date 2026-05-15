@@ -9,11 +9,11 @@
 
 #include "lib/base/compiler_specific.h"
 
-#if defined(LIB_EXTRAS_CONVOLVE_INL_H_) == defined(HWY_TARGET_TOGGLE)
-#ifdef LIB_EXTRAS_CONVOLVE_INL_H_
-#undef LIB_EXTRAS_CONVOLVE_INL_H_
+#if defined(JPEGLI_LIB_EXTRAS_CONVOLVE_INL_H_) == defined(HWY_TARGET_TOGGLE)
+#ifdef JPEGLI_LIB_EXTRAS_CONVOLVE_INL_H_
+#undef JPEGLI_LIB_EXTRAS_CONVOLVE_INL_H_
 #else
-#define LIB_EXTRAS_CONVOLVE_INL_H_
+#define JPEGLI_LIB_EXTRAS_CONVOLVE_INL_H_
 #endif
 
 #include <hwy/highway.h>
@@ -29,7 +29,7 @@
 #include "lib/extras/image_ops.h"
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 namespace {
 
@@ -80,7 +80,7 @@ class Neighbors {
     return TableLookupLanes(c, indices);  // NMLK'JIIJ
 #elif HWY_TARGET == HWY_SCALAR
     const D d;
-    JXL_DEBUG_ABORT("Unsupported");
+    JPEGLI_DEBUG_ABORT("Unsupported");
     return Zero(d);
 #else  // 128 bit
     // c = LKJI
@@ -99,7 +99,7 @@ class Neighbors {
 }  // namespace
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
-#endif  // LIB_EXTRAS_CONVOLVE_INL_H_
+#endif  // JPEGLI_LIB_EXTRAS_CONVOLVE_INL_H_

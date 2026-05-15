@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_DEC_DECODE_H_
-#define LIB_EXTRAS_DEC_DECODE_H_
+#ifndef JPEGLI_LIB_EXTRAS_DEC_DECODE_H_
+#define JPEGLI_LIB_EXTRAS_DEC_DECODE_H_
 
 // Facade for image decoders (PNG, PNM, ...).
 
@@ -14,12 +14,13 @@
 #include <string>
 
 #include "lib/base/compiler_specific.h"
+#include "lib/base/memory_manager.h"
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/packed_image.h"
 
-namespace jxl {
+namespace jpegli {
 
 struct SizeConstraints;
 
@@ -37,6 +38,8 @@ enum class Codec : uint32_t {
   kJXL
 };
 
+Codec DetectCodec(const Span<const uint8_t>& bytes);
+
 bool CanDecode(Codec codec);
 
 std::string ListOfDecodeCodecs();
@@ -44,7 +47,7 @@ std::string ListOfDecodeCodecs();
 // If and only if extension is ".pfm", *bits_per_sample is updated to 32 so
 // that Encode() would encode to PFM instead of PPM.
 Codec CodecFromPath(const std::string& path,
-                    size_t* JXL_RESTRICT bits_per_sample = nullptr,
+                    size_t* JPEGLI_RESTRICT bits_per_sample = nullptr,
                     std::string* extension = nullptr);
 
 // Decodes "bytes" info *ppf.
@@ -52,9 +55,11 @@ Codec CodecFromPath(const std::string& path,
 Status DecodeBytes(Span<const uint8_t> bytes, const ColorHints& color_hints,
                    extras::PackedPixelFile* ppf,
                    const SizeConstraints* constraints = nullptr,
-                   Codec* orig_codec = nullptr);
+                   Codec* orig_codec = nullptr,
+                   JpegliMemoryManager* memory_manager = nullptr,
+                   bool coalescing = true);
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_DEC_DECODE_H_
+#endif  // JPEGLI_LIB_EXTRAS_DEC_DECODE_H_

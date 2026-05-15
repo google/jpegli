@@ -20,8 +20,7 @@
 #include "lib/base/status.h"
 #include "tools/benchmark/benchmark_args.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 namespace {
 
@@ -161,13 +160,13 @@ void BenchmarkStats::Assimilate(const BenchmarkStats& victim) {
   }
 }
 
-::jxl::Status BenchmarkStats::PrintMoreStats() const {
+::jpegli::Status BenchmarkStats::PrintMoreStats() const {
   if (Args()->print_distance_percentiles && distances.size() > 1) {
     const auto& descriptors = GetColumnDescriptors(0);
     int spaces = 0;
     for (int i = 0; i < 4; i++) spaces += descriptors[i].width;
-    JXL_ENSURE(distances.size() == pnorms.size());
-    JXL_ENSURE(distances.size() == ssimulacra2s.size());
+    JPEGLI_ENSURE(distances.size() == pnorms.size());
+    JPEGLI_ENSURE(distances.size() == ssimulacra2s.size());
     std::vector<float> sorted = distances;
     std::sort(sorted.begin(), sorted.end());
     std::vector<float> sorted2 = pnorms;
@@ -275,7 +274,7 @@ std::string BenchmarkStats::PrintLine(const std::string& codec_desc) const {
   return PrintFormattedEntries(extra_metrics.size(), values);
 }
 
-::jxl::StatusOr<std::string> PrintHeader(
+::jpegli::StatusOr<std::string> PrintHeader(
     const std::vector<std::string>& extra_metrics_names) {
   std::string out;
   // Extra metrics are handled separately.
@@ -291,7 +290,7 @@ std::string BenchmarkStats::PrintLine(const std::string& codec_desc) const {
   }
   for (const std::string& em : extra_metrics_names) {
     int numspaces = ExtraMetricDescriptor().width - em.size();
-    JXL_ENSURE(numspaces >= 1);
+    JPEGLI_ENSURE(numspaces >= 1);
     out += std::string(std::max(numspaces, 1), ' ');
     out += em;
   }
@@ -305,14 +304,14 @@ std::string BenchmarkStats::PrintLine(const std::string& codec_desc) const {
   return out + "\n";
 }
 
-::jxl::StatusOr<std::string> PrintAggregate(
+::jpegli::StatusOr<std::string> PrintAggregate(
     size_t num_extra_metrics,
     const std::vector<std::vector<ColumnValue>>& aggregate) {
   const auto& descriptors = GetColumnDescriptors(num_extra_metrics);
 
   for (const auto& column : aggregate) {
     // Check when statistics has wrong amount of column entries
-    JXL_ENSURE(column.size() == descriptors.size());
+    JPEGLI_ENSURE(column.size() == descriptors.size());
   }
 
   std::vector<ColumnValue> result(descriptors.size());
@@ -361,12 +360,11 @@ std::string BenchmarkStats::PrintLine(const std::string& codec_desc) const {
     } else if (type == TYPE_POSITIVE_FLOAT) {
       result[i].f = geomean;
     } else {
-      JXL_DEBUG_ABORT("Unreachable");
+      JPEGLI_DEBUG_ABORT("Unreachable");
     }
   }
 
   return PrintFormattedEntries(num_extra_metrics, result);
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools

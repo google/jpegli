@@ -18,8 +18,8 @@
 //      with the one built by this project that is API- and ABI-compatible with
 //      libjpeg-turbo's version of libjpeg.so.
 
-#ifndef LIB_JPEGLI_DECODE_H_
-#define LIB_JPEGLI_DECODE_H_
+#ifndef JPEGLI_LIB_JPEGLI_DECODE_H_
+#define JPEGLI_LIB_JPEGLI_DECODE_H_
 
 #include <cstddef>
 #include <cstdio>
@@ -108,4 +108,4 @@ void jpegli_set_output_format(j_decompress_ptr cinfo, JpegliDataType data_type,
 }  // extern "C"
 #endif
 
-#endif  // LIB_JPEGLI_DECODE_H_
+#endif  // JPEGLI_LIB_JPEGLI_DECODE_H_

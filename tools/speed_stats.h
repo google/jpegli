@@ -4,14 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_SPEED_STATS_H_
-#define TOOLS_SPEED_STATS_H_
+#ifndef JPEGLI_TOOLS_SPEED_STATS_H_
+#define JPEGLI_TOOLS_SPEED_STATS_H_
 
 #include <cstddef>
 #include <vector>
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 class SpeedStats {
  public:
@@ -54,7 +53,6 @@ class SpeedStats {
   size_t file_size_ = 0;
 };
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_SPEED_STATS_H_
+#endif  // JPEGLI_TOOLS_SPEED_STATS_H_

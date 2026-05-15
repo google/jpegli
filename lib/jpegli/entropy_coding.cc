@@ -53,7 +53,8 @@ size_t MaxNumTokensPerMCURow(j_compress_ptr cinfo) {
   size_t blocks_per_mcu = 0;
   for (int c = 0; c < cinfo->num_components; ++c) {
     jpeg_component_info* comp = &cinfo->comp_info[c];
-    blocks_per_mcu += comp->h_samp_factor * comp->v_samp_factor;
+    blocks_per_mcu +=
+        static_cast<size_t>(comp->h_samp_factor) * comp->v_samp_factor;
   }
   return kDCTBlockSize * blocks_per_mcu * MCUs_per_row;
 }
@@ -86,7 +87,7 @@ void TokenizeProgressiveDC(const coeff_t* coeffs, int context, int Al,
     temp = -temp;
     temp2--;
   }
-  int nbits = (temp == 0) ? 0 : (jxl::FloorLog2Nonzero<uint32_t>(temp) + 1);
+  int nbits = (temp == 0) ? 0 : (jpegli::FloorLog2Nonzero<uint32_t>(temp) + 1);
   int bits = temp2 & ((1 << nbits) - 1);
   *(*next_token)++ = Token(context, nbits, bits);
 }
@@ -102,7 +103,8 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
   const int Se = scan_info->Se;
   const size_t restart_interval = sti->restart_interval;
   int restarts_to_go = restart_interval;
-  size_t num_blocks = comp->height_in_blocks * comp->width_in_blocks;
+  size_t num_blocks =
+      static_cast<size_t>(comp->height_in_blocks) * comp->width_in_blocks;
   size_t num_restarts =
       restart_interval > 0 ? DivCeil(num_blocks, restart_interval) : 1;
   size_t restart_idx = 0;
@@ -111,7 +113,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
   sti->token_offset = m->total_num_tokens + ta->num_tokens;
   sti->restarts = Allocate<size_t>(cinfo, num_restarts, JPOOL_IMAGE);
   const auto emit_eob_run = [&]() {
-    int nbits = jxl::FloorLog2Nonzero<uint32_t>(eob_run);
+    int nbits = jpegli::FloorLog2Nonzero<uint32_t>(eob_run);
     int symbol = nbits << 4u;
     *m->next_token++ = Token(context, symbol, eob_run & ((1 << nbits) - 1));
     eob_run = 0;
@@ -173,7 +175,7 @@ void TokenizeACProgressiveScan(j_compress_ptr cinfo, int scan_index,
           *m->next_token++ = Token(context, 0xf0, 0);
           r -= 16;
         }
-        int nbits = jxl::FloorLog2Nonzero<uint32_t>(temp) + 1;
+        int nbits = jpegli::FloorLog2Nonzero<uint32_t>(temp) + 1;
         int symbol = (r << 4u) + nbits;
         *m->next_token++ = Token(context, symbol, temp2 & ((1 << nbits) - 1));
         ++num_nzeros;
@@ -211,7 +213,8 @@ void TokenizeACRefinementScan(j_compress_ptr cinfo, int scan_index,
   RefToken token;
   int eob_run = 0;
   int eob_refbits = 0;
-  size_t num_blocks = comp->height_in_blocks * comp->width_in_blocks;
+  size_t num_blocks =
+      static_cast<size_t>(comp->height_in_blocks) * comp->width_in_blocks;
   size_t num_restarts =
       restart_interval > 0 ? DivCeil(num_blocks, restart_interval) : 1;
   sti->tokens = m->next_refinement_token;
@@ -334,7 +337,7 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
   // "Non-interleaved" means color data comes in separate scans, in other words
   // each scan can contain only one color component.
   const bool is_interleaved = (scan_info->comps_in_scan > 1);
-  const bool is_progressive = FROM_JXL_BOOL(cinfo->progressive_mode);
+  const bool is_progressive = FROM_JPEGLI_BOOL(cinfo->progressive_mode);
   const int Ah = scan_info->Ah;
   const int Al = scan_info->Al;
   HWY_ALIGN constexpr coeff_t kSinkBlock[DCTSIZE2] = {0};
@@ -434,14 +437,14 @@ void TokenizeScan(j_compress_ptr cinfo, size_t scan_index, int ac_ctx_offset,
     }
     ta->num_tokens = m->next_token - ta->tokens;
   }
-  JXL_DASSERT(block_idx == sti->num_blocks);
+  JPEGLI_DASSERT(block_idx == sti->num_blocks);
   sti->num_tokens =
       Ah > 0 ? sti->num_blocks
              : m->total_num_tokens + ta->num_tokens - sti->token_offset;
   sti->restarts[restart_idx++] =
       Ah > 0 ? sti->num_blocks : m->total_num_tokens + ta->num_tokens;
   if (Ah == 0 && cinfo->progressive_mode) {
-    JXL_DASSERT(sti->num_blocks == sti->num_tokens);
+    JPEGLI_DASSERT(sti->num_blocks == sti->num_tokens);
   }
 }
 
@@ -472,7 +475,8 @@ void TokenizeJpeg(j_compress_ptr cinfo) {
     if (si->Ss > 0 && si->Ah > 0) {
       int comp_idx = si->component_index[0];
       const jpeg_component_info* comp = &cinfo->comp_info[comp_idx];
-      size_t num_blocks = comp->width_in_blocks * comp->height_in_blocks;
+      size_t num_blocks =
+          static_cast<size_t>(comp->width_in_blocks) * comp->height_in_blocks;
       max_refinement_tokens += (1 + (si->Se - si->Ss) / 16) * num_blocks;
     }
   }
@@ -497,8 +501,8 @@ void TokenizeJpeg(j_compress_ptr cinfo) {
         new_refinement_bits += sti->num_nonzeros;
       }
     }
-    JXL_DASSERT(m->next_refinement_bit <=
-                refinement_bits + num_refinement_bits);
+    JPEGLI_DASSERT(m->next_refinement_bit <=
+                   refinement_bits + num_refinement_bits);
     num_refinement_bits += new_refinement_bits;
   }
   for (int i = 0; i < cinfo->num_scans; ++i) {
@@ -562,7 +566,7 @@ float HistogramCost(const Histogram& histo) {
   for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
     if (depths[i] > 0) {
       header_bits += 8;
-      data_bits += counts[i] * depths[i];
+      data_bits += static_cast<size_t>(counts[i]) * depths[i];
     }
   }
   return header_bits + data_bits;
@@ -624,7 +628,7 @@ void ClusterJpegHistograms(j_compress_ptr cinfo, const Histogram* histograms,
         slot_histograms.push_back(histogram_index);
         slot_costs.push_back(best_cost);
       } else {
-        // TODO(szabadka) Find the best histogram to replce.
+        // TODO(szabadka) Find the best histogram to replace.
         best_slot = (clusters->slot_ids.back() + 1) % 4;
       }
       slot_histograms[best_slot] = histogram_index;

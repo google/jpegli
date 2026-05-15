@@ -43,15 +43,15 @@
 
 #include "lib/extras/enc/encode.h"
 
-#if !JPEGXL_ENABLE_APNG
+#if !JPEGLI_ENABLE_APNG
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 std::unique_ptr<Encoder> GetAPNGEncoder() { return nullptr; }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_APNG
+#else  // JPEGLI_ENABLE_APNG
 
 #include <cmath>
 #include <cstdint>
@@ -73,7 +73,7 @@ std::unique_ptr<Encoder> GetAPNGEncoder() { return nullptr; }
 #include "lib/extras/packed_image.h"
 #include "png.h" /* original (unpatched) libpng is ok */
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 namespace {
@@ -83,14 +83,15 @@ constexpr unsigned char kExifSignature[6] = {0x45, 0x78, 0x69,
 
 class APNGEncoder : public Encoder {
  public:
-  std::vector<JxlPixelFormat> AcceptedFormats() const override {
-    std::vector<JxlPixelFormat> formats;
+  std::vector<JpegliPixelFormat> AcceptedFormats() const override {
+    std::vector<JpegliPixelFormat> formats;
     for (const uint32_t num_channels : {1, 2, 3, 4}) {
-      for (const JxlDataType data_type :
-           {JXL_TYPE_UINT8, JXL_TYPE_UINT16, JXL_TYPE_FLOAT}) {
-        for (JxlEndianness endianness : {JXL_BIG_ENDIAN, JXL_LITTLE_ENDIAN}) {
-          formats.push_back(
-              JxlPixelFormat{num_channels, data_type, endianness, /*align=*/0});
+      for (const JpegliDataType data_type :
+           {JPEGLI_TYPE_UINT8, JPEGLI_TYPE_UINT16, JPEGLI_TYPE_FLOAT}) {
+        for (JpegliEndianness endianness :
+             {JPEGLI_BIG_ENDIAN, JPEGLI_LITTLE_ENDIAN}) {
+          formats.push_back(JpegliPixelFormat{num_channels, data_type,
+                                              endianness, /*align=*/0});
         }
       }
     }
@@ -99,29 +100,26 @@ class APNGEncoder : public Encoder {
   Status Encode(const PackedPixelFile& ppf, EncodedImage* encoded_image,
                 ThreadPool* pool) const override {
     // Encode main image frames
-    JXL_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
+    JPEGLI_RETURN_IF_ERROR(VerifyBasicInfo(ppf.info));
     encoded_image->icc.clear();
-    encoded_image->bitstreams.resize(1);
-    JXL_RETURN_IF_ERROR(EncodePackedPixelFileToAPNG(
-        ppf, pool, &encoded_image->bitstreams.front()));
+    JPEGLI_RETURN_IF_ERROR(
+        EncodePackedPixelFileToAPNG(ppf, pool, &encoded_image->bitstreams));
 
     // Encode extra channels
     for (size_t i = 0; i < ppf.extra_channels_info.size(); ++i) {
       encoded_image->extra_channel_bitstreams.emplace_back();
       auto& ec_bitstreams = encoded_image->extra_channel_bitstreams.back();
-      ec_bitstreams.emplace_back();
-      JXL_RETURN_IF_ERROR(EncodePackedPixelFileToAPNG(
-          ppf, pool, &ec_bitstreams.back(), true, i));
+      JPEGLI_RETURN_IF_ERROR(
+          EncodePackedPixelFileToAPNG(ppf, pool, &ec_bitstreams, true, i));
     }
     return true;
   }
 
  private:
-  Status EncodePackedPixelFileToAPNG(const PackedPixelFile& ppf,
-                                     ThreadPool* pool,
-                                     std::vector<uint8_t>* bytes,
-                                     bool encode_extra_channels = false,
-                                     size_t extra_channel_index = 0) const;
+  Status EncodePackedPixelFileToAPNG(
+      const PackedPixelFile& ppf, ThreadPool* pool,
+      std::vector<std::vector<uint8_t> >* bitstreams,
+      bool encode_extra_channels = false, size_t extra_channel_index = 0) const;
 };
 
 void PngWrite(png_structp png_ptr, png_bytep data, png_size_t length) {
@@ -151,26 +149,26 @@ class BlobsWriterPNG {
         exif.insert(exif.begin(), kExifSignature,
                     kExifSignature + sizeof kExifSignature);
       }
-      JXL_RETURN_IF_ERROR(EncodeBase16("exif", exif, strings));
+      JPEGLI_RETURN_IF_ERROR(EncodeBase16("exif", exif, strings));
     }
     if (!blobs.iptc.empty()) {
-      JXL_RETURN_IF_ERROR(EncodeBase16("iptc", blobs.iptc, strings));
+      JPEGLI_RETURN_IF_ERROR(EncodeBase16("iptc", blobs.iptc, strings));
     }
     if (!blobs.xmp.empty()) {
       // TODO(user): Store XMP data in an "XML:com.adobe.xmp" text chunk
       //             instead.
-      JXL_RETURN_IF_ERROR(EncodeBase16("xmp", blobs.xmp, strings));
+      JPEGLI_RETURN_IF_ERROR(EncodeBase16("xmp", blobs.xmp, strings));
     }
     return true;
   }
 
  private:
   // TODO(eustas): use array
-  static JXL_INLINE char EncodeNibble(const uint8_t nibble) {
+  static JPEGLI_INLINE char EncodeNibble(const uint8_t nibble) {
     if (nibble < 16) {
       return (nibble < 10) ? '0' + nibble : 'a' + nibble - 10;
     } else {
-      JXL_DEBUG_ABORT("Internal logic error");
+      JPEGLI_DEBUG_ABORT("Internal logic error");
       return 0;
     }
   }
@@ -189,7 +187,7 @@ class BlobsWriterPNG {
       base16.push_back(EncodeNibble(bytes[i] & 0x0F));
     }
     base16.push_back('\n');
-    JXL_ENSURE(base16.length() == base16_size);
+    JPEGLI_ENSURE(base16.length() == base16_size);
 
     char key[30];
     snprintf(key, sizeof(key), "Raw profile type %s", type.c_str());
@@ -204,29 +202,29 @@ class BlobsWriterPNG {
   }
 };
 
-void MaybeAddCICP(const JxlColorEncoding& c_enc, png_structp png_ptr,
+void MaybeAddCICP(const JpegliColorEncoding& c_enc, png_structp png_ptr,
                   png_infop info_ptr) {
   png_byte cicp_data[4] = {};
   png_unknown_chunk cicp_chunk;
-  if (c_enc.color_space != JXL_COLOR_SPACE_RGB) {
+  if (c_enc.color_space != JPEGLI_COLOR_SPACE_RGB) {
     return;
   }
-  if (c_enc.primaries == JXL_PRIMARIES_P3) {
-    if (c_enc.white_point == JXL_WHITE_POINT_D65) {
+  if (c_enc.primaries == JPEGLI_PRIMARIES_P3) {
+    if (c_enc.white_point == JPEGLI_WHITE_POINT_D65) {
       cicp_data[0] = 12;
-    } else if (c_enc.white_point == JXL_WHITE_POINT_DCI) {
+    } else if (c_enc.white_point == JPEGLI_WHITE_POINT_DCI) {
       cicp_data[0] = 11;
     } else {
       return;
     }
-  } else if (c_enc.primaries != JXL_PRIMARIES_CUSTOM &&
-             c_enc.white_point == JXL_WHITE_POINT_D65) {
+  } else if (c_enc.primaries != JPEGLI_PRIMARIES_CUSTOM &&
+             c_enc.white_point == JPEGLI_WHITE_POINT_D65) {
     cicp_data[0] = static_cast<png_byte>(c_enc.primaries);
   } else {
     return;
   }
-  if (c_enc.transfer_function == JXL_TRANSFER_FUNCTION_UNKNOWN ||
-      c_enc.transfer_function == JXL_TRANSFER_FUNCTION_GAMMA) {
+  if (c_enc.transfer_function == JPEGLI_TRANSFER_FUNCTION_UNKNOWN ||
+      c_enc.transfer_function == JPEGLI_TRANSFER_FUNCTION_GAMMA) {
     return;
   }
   cicp_data[1] = static_cast<png_byte>(c_enc.transfer_function);
@@ -241,13 +239,13 @@ void MaybeAddCICP(const JxlColorEncoding& c_enc, png_structp png_ptr,
   png_set_unknown_chunks(png_ptr, info_ptr, &cicp_chunk, 1);
 }
 
-bool MaybeAddSRGB(const JxlColorEncoding& c_enc, png_structp png_ptr,
+bool MaybeAddSRGB(const JpegliColorEncoding& c_enc, png_structp png_ptr,
                   png_infop info_ptr) {
-  if (c_enc.transfer_function == JXL_TRANSFER_FUNCTION_SRGB &&
-      (c_enc.color_space == JXL_COLOR_SPACE_GRAY ||
-       (c_enc.color_space == JXL_COLOR_SPACE_RGB &&
-        c_enc.primaries == JXL_PRIMARIES_SRGB &&
-        c_enc.white_point == JXL_WHITE_POINT_D65))) {
+  if (c_enc.transfer_function == JPEGLI_TRANSFER_FUNCTION_SRGB &&
+      (c_enc.color_space == JPEGLI_COLOR_SPACE_GRAY ||
+       (c_enc.color_space == JPEGLI_COLOR_SPACE_RGB &&
+        c_enc.primaries == JPEGLI_PRIMARIES_SRGB &&
+        c_enc.white_point == JPEGLI_WHITE_POINT_D65))) {
     png_set_sRGB(png_ptr, info_ptr, c_enc.rendering_intent);
     png_set_cHRM_fixed(png_ptr, info_ptr, 31270, 32900, 64000, 33000, 30000,
                        60000, 15000, 6000);
@@ -257,9 +255,9 @@ bool MaybeAddSRGB(const JxlColorEncoding& c_enc, png_structp png_ptr,
   return false;
 }
 
-void MaybeAddCHRM(const JxlColorEncoding& c_enc, png_structp png_ptr,
+void MaybeAddCHRM(const JpegliColorEncoding& c_enc, png_structp png_ptr,
                   png_infop info_ptr) {
-  if (c_enc.color_space != JXL_COLOR_SPACE_RGB) return;
+  if (c_enc.color_space != JPEGLI_COLOR_SPACE_RGB) return;
   if (c_enc.primaries == 0) return;
   png_set_cHRM(png_ptr, info_ptr, c_enc.white_point_xy[0],
                c_enc.white_point_xy[1], c_enc.primaries_red_xy[0],
@@ -268,16 +266,16 @@ void MaybeAddCHRM(const JxlColorEncoding& c_enc, png_structp png_ptr,
                c_enc.primaries_blue_xy[1]);
 }
 
-void MaybeAddGAMA(const JxlColorEncoding& c_enc, png_structp png_ptr,
+void MaybeAddGAMA(const JpegliColorEncoding& c_enc, png_structp png_ptr,
                   png_infop info_ptr) {
   switch (c_enc.transfer_function) {
-    case JXL_TRANSFER_FUNCTION_LINEAR:
+    case JPEGLI_TRANSFER_FUNCTION_LINEAR:
       png_set_gAMA_fixed(png_ptr, info_ptr, PNG_FP_1);
       break;
-    case JXL_TRANSFER_FUNCTION_SRGB:
+    case JPEGLI_TRANSFER_FUNCTION_SRGB:
       png_set_gAMA_fixed(png_ptr, info_ptr, 45455);
       break;
-    case JXL_TRANSFER_FUNCTION_GAMMA:
+    case JPEGLI_TRANSFER_FUNCTION_GAMMA:
       png_set_gAMA(png_ptr, info_ptr, c_enc.gamma);
       break;
 
@@ -286,9 +284,10 @@ void MaybeAddGAMA(const JxlColorEncoding& c_enc, png_structp png_ptr,
   }
 }
 
-void MaybeAddCLLi(const JxlColorEncoding& c_enc, const float intensity_target,
-                  png_structp png_ptr, png_infop info_ptr) {
-  if (c_enc.transfer_function != JXL_TRANSFER_FUNCTION_PQ) return;
+void MaybeAddCLLi(const JpegliColorEncoding& c_enc,
+                  const float intensity_target, png_structp png_ptr,
+                  png_infop info_ptr) {
+  if (c_enc.transfer_function != JPEGLI_TRANSFER_FUNCTION_PQ) return;
   if (intensity_target == 10'000) return;
 
   const uint32_t max_content_light_level =
@@ -307,12 +306,13 @@ void MaybeAddCLLi(const JxlColorEncoding& c_enc, const float intensity_target,
 }
 
 Status APNGEncoder::EncodePackedPixelFileToAPNG(
-    const PackedPixelFile& ppf, ThreadPool* pool, std::vector<uint8_t>* bytes,
-    bool encode_extra_channels, size_t extra_channel_index) const {
-  JxlExtraChannelInfo ec_info{};
+    const PackedPixelFile& ppf, ThreadPool* pool,
+    std::vector<std::vector<uint8_t> >* bitstreams, bool encode_extra_channels,
+    size_t extra_channel_index) const {
+  JpegliExtraChannelInfo ec_info{};
   if (encode_extra_channels) {
     if (ppf.extra_channels_info.size() <= extra_channel_index) {
-      return JXL_FAILURE("Invalid index for extra channel");
+      return JPEGLI_FAILURE("Invalid index for extra channel");
     }
     ec_info = ppf.extra_channels_info[extra_channel_index].ec_info;
   }
@@ -323,14 +323,19 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
       encode_extra_channels ? 1 : ppf.info.num_color_channels;
   size_t num_channels = color_channels + (has_alpha ? 1 : 0);
 
-  if (!ppf.info.have_animation && ppf.frames.size() != 1) {
-    return JXL_FAILURE("Invalid number of frames");
-  }
+  bitstreams->emplace_back();
+  auto bytes = &bitstreams->back();
 
   size_t count = 0;
   size_t anim_chunks = 0;
 
   for (const auto& frame : ppf.frames) {
+    if (!ppf.info.have_animation && count > 0) {
+      // in the case of non-coalesced layers (composite still), write multiple
+      // files
+      bitstreams->emplace_back();
+      bytes = &bitstreams->back();
+    }
     const PackedImage& color = encode_extra_channels
                                    ? frame.extra_channels[extra_channel_index]
                                    : frame.color;
@@ -342,16 +347,16 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
     uint32_t bits_per_sample = encode_extra_channels ? ec_info.bits_per_sample
                                                      : ppf.info.bits_per_sample;
     if (!encode_extra_channels) {
-      JXL_RETURN_IF_ERROR(VerifyPackedImage(color, ppf.info));
+      JPEGLI_RETURN_IF_ERROR(VerifyPackedImage(color, ppf.info));
     } else {
-      JXL_RETURN_IF_ERROR(VerifyFormat(color.format));
-      JXL_RETURN_IF_ERROR(VerifyBitDepth(color.format.data_type,
-                                         bits_per_sample,
-                                         ec_info.exponent_bits_per_sample));
+      JPEGLI_RETURN_IF_ERROR(VerifyFormat(color.format));
+      JPEGLI_RETURN_IF_ERROR(VerifyBitDepth(color.format.data_type,
+                                            bits_per_sample,
+                                            ec_info.exponent_bits_per_sample));
     }
-    const JxlPixelFormat format = color.format;
+    const JpegliPixelFormat format = color.format;
     const uint8_t* in = reinterpret_cast<const uint8_t*>(color.pixels());
-    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
+    JPEGLI_RETURN_IF_ERROR(PackedImage::ValidateDataType(format.data_type));
     size_t data_bits_per_sample = PackedImage::BitsPerChannel(format.data_type);
     size_t bytes_per_sample = data_bits_per_sample / 8;
     size_t out_bytes_per_sample = bytes_per_sample > 1 ? 2 : 1;
@@ -359,41 +364,42 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
     size_t out_size = ysize * out_stride;
     std::vector<uint8_t> out(out_size);
 
-    if (format.data_type == JXL_TYPE_UINT8) {
+    if (format.data_type == JPEGLI_TYPE_UINT8) {
       if (bits_per_sample < 8) {
         float mul = 255.0 / ((1u << bits_per_sample) - 1);
         for (size_t i = 0; i < num_samples; ++i) {
-          out[i] = static_cast<uint8_t>(std::lroundf(in[i] * mul));
+          out[i] = static_cast<uint8_t>(std::lround(in[i] * mul));
         }
       } else {
         memcpy(out.data(), in, out_size);
       }
-    } else if (format.data_type == JXL_TYPE_UINT16) {
-      if (bits_per_sample < 16 || format.endianness != JXL_BIG_ENDIAN) {
+    } else if (format.data_type == JPEGLI_TYPE_UINT16) {
+      if (bits_per_sample < 16 || format.endianness != JPEGLI_BIG_ENDIAN) {
         float mul = 65535.0 / ((1u << bits_per_sample) - 1);
         const uint8_t* p_in = in;
         uint8_t* p_out = out.data();
         for (size_t i = 0; i < num_samples; ++i, p_in += 2, p_out += 2) {
-          uint32_t val = (format.endianness == JXL_BIG_ENDIAN ? LoadBE16(p_in)
-                                                              : LoadLE16(p_in));
-          StoreBE16(static_cast<uint32_t>(std::lroundf(val * mul)), p_out);
+          uint32_t val =
+              (format.endianness == JPEGLI_BIG_ENDIAN ? LoadBE16(p_in)
+                                                      : LoadLE16(p_in));
+          StoreBE16(static_cast<uint32_t>(std::lround(val * mul)), p_out);
         }
       } else {
         memcpy(out.data(), in, out_size);
       }
-    } else if (format.data_type == JXL_TYPE_FLOAT) {
+    } else if (format.data_type == JPEGLI_TYPE_FLOAT) {
       constexpr float kMul = 65535.0;
       const uint8_t* p_in = in;
       uint8_t* p_out = out.data();
       for (size_t i = 0; i < num_samples;
            ++i, p_in += sizeof(float), p_out += 2) {
         float val =
-            Clamp1(format.endianness == JXL_BIG_ENDIAN ? LoadBEFloat(p_in)
-                   : format.endianness == JXL_LITTLE_ENDIAN
+            Clamp1(format.endianness == JPEGLI_BIG_ENDIAN ? LoadBEFloat(p_in)
+                   : format.endianness == JPEGLI_LITTLE_ENDIAN
                        ? LoadLEFloat(p_in)
                        : *reinterpret_cast<const float*>(p_in),
                    0.f, 1.f);
-        StoreBE16(static_cast<uint32_t>(std::lroundf(val * kMul)), p_out);
+        StoreBE16(static_cast<uint32_t>(std::lround(val * kMul)), p_out);
       }
     }
     png_structp png_ptr;
@@ -402,10 +408,10 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr,
                                       nullptr);
 
-    if (!png_ptr) return JXL_FAILURE("Could not init png encoder");
+    if (!png_ptr) return JPEGLI_FAILURE("Could not init png encoder");
 
     info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) return JXL_FAILURE("Could not init png info struct");
+    if (!info_ptr) return JPEGLI_FAILURE("Could not init png info struct");
     png_set_compression_level(png_ptr, 1);
 
     png_set_write_fn(png_ptr, bytes, PngWrite, nullptr);
@@ -421,31 +427,34 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
     png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, color_type,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
                  PNG_FILTER_TYPE_BASE);
-    if (count == 0 && !encode_extra_channels) {
-      if (!MaybeAddSRGB(ppf.color_encoding, png_ptr, info_ptr)) {
-        if (ppf.primary_color_representation !=
-            PackedPixelFile::kIccIsPrimary) {
-          MaybeAddCICP(ppf.color_encoding, png_ptr, info_ptr);
+    if (count == 0 || !ppf.info.have_animation) {
+      if (!encode_extra_channels) {
+        if (!MaybeAddSRGB(ppf.color_encoding, png_ptr, info_ptr)) {
+          if (ppf.primary_color_representation !=
+              PackedPixelFile::kIccIsPrimary) {
+            MaybeAddCICP(ppf.color_encoding, png_ptr, info_ptr);
+          }
+          if (!ppf.icc.empty()) {
+            png_set_benign_errors(png_ptr, 1);
+            png_set_iCCP(png_ptr, info_ptr, "1", 0, ppf.icc.data(),
+                         ppf.icc.size());
+          }
+          MaybeAddCHRM(ppf.color_encoding, png_ptr, info_ptr);
+          MaybeAddGAMA(ppf.color_encoding, png_ptr, info_ptr);
         }
-        if (!ppf.icc.empty()) {
-          png_set_benign_errors(png_ptr, 1);
-          png_set_iCCP(png_ptr, info_ptr, "1", 0, ppf.icc.data(),
-                       ppf.icc.size());
-        }
-        MaybeAddCHRM(ppf.color_encoding, png_ptr, info_ptr);
-        MaybeAddGAMA(ppf.color_encoding, png_ptr, info_ptr);
-      }
-      MaybeAddCLLi(ppf.color_encoding, ppf.info.intensity_target, png_ptr,
-                   info_ptr);
+        MaybeAddCLLi(ppf.color_encoding, ppf.info.intensity_target, png_ptr,
+                     info_ptr);
 
-      std::vector<std::string> textstrings;
-      JXL_RETURN_IF_ERROR(BlobsWriterPNG::Encode(ppf.metadata, &textstrings));
-      for (size_t kk = 0; kk + 1 < textstrings.size(); kk += 2) {
-        png_text text;
-        text.key = const_cast<png_charp>(textstrings[kk].c_str());
-        text.text = const_cast<png_charp>(textstrings[kk + 1].c_str());
-        text.compression = PNG_TEXT_COMPRESSION_zTXt;
-        png_set_text(png_ptr, info_ptr, &text, 1);
+        std::vector<std::string> textstrings;
+        JPEGLI_RETURN_IF_ERROR(
+            BlobsWriterPNG::Encode(ppf.metadata, &textstrings));
+        for (size_t kk = 0; kk + 1 < textstrings.size(); kk += 2) {
+          png_text text;
+          text.key = const_cast<png_charp>(textstrings[kk].c_str());
+          text.text = const_cast<png_charp>(textstrings[kk + 1].c_str());
+          text.compression = PNG_TEXT_COMPRESSION_zTXt;
+          png_set_text(png_ptr, info_ptr, &text, 1);
+        }
       }
 
       png_write_info(png_ptr, info_ptr);
@@ -489,16 +498,16 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
     const size_t pos = bytes->size();
     png_write_image(png_ptr, rows.data());
     png_write_flush(png_ptr);
-    if (count > 0) {
+    if (count > 0 && ppf.info.have_animation) {
       std::vector<uint8_t> fdata(4);
       png_save_uint_32(fdata.data(), anim_chunks++);
       size_t p = pos;
       while (p + 8 < bytes->size()) {
         size_t len = png_get_uint_32(bytes->data() + p);
-        JXL_ENSURE(bytes->operator[](p + 4) == 'I');
-        JXL_ENSURE(bytes->operator[](p + 5) == 'D');
-        JXL_ENSURE(bytes->operator[](p + 6) == 'A');
-        JXL_ENSURE(bytes->operator[](p + 7) == 'T');
+        JPEGLI_ENSURE(bytes->operator[](p + 4) == 'I');
+        JPEGLI_ENSURE(bytes->operator[](p + 5) == 'D');
+        JPEGLI_ENSURE(bytes->operator[](p + 6) == 'A');
+        JPEGLI_ENSURE(bytes->operator[](p + 7) == 'T');
         fdata.insert(fdata.end(), bytes->data() + p + 8,
                      bytes->data() + p + 8 + len);
         p += len + 12;
@@ -523,10 +532,10 @@ Status APNGEncoder::EncodePackedPixelFileToAPNG(
 }  // namespace
 
 std::unique_ptr<Encoder> GetAPNGEncoder() {
-  return jxl::make_unique<APNGEncoder>();
+  return jpegli::make_unique<APNGEncoder>();
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_APNG
+#endif  // JPEGLI_ENABLE_APNG

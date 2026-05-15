@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_COLOR_DESCRIPTION_H_
-#define LIB_EXTRAS_COLOR_DESCRIPTION_H_
+#ifndef JPEGLI_LIB_EXTRAS_COLOR_DESCRIPTION_H_
+#define JPEGLI_LIB_EXTRAS_COLOR_DESCRIPTION_H_
 
 #include <string>
 
@@ -13,12 +13,12 @@
 #include "lib/base/status.h"
 #include "lib/cms/color_encoding.h"
 
-namespace jxl {
+namespace jpegli {
 
-// Parse the color description into a JxlColorEncoding "RGB_D65_SRG_Rel_Lin".
+// Parse the color description into a JpegliColorEncoding "RGB_D65_SRG_Rel_Lin".
 Status ParseDescription(const std::string& description,
-                        JxlColorEncoding* JXL_RESTRICT c);
+                        JpegliColorEncoding* JPEGLI_RESTRICT c);
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_COLOR_DESCRIPTION_H_
+#endif  // JPEGLI_LIB_EXTRAS_COLOR_DESCRIPTION_H_

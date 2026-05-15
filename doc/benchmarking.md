@@ -25,13 +25,6 @@ target psychovisual distances of 1 and 2 (higher implies lower quality) and
 the encoder effort (see below). Another common parameter is `q92` (quality 92, on a scale of 0-100, where
 higher is better). Quality is directly mapped to distance (quality 90 equals a distance of 1). The `jxl` codec supports the following additional parameters:
 
-Speeds: `lightning`, `thunder`, `falcon`, `cheetah`, `hare`, `wombat`, `squirrel`,
-`kitten`, `tortoise`, `glacier`, and `tectonic_plate` control the encoder effort in ascending order. This also
-affects memory usage: using lower effort will typically reduce memory consumption
-during encoding.
-
-[Encode_effort.md](https://github.com/libjxl/libjxl/blob/main/doc/encode_effort.md) describes what the various effort settings do.
-
 Mode: JPEG XL has two modes. The default is Var-DCT mode, which is suitable for
 lossy compression. The other mode is Modular mode, which is suitable for lossless
 compression. Modular mode can also do lossy compression (e.g. `jxl:m:q50`).

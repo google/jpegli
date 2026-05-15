@@ -1,6 +1,6 @@
-JXL_0 {
+JPEGLI_0 {
   global:
-    Jxl*;
+    Jpegli*;
 
   local:
     # Hide all the std namespace symbols. std namespace is explicitly marked

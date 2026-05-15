@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_DEC_PNM_H_
-#define LIB_EXTRAS_DEC_PNM_H_
+#ifndef JPEGLI_LIB_EXTRAS_DEC_PNM_H_
+#define JPEGLI_LIB_EXTRAS_DEC_PNM_H_
 
 // Decodes PBM/PGM/PPM/PFM pixels in memory.
 
@@ -19,7 +19,7 @@
 #include "lib/base/span.h"
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 struct SizeConstraints;
 
@@ -42,10 +42,10 @@ struct HeaderPNM {
   size_t bits_per_sample;
   bool floating_point;
   bool big_endian;
-  std::vector<JxlExtraChannelType> ec_types;  // PAM
+  std::vector<JpegliExtraChannelType> ec_types;  // PAM
 };
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_DEC_PNM_H_
+#endif  // JPEGLI_LIB_EXTRAS_DEC_PNM_H_

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_MATRIX_OPS_H_
-#define LIB_JXL_BASE_MATRIX_OPS_H_
+#ifndef JPEGLI_LIB_BASE_MATRIX_OPS_H_
+#define JPEGLI_LIB_BASE_MATRIX_OPS_H_
 
 // 3x3 matrix operations.
 
@@ -15,12 +15,12 @@
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
-typedef std::array<float, 3> Vector3;
-typedef std::array<double, 3> Vector3d;
-typedef std::array<Vector3, 3> Matrix3x3;
-typedef std::array<Vector3d, 3> Matrix3x3d;
+using Vector3 = std::array<float, 3>;
+using Vector3d = std::array<double, 3>;
+using Matrix3x3 = std::array<Vector3, 3>;
+using Matrix3x3d = std::array<Vector3d, 3>;
 
 // Computes C = A * B, where A, B, C are 3x3 matrices.
 template <typename Matrix>
@@ -39,7 +39,7 @@ void Mul3x3Vector(const Matrix& a, const Vector& b, Vector& c) {
   for (size_t y = 0; y < 3; y++) {
     double e = 0;
     for (size_t x = 0; x < 3; x++) {
-      e += a[y][x] * b[x];
+      e += static_cast<double>(a[y][x]) * b[x];
     }
     c[y] = e;
   }
@@ -71,7 +71,7 @@ Status Inv3x3Matrix(Matrix& matrix) {
   double det = matrix[0][0] * temp[0][0] + matrix[0][1] * temp[1][0] +
                matrix[0][2] * temp[2][0];
   if (std::abs(det) < 1e-10) {
-    return JXL_FAILURE("Matrix determinant is too close to 0");
+    return JPEGLI_FAILURE("Matrix determinant is too close to 0");
   }
   double idet = 1.0 / det;
   for (size_t j = 0; j < 3; j++) {
@@ -82,6 +82,6 @@ Status Inv3x3Matrix(Matrix& matrix) {
   return true;
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_MATRIX_OPS_H_
+#endif  // JPEGLI_LIB_BASE_MATRIX_OPS_H_
