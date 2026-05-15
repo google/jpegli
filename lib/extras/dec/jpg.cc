@@ -14,9 +14,9 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
-#if !JPEGXL_ENABLE_JPEG
+#if !JPEGLI_ENABLE_JPEG
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 bool CanDecodeJPG() { return false; }
 Status DecodeImageJPG(const Span<const uint8_t> bytes,
@@ -26,12 +26,11 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
   return false;
 }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_JPEG
+#else  // JPEGLI_ENABLE_JPEG
 
 #include <algorithm>
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <numeric>
@@ -46,7 +45,7 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
 #include "lib/cms/color_encoding.h"
 #include "lib/extras/codestream_header.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 namespace {
@@ -99,15 +98,15 @@ Status ReadICCProfile(jpeg_decompress_struct* const cinfo,
 
     const int current_marker = marker->data[kICCSignatureSize];
     if (current_marker == 0) {
-      return JXL_FAILURE("inconsistent JPEG ICC marker numbering");
+      return JPEGLI_FAILURE("inconsistent JPEG ICC marker numbering");
     }
     const int current_num_markers = marker->data[kICCSignatureSize + 1];
     if (current_marker > current_num_markers) {
-      return JXL_FAILURE("inconsistent JPEG ICC marker numbering");
+      return JPEGLI_FAILURE("inconsistent JPEG ICC marker numbering");
     }
     if (has_num_markers) {
       if (current_num_markers != num_markers) {
-        return JXL_FAILURE("inconsistent numbers of JPEG ICC markers");
+        return JPEGLI_FAILURE("inconsistent numbers of JPEG ICC markers");
       }
     } else {
       num_markers = current_num_markers;
@@ -119,11 +118,11 @@ Status ReadICCProfile(jpeg_decompress_struct* const cinfo,
 
     if (marker_length == 0) {
       // NB: if we allow empty chunks, then the next check is incorrect.
-      return JXL_FAILURE("Empty ICC chunk");
+      return JPEGLI_FAILURE("Empty ICC chunk");
     }
 
     if (marker_lengths[current_marker] != 0) {
-      return JXL_FAILURE("duplicate JPEG ICC marker number");
+      return JPEGLI_FAILURE("duplicate JPEG ICC marker number");
     }
     marker_lengths[current_marker] = marker_length;
     seen_markers_count++;
@@ -135,8 +134,8 @@ Status ReadICCProfile(jpeg_decompress_struct* const cinfo,
   }
 
   if (seen_markers_count != num_markers) {
-    JXL_ENSURE(has_num_markers);
-    return JXL_FAILURE("Incomplete set of ICC chunks");
+    JPEGLI_ENSURE(has_num_markers);
+    return JPEGLI_FAILURE("Incomplete set of ICC chunks");
   }
 
   std::vector<size_t> offsets = std::move(marker_lengths);
@@ -181,20 +180,20 @@ void MyErrorExit(j_common_ptr cinfo) {
 }
 
 void MyOutputMessage(j_common_ptr cinfo) {
-  if (JXL_IS_DEBUG_BUILD) {
+  if (JPEGLI_IS_DEBUG_BUILD) {
     char buf[JMSG_LENGTH_MAX + 1];
     (*cinfo->err->format_message)(cinfo, buf);
     buf[JMSG_LENGTH_MAX] = 0;
-    JXL_WARNING("%s", buf);
+    JPEGLI_WARNING("%s", buf);
   }
 }
 
 Status UnmapColors(uint8_t* row, size_t xsize, int components,
                    JSAMPARRAY colormap, size_t num_colors) {
-  JXL_ENSURE(colormap != nullptr);
+  JPEGLI_ENSURE(colormap != nullptr);
   std::vector<uint8_t> tmp(xsize * components);
   for (size_t x = 0; x < xsize; ++x) {
-    JXL_ENSURE(row[x] < num_colors);
+    JPEGLI_ENSURE(row[x] < num_colors);
     for (int c = 0; c < components; ++c) {
       tmp[x * components + c] = colormap[c][row[x]];
     }
@@ -242,7 +241,7 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     const auto failure = [&cinfo](const char* str) -> Status {
       jpeg_abort_decompress(&cinfo);
       jpeg_destroy_decompress(&cinfo);
-      return JXL_FAILURE("%s", str);
+      return JPEGLI_FAILURE("%s", str);
     };
     int read_header_result = jpeg_read_header(&cinfo, TRUE);
     // TODO(eustas): what about JPEG_HEADER_TABLES_ONLY?
@@ -270,11 +269,11 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
       // Actually, (cinfo.output_components == nbcomp) will be checked after
       // `jpeg_start_decompress`.
       ppf->color_encoding.color_space =
-          (nbcomp == 1) ? JXL_COLOR_SPACE_GRAY : JXL_COLOR_SPACE_RGB;
-      ppf->color_encoding.white_point = JXL_WHITE_POINT_D65;
-      ppf->color_encoding.primaries = JXL_PRIMARIES_SRGB;
-      ppf->color_encoding.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
-      ppf->color_encoding.rendering_intent = JXL_RENDERING_INTENT_PERCEPTUAL;
+          (nbcomp == 1) ? JPEGLI_COLOR_SPACE_GRAY : JPEGLI_COLOR_SPACE_RGB;
+      ppf->color_encoding.white_point = JPEGLI_WHITE_POINT_D65;
+      ppf->color_encoding.primaries = JPEGLI_PRIMARIES_SRGB;
+      ppf->color_encoding.transfer_function = JPEGLI_TRANSFER_FUNCTION_SRGB;
+      ppf->color_encoding.rendering_intent = JPEGLI_RENDERING_INTENT_PERCEPTUAL;
     }
     ReadExif(&cinfo, &ppf->metadata.exif);
     if (!ApplyColorHints(color_hints, /*color_already_set=*/true,
@@ -289,14 +288,14 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     static_assert(BITS_IN_JSAMPLE == 8 || BITS_IN_JSAMPLE == 16,
                   "Only 8/16 bit samples are supported");
     ppf->info.exponent_bits_per_sample = 0;
-    ppf->info.uses_original_profile = JXL_TRUE;
+    ppf->info.uses_original_profile = JPEGLI_TRUE;
 
     // No alpha in JPG
     ppf->info.alpha_bits = 0;
     ppf->info.alpha_exponent_bits = 0;
 
     ppf->info.num_color_channels = nbcomp;
-    ppf->info.orientation = JXL_ORIENT_IDENTITY;
+    ppf->info.orientation = JPEGLI_ORIENT_IDENTITY;
 
     if (dparams && dparams->num_colors > 0) {
       cinfo.quantize_colors = TRUE;
@@ -306,41 +305,42 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
     }
 
     jpeg_start_decompress(&cinfo);
-    JXL_ENSURE(cinfo.out_color_components == nbcomp);
-    JxlDataType data_type =
-        ppf->info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
+    JPEGLI_ENSURE(cinfo.out_color_components == nbcomp);
+    JpegliDataType data_type =
+        ppf->info.bits_per_sample <= 8 ? JPEGLI_TYPE_UINT8 : JPEGLI_TYPE_UINT16;
 
-    const JxlPixelFormat format{
+    const JpegliPixelFormat format{
         /*num_channels=*/static_cast<uint32_t>(nbcomp),
         data_type,
-        /*endianness=*/JXL_NATIVE_ENDIAN,
+        /*endianness=*/JPEGLI_NATIVE_ENDIAN,
         /*align=*/0,
     };
     ppf->frames.clear();
     // Allocates the frame buffer.
     {
-      JXL_ASSIGN_OR_RETURN(
+      JPEGLI_ASSIGN_OR_RETURN(
           PackedFrame frame,
           PackedFrame::Create(cinfo.image_width, cinfo.image_height, format));
       ppf->frames.emplace_back(std::move(frame));
     }
     const auto& frame = ppf->frames.back();
-    JXL_ENSURE(sizeof(JSAMPLE) * cinfo.out_color_components *
-                   cinfo.image_width <=
-               frame.color.stride);
+    JPEGLI_ENSURE(sizeof(JSAMPLE) * cinfo.out_color_components *
+                      cinfo.image_width <=
+                  frame.color.stride);
 
     if (cinfo.quantize_colors) {
       JSAMPLE** colormap = cinfo.colormap;
-      jxl::msan::UnpoisonMemory(reinterpret_cast<void*>(colormap),
-                                cinfo.out_color_components * sizeof(JSAMPLE*));
+      jpegli::msan::UnpoisonMemory(
+          reinterpret_cast<void*>(colormap),
+          cinfo.out_color_components * sizeof(JSAMPLE*));
       for (int c = 0; c < cinfo.out_color_components; ++c) {
-        jxl::msan::UnpoisonMemory(
+        jpegli::msan::UnpoisonMemory(
             reinterpret_cast<void*>(colormap[c]),
             cinfo.actual_number_of_colors * sizeof(JSAMPLE));
       }
     }
     if (dparams && dparams->num_colors > 0) {
-      JXL_ENSURE(cinfo.colormap != nullptr);
+      JPEGLI_ENSURE(cinfo.colormap != nullptr);
     }
     for (size_t y = 0; y < cinfo.image_height; ++y) {
       JSAMPROW rows[] = {reinterpret_cast<JSAMPLE*>(
@@ -350,7 +350,7 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
       msan::UnpoisonMemory(rows[0], sizeof(JSAMPLE) * cinfo.output_components *
                                         cinfo.image_width);
       if (dparams && dparams->num_colors > 0) {
-        JXL_RETURN_IF_ERROR(
+        JPEGLI_RETURN_IF_ERROR(
             UnmapColors(rows[0], cinfo.output_width, cinfo.out_color_components,
                         cinfo.colormap, cinfo.actual_number_of_colors));
       }
@@ -365,6 +365,6 @@ Status DecodeImageJPG(const Span<const uint8_t> bytes,
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_JPEG
+#endif  // JPEGLI_ENABLE_JPEG

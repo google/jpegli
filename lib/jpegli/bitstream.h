@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_BITSTREAM_H_
-#define LIB_JPEGLI_BITSTREAM_H_
+#ifndef JPEGLI_LIB_JPEGLI_BITSTREAM_H_
+#define JPEGLI_LIB_JPEGLI_BITSTREAM_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -37,13 +37,13 @@ void EncodeDHT(j_compress_ptr cinfo, size_t offset, size_t num);
 void EncodeSOS(j_compress_ptr cinfo, int scan_index);
 void WriteScanHeader(j_compress_ptr cinfo, int scan_index);
 
-void WriteBlock(const int32_t* JXL_RESTRICT symbols,
-                const int32_t* JXL_RESTRICT extra_bits, int num_nonzeros,
-                bool emit_eob, const HuffmanCodeTable* JXL_RESTRICT dc_code,
-                const HuffmanCodeTable* JXL_RESTRICT ac_code,
-                JpegBitWriter* JXL_RESTRICT bw);
+void WriteBlock(const int32_t* JPEGLI_RESTRICT symbols,
+                const int32_t* JPEGLI_RESTRICT extra_bits, int num_nonzeros,
+                bool emit_eob, const HuffmanCodeTable* JPEGLI_RESTRICT dc_code,
+                const HuffmanCodeTable* JPEGLI_RESTRICT ac_code,
+                JpegBitWriter* JPEGLI_RESTRICT bw);
 void WriteScanData(j_compress_ptr cinfo, int scan_index);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_BITSTREAM_H_
+#endif  // JPEGLI_LIB_JPEGLI_BITSTREAM_H_

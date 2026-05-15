@@ -14,7 +14,7 @@ Since all of the build environments are built on top of the MSYS environment, **
 
 * **UCRT64:**  The Universal C Runtime (UCRT) is used by recent versions of Microsoft Visual Studio.  It ships by default with Windows 10.  For older versions of Windows, it must be provided with the application or installed by the user.  Package names are prefixed with `mingw-w64-ucrt-x86_64`.
 
-* **CLANG64:** Unfortunately, the `gimp` packages are not available for the CLANG64 environment.  However, `libjxl` will otherwise build in this environment if the appropriate packages are installed.  Packages are prefixed with `mingw-w64-clang-x86_64`.
+* **CLANG64:** Unfortunately, the `gimp` packages are not available for the CLANG64 environment.  However, `jpegli` will otherwise build in this environment if the appropriate packages are installed.  Packages are prefixed with `mingw-w64-clang-x86_64`.
 
 ## Install and Upgrade MSYS2
 
@@ -83,9 +83,9 @@ pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja \
     mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo 
 ```
 
-## Build `libjxl`
+## Build `jpegli`
 
-Download the source from the libjxl [releases](https://github.com/libjxl/libjxl/releases) page.  Alternatively, you may obtain the latest development version with `git`.  Run `./deps.sh` to ensure additional third-party dependencies are downloaded.
+Download the source from the jpegli [releases](https://github.com/google/jpegli/releases) page.  Alternatively, you may obtain the latest development version with `git`.  Run `./deps.sh` to ensure additional third-party dependencies are downloaded.
 
 Start the MINGW64 environment, create a build directory within the source directory, and configure with `cmake`.
 
@@ -93,15 +93,13 @@ Start the MINGW64 environment, create a build directory within the source direct
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-   -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
-   -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_PLUGINS=ON \
-   -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
-   -DJPEGXL_FORCE_SYSTEM_GTEST=ON ..
+   -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF -DJPEGLI_ENABLE_BENCHMARK=OFF \
+   -DJPEGLI_ENABLE_MANPAGES=OFF -DJPEGLI_FORCE_SYSTEM_GTEST=ON ..
 ```
 
 Check the output to see if any dependencies were missed and need to be installed.  Adding `-G Ninja` may be helpful, but on my computer, Ninja was selected by default.  Remember that package changes must be done from the MSYS environment.  Then exit all MSYS2 terminals and restart the build environment.
 
-If all went well, you may now run `cmake` to build `libjxl`:
+If all went well, you may now run `cmake` to build `jpegli`:
 
 ```bash
 cmake --build .
@@ -127,12 +125,12 @@ mingw-w64-ucrt64-x86_64-clang-tools-extra
 mingw-w64-ucrt64-x86_64-clang-compiler-rt
 ```
 
-After the `clang` compiler is installed, 'libjxl' can be built with the `./ci.sh` script.
+After the `clang` compiler is installed, 'jpegli' can be built with the `./ci.sh` script.
 
 ```bash
 ./ci.sh opt -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
-    -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_MANPAGES=OFF \
-    -DJPEGXL_FORCE_SYSTEM_BROTLI=ON -DJPEGXL_FORCE_SYSTEM_GTEST=ON
+    -DJPEGLI_ENABLE_BENCHMARK=OFF -DJPEGLI_ENABLE_MANPAGES=OFF \
+    -DJPEGLI_FORCE_SYSTEM_GTEST=ON
 ```
 
 On my computer, `doxygen` packages needed to be installed to proceed with building.  Use `pacman -Ss doxygen` to find the packages to install.
@@ -154,9 +152,8 @@ cd build
 rm -r CM*
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
    -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
-   -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_MANPAGES=OFF \
-   -DJPEGXL_ENABLE_PLUGINS=ON -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
-   -DJPEGXL_FORCE_SYSTEM_GTEST=ON ..
+   -DJPEGLI_ENABLE_BENCHMARK=OFF -DJPEGLI_ENABLE_MANPAGES=OFF \
+   -DJPEGLI_FORCE_SYSTEM_GTEST=ON ..
 ```
 
 The plugin is built statically, so there should be no need to install `dll` files.  To try out the plugin:

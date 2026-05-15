@@ -18,8 +18,8 @@
 //      with the one built by this project that is API- and ABI-compatible with
 //      libjpeg-turbo's version of libjpeg.so.
 
-#ifndef LIB_JPEGLI_ENCODE_H_
-#define LIB_JPEGLI_ENCODE_H_
+#ifndef JPEGLI_LIB_JPEGLI_ENCODE_H_
+#define JPEGLI_LIB_JPEGLI_ENCODE_H_
 
 #include <cstddef>
 #include <cstdio>
@@ -160,4 +160,4 @@ void jpegli_use_standard_quant_tables(j_compress_ptr cinfo);
 }  // extern "C"
 #endif
 
-#endif  // LIB_JPEGLI_ENCODE_H_
+#endif  // JPEGLI_LIB_JPEGLI_ENCODE_H_

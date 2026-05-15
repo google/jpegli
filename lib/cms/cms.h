@@ -4,12 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef JXL_CMS_H_
-#define JXL_CMS_H_
+#ifndef JPEGLI_CMS_H_
+#define JPEGLI_CMS_H_
 
 // ICC profiles and color space conversions.
 
-#include <jxl/jxl_cms_export.h>
+#include <jpegli/jpegli_cms_export.h>
 
 #include "lib/cms/cms_interface.h"
 
@@ -17,10 +17,10 @@
 extern "C" {
 #endif
 
-JXL_CMS_EXPORT const JxlCmsInterface* JxlGetDefaultCms();
+JPEGLI_CMS_EXPORT const JpegliCmsInterface* JpegliGetDefaultCms();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // JXL_CMS_H_
+#endif  // JPEGLI_CMS_H_

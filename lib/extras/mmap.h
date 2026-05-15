@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_MMAP_H_
-#define LIB_EXTRAS_MMAP_H_
+#ifndef JPEGLI_LIB_EXTRAS_MMAP_H_
+#define JPEGLI_LIB_EXTRAS_MMAP_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -13,7 +13,7 @@
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 struct MemoryMappedFileImpl;
 
 class MemoryMappedFile {
@@ -29,6 +29,6 @@ class MemoryMappedFile {
  private:
   std::unique_ptr<MemoryMappedFileImpl> impl_;
 };
-}  // namespace jxl
+}  // namespace jpegli
 
 #endif

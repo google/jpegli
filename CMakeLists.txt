@@ -8,10 +8,18 @@
 cmake_minimum_required(VERSION 3.16...3.27)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(LIBJXL LANGUAGES C CXX)
+project(LIBJPEGLI LANGUAGES C CXX)
+
+message(STATUS "CMake version: ${CMAKE_VERSION}")
+message(STATUS "Compiler IDs\
+ C:${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION},\
+ C++:${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Linker IDs\
+ C:${CMAKE_C_COMPILER_LINKER_ID} ${CMAKE_C_COMPILER_LINKER_VERSION},\
+ C++:${CMAKE_CXX_COMPILER_LINKER_ID} ${CMAKE_CXX_COMPILER_LINKER_VERSION}")
 
 # TODO(sboukortt): remove once oss-fuzz passes -DBUILD_SHARED_LIBS=OFF
-if(JPEGXL_ENABLE_FUZZERS)
+if(JPEGLI_ENABLE_FUZZERS)
   message(STATUS "Fuzzer build detected, building static libs")
   set(BUILD_SHARED_LIBS OFF)
 endif()
@@ -99,7 +107,7 @@ check_cxx_source_compiles(
       #endif
       return 0;
     }"
-  JXL_HWY_DISABLED_TARGETS_FORCED
+  JPEGLI_HWY_DISABLED_TARGETS_FORCED
 )
 
 if((SANITIZER STREQUAL "msan") OR EMSCRIPTEN)
@@ -108,73 +116,81 @@ else()
   set(BUNDLE_LIBPNG_DEFAULT NO)
 endif()
 
+set(JPEGLI_HWY_TARGETS AVX2 AVX3 AVX3_DL AVX3_SPR AVX3_ZEN4 EMU128 NEON NEON_BF16 NEON_WITHOUT_AES PPC10 PPC8 PPC9 RVV SCALAR SSE2 SSE4 SSSE3 SVE SVE_256 SVE2 SVE2_128 WASM WASM_EMU256 Z14 Z15)
+set(JPEGLI_HWY_TARGETS_OFF_BY_DEFAULT AVX3 AVX3_SPR AVX3_ZEN4 RVV SSSE3 SVE_256)
+if (NOT CXX_SVE_SUPPORTED)
+  list(APPEND JPEGLI_HWY_TARGETS_OFF_BY_DEFAULT SVE SVE2 SVE_256 SVE2_128)
+endif()
+
 # Standard cmake naming for building shared libraries.
 get_property(SHARED_LIBS_SUPPORTED GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" ${SHARED_LIBS_SUPPORTED})
 
-set(JPEGXL_ENABLE_FUZZERS ${ENABLE_FUZZERS_DEFAULT} CACHE BOOL
-    "Build JPEGXL fuzzer targets.")
-set(JPEGXL_ENABLE_DEVTOOLS false CACHE BOOL
-    "Build JPEGXL developer tools.")
-set(JPEGXL_ENABLE_TOOLS true CACHE BOOL
-    "Build JPEGXL user tools: cjxl and djxl.")
-set(JPEGXL_ENABLE_JPEGLI_LIBJPEG true CACHE BOOL
+set(JPEGLI_ENABLE_FUZZERS ${ENABLE_FUZZERS_DEFAULT} CACHE BOOL
+    "Build JPEGLI fuzzer targets.")
+set(JPEGLI_ENABLE_DEVTOOLS false CACHE BOOL
+    "Build JPEGLI developer tools.")
+set(JPEGLI_ENABLE_TOOLS true CACHE BOOL
+    "Build JPEGLI user tools: cjpegli and djpegli.")
+set(JPEGLI_ENABLE_JPEGLI_LIBJPEG true CACHE BOOL
     "Build libjpeg.so shared library based on jpegli.")
-set(JPEGXL_INSTALL_JPEGLI_LIBJPEG false CACHE BOOL
+set(JPEGLI_INSTALL_JPEGLI_LIBJPEG false CACHE BOOL
     "Install jpegli version of libjpeg.so system-wide.")
 set(JPEGLI_LIBJPEG_LIBRARY_VERSION "62.3.0" CACHE STRING
     "Library version of the libjpeg.so shared library that we build.")
 set(JPEGLI_LIBJPEG_LIBRARY_SOVERSION "62" CACHE STRING
     "Library so-version of the libjpeg.so shared library that we build.")
-set(JPEGXL_ENABLE_DOXYGEN true CACHE BOOL
+set(JPEGLI_ENABLE_DOXYGEN true CACHE BOOL
     "Generate C API documentation using Doxygen.")
-set(JPEGXL_ENABLE_MANPAGES true CACHE BOOL
+set(JPEGLI_ENABLE_MANPAGES true CACHE BOOL
     "Build and install man pages for the command-line tools.")
-set(JPEGXL_ENABLE_BENCHMARK true CACHE BOOL
-    "Build JPEGXL benchmark tools.")
-set(JPEGXL_BUNDLE_LIBPNG ${BUNDLE_LIBPNG_DEFAULT} CACHE BOOL
+set(JPEGLI_ENABLE_BENCHMARK true CACHE BOOL
+    "Build JPEGLI benchmark tools.")
+set(JPEGLI_BUNDLE_LIBPNG ${BUNDLE_LIBPNG_DEFAULT} CACHE BOOL
     "Build libpng from source and link it statically.")
-set(JPEGXL_ENABLE_JNI true CACHE BOOL
-    "Build JPEGXL JNI Java wrapper, if Java dependencies are installed.")
-set(JPEGXL_ENABLE_SJPEG true CACHE BOOL
-    "Build JPEGXL with support for encoding with sjpeg.")
-set(JPEGXL_ENABLE_OPENEXR true CACHE BOOL
-    "Build JPEGXL with support for OpenEXR if available.")
-set(JPEGXL_ENABLE_SKCMS ${ENABLE_SKCMS_DEFAULT} CACHE BOOL
+set(JPEGLI_ENABLE_JNI true CACHE BOOL
+    "Build JPEGLI JNI Java wrapper, if Java dependencies are installed.")
+set(JPEGLI_ENABLE_SJPEG true CACHE BOOL
+    "Build JPEGLI with support for encoding with sjpeg.")
+set(JPEGLI_ENABLE_OPENEXR true CACHE BOOL
+    "Build JPEGLI with support for OpenEXR if available.")
+set(JPEGLI_ENABLE_SKCMS ${ENABLE_SKCMS_DEFAULT} CACHE BOOL
     "Build with skcms instead of lcms2.")
-set(JPEGXL_ENABLE_TCMALLOC ${ENABLE_TCMALLOC_DEFAULT} CACHE BOOL
-    "Build JPEGXL using gperftools (tcmalloc) allocator.")
-set(JPEGXL_ENABLE_COVERAGE false CACHE BOOL
-    "Enable code coverage tracking for libjxl. This also enables debug and disables optimizations.")
-set(JPEGXL_ENABLE_SIZELESS_VECTORS false CACHE BOOL
-    "Builds in support for SVE/RVV vectorization")
-set(JPEGXL_STATIC false CACHE BOOL
+set(JPEGLI_ENABLE_TCMALLOC ${ENABLE_TCMALLOC_DEFAULT} CACHE BOOL
+    "Build JPEGLI using gperftools (tcmalloc) allocator.")
+set(JPEGLI_ENABLE_COVERAGE false CACHE BOOL
+    "Enable code coverage tracking for libjpegli. This also enables debug and disables optimizations.")
+set(JPEGLI_STATIC false CACHE BOOL
     "Build tools as static binaries.")
-set(JPEGXL_WARNINGS_AS_ERRORS false CACHE BOOL
+set(JPEGLI_WARNINGS_AS_ERRORS false CACHE BOOL
     "Treat warnings as errors during compilation.")
-set(JPEGXL_DEP_LICENSE_DIR "" CACHE STRING
+set(JPEGLI_DEP_LICENSE_DIR "" CACHE STRING
     "Directory where to search for system dependencies \"copyright\" files.")
-set(JPEGXL_FORCE_NEON false CACHE BOOL
+set(JPEGLI_FORCE_NEON false CACHE BOOL
     "Set flags to enable NEON in arm if not enabled by your toolchain.")
-set(JPEGXL_TEST_TOOLS false CACHE BOOL
+set(JPEGLI_TEST_TOOLS false CACHE BOOL
     "Run scripts that test the encoding / decoding tools.")
-set(JPEGXL_ENABLE_AVX512 false CACHE BOOL
-    "Build with AVX512 support (faster on CPUs that support it, but larger binary size).")
-set(JPEGXL_ENABLE_AVX512_SPR false CACHE BOOL
-    "Build with AVX-512FP16 support (faster on CPUs that support it, but larger binary size).")
-set(JPEGXL_ENABLE_AVX512_ZEN4 false CACHE BOOL
-"Build with Zen4-optimized AVX512 support (faster on CPUs that support it, but larger binary size).")
-set(JPEGXL_ENABLE_WASM_THREADS true CACHE BOOL
-    "Builds WASM modules with threads support")
+set(JPEGLI_ENABLE_WASM_THREADS true CACHE BOOL
+    "Builds WASM modules with threads support.")
+set(JPEGLI_ENABLE_LTO false CACHE BOOL
+    "Set flags to enable LTO.")
+
+# HWY codegen levers
+foreach(tgt IN LISTS JPEGLI_HWY_TARGETS)
+  set(JPEGLI_ENABLE_HWY_${tgt}_DEFAULT true)
+  if (${tgt} IN_LIST JPEGLI_HWY_TARGETS_OFF_BY_DEFAULT)
+    set(JPEGLI_ENABLE_HWY_${tgt}_DEFAULT false)
+  endif()
+  set(JPEGLI_ENABLE_HWY_${tgt} ${JPEGLI_ENABLE_HWY_${tgt}_DEFAULT} CACHE BOOL
+    "Build with ${tgt} support (faster on CPUs that support it, but larger binary size).")
+endforeach()
 
 # Force system dependencies.
-set(JPEGXL_FORCE_SYSTEM_BROTLI false CACHE BOOL
-    "Force using system installed brotli instead of third_party/brotli source.")
-set(JPEGXL_FORCE_SYSTEM_GTEST false CACHE BOOL
+set(JPEGLI_FORCE_SYSTEM_GTEST false CACHE BOOL
     "Force using system installed googletest (gtest) instead of third_party/googletest source.")
-set(JPEGXL_FORCE_SYSTEM_LCMS2 false CACHE BOOL
+set(JPEGLI_FORCE_SYSTEM_LCMS2 false CACHE BOOL
     "Force using system installed lcms2 instead of third_party/lcms source.")
-set(JPEGXL_FORCE_SYSTEM_HWY false CACHE BOOL
+set(JPEGLI_FORCE_SYSTEM_HWY false CACHE BOOL
     "Force using system installed highway (libhwy-dev) instead of third_party/highway source.")
 
 # Check minimum compiler versions. Older compilers are not supported and fail
@@ -184,33 +200,29 @@ if (NOT CMAKE_C_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
           "${CMAKE_C_COMPILER_ID} vs ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
-message(STATUS
-    "Compiled IDs C:${CMAKE_C_COMPILER_ID}, C++:${CMAKE_CXX_COMPILER_ID}")
+set(JPEGLI_HWY_INCLUDE_DIRS "$<BUILD_INTERFACE:$<TARGET_PROPERTY:$<IF:$<TARGET_EXISTS:hwy::hwy>,hwy::hwy,hwy>,INTERFACE_INCLUDE_DIRECTORIES>>")
 
-set(JXL_HWY_INCLUDE_DIRS "$<BUILD_INTERFACE:$<TARGET_PROPERTY:$<IF:$<TARGET_EXISTS:hwy::hwy>,hwy::hwy,hwy>,INTERFACE_INCLUDE_DIRECTORIES>>")
-# Always disable SSSE3 since it is rare to have SSSE3 but not SSE4
-set(HWY_DISABLED_TARGETS "HWY_SSSE3")
-if (NOT JPEGXL_ENABLE_AVX512)
-  message(STATUS "Disabled AVX512 (set JPEGXL_ENABLE_AVX512 to enable it)")
-  set(HWY_DISABLED_TARGETS "${HWY_DISABLED_TARGETS}|HWY_AVX3")
-  add_definitions(-DFJXL_ENABLE_AVX512=0)
+if (JPEGLI_HWY_DISABLED_TARGETS_FORCED)
+  message(WARNING "HWY_DISABLED_TARGETS is overridden; JPEGLI_ENABLE_hwy_target will be ignored")
+else()
+  set(HWY_DISABLED_TARGETS_LIST "")
+  foreach(tgt IN LISTS JPEGLI_HWY_TARGETS)
+    message(STATUS "HWY ${tgt} enabled: ${JPEGLI_ENABLE_HWY_${tgt}}")
+    if (NOT JPEGLI_ENABLE_HWY_${tgt})
+      list(APPEND HWY_DISABLED_TARGETS_LIST HWY_${tgt})
+    endif()
+  endforeach()
+  if (HWY_DISABLED_TARGETS_LIST)
+    list(JOIN HWY_DISABLED_TARGETS_LIST "|" HWY_DISABLED_TARGETS)
+    add_compile_options($<$<NOT:$<COMPILE_LANGUAGE:RC>>:-DHWY_DISABLED_TARGETS=\(${HWY_DISABLED_TARGETS}\)>)
+  endif()
 endif()
-if (NOT JPEGXL_ENABLE_AVX512_SPR)
-  message(STATUS "Disabled AVX512_SPR (set JPEGXL_ENABLE_AVX512_SPR to enable it)")
-  set(HWY_DISABLED_TARGETS "${HWY_DISABLED_TARGETS}|HWY_AVX3_SPR")
-endif()
-if (NOT JPEGXL_ENABLE_AVX512_ZEN4)
-  message(STATUS "Disabled AVX512_ZEN4 (set JPEGXL_ENABLE_AVX512_ZEN4 to enable it)")
-  set(HWY_DISABLED_TARGETS "${HWY_DISABLED_TARGETS}|HWY_AVX3_ZEN4")
-endif()
-
-
 
 # CMAKE_EXPORT_COMPILE_COMMANDS is used to generate the compilation database
 # used by clang-tidy.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(JPEGXL_STATIC)
+if(JPEGLI_STATIC)
   set(BUILD_SHARED_LIBS 0)
 
   # https://learn.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library?view=msvc-170
@@ -229,7 +241,7 @@ if(JPEGXL_STATIC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libgcc -static-libstdc++")
   endif()
-endif()  # JPEGXL_STATIC
+endif()  # JPEGLI_STATIC
 
 # Threads
 set(THREADS_PREFER_PTHREAD_FLAG YES)
@@ -254,7 +266,7 @@ message(STATUS "CXX_STANDARD is ${CMAKE_CXX_STANDARD}")
 # Atomics
 find_package(Atomics REQUIRED)
 
-if(JPEGXL_STATIC)
+if(JPEGLI_STATIC)
   if (MINGW)
     # In MINGW libstdc++ uses pthreads directly. When building statically a
     # program (regardless of whether the source code uses pthread or not) the
@@ -276,7 +288,8 @@ if(JPEGXL_STATIC)
     link_libraries(-Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic)
   elseif(CMAKE_USE_PTHREADS_INIT)
     # "whole-archive" is not supported on OSX.
-    if (NOT APPLE)
+    # On Android, libc (bionic) has pthreads built-in.
+    if (NOT APPLE AND NOT ANDROID)
       # Set pthreads as a whole-archive, otherwise weak symbols in the static
       # libraries will discard pthreads symbols leading to segmentation fault at
       # runtime.
@@ -286,12 +299,18 @@ if(JPEGXL_STATIC)
             "-Wl,--whole-archive;-lpthread;-Wl,--no-whole-archive")
     endif()
   endif()
-endif()  # JPEGXL_STATIC
+endif()  # JPEGLI_STATIC
 
-if (EMSCRIPTEN AND JPEGXL_ENABLE_WASM_THREADS)
+if (EMSCRIPTEN AND JPEGLI_ENABLE_WASM_THREADS)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+endif()
+
+if (JPEGLI_ENABLE_LTO)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
 endif()
 
 if (CXX_MACRO_PREFIX_MAP)
@@ -303,8 +322,8 @@ if (CXX_NO_RTTI_SUPPORTED)
 endif()
 
 # Internal flags for coverage builds:
-set(JPEGXL_COVERAGE_FLAGS)
-set(JPEGXL_COVERAGE_LINK_FLAGS)
+set(JPEGLI_COVERAGE_FLAGS)
+set(JPEGLI_COVERAGE_LINK_FLAGS)
 
 if (MSVC)
   # TODO(janwas): add flags
@@ -318,21 +337,9 @@ else ()
     -D__TIME__="redacted"
   )
 
-  # TODO(eustas): JXL currently compiles, but does not pass tests...
-  if (NOT JXL_HWY_DISABLED_TARGETS_FORCED)
-    # For AppleClang ("Scalable vectors function return values not yet supported")
-    if (NOT CXX_SVE_SUPPORTED)
-      set(HWY_DISABLED_TARGETS "${HWY_DISABLED_TARGETS}|HWY_SVE|HWY_SVE2|HWY_SVE_256|HWY_SVE2_128")
-    endif()
-    if (NOT JPEGXL_ENABLE_SIZELESS_VECTORS)
-      set(HWY_DISABLED_TARGETS "${HWY_DISABLED_TARGETS}|HWY_RVV")
-    endif()
-    add_compile_options($<$<NOT:$<COMPILE_LANGUAGE:RC>>:-DHWY_DISABLED_TARGETS=\(${HWY_DISABLED_TARGETS}\)>)
-  endif()
-
   # Machine flags.
   add_compile_options(-funwind-tables)
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "riscv")
     add_compile_options("SHELL:-Xclang -mrelax-all")
   endif()
   if (CXX_CONSTRUCTOR_ALIASES_SUPPORTED)
@@ -349,7 +356,7 @@ else ()
 
   # TODO(janwas): this also matches M1, but only ARMv7 is intended/needed.
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
-    if(JPEGXL_FORCE_NEON)
+    if(JPEGLI_FORCE_NEON)
       # GCC requires these flags, otherwise __ARM_NEON is undefined.
       add_compile_options(-mfpu=neon-vfpv4 -mfloat-abi=hard)
     endif()
@@ -363,18 +370,18 @@ else ()
     -Wall
   )
 
-  if (JPEGXL_WARNINGS_AS_ERRORS)
+  if (JPEGLI_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
   endif ()
 
-  if(JPEGXL_ENABLE_COVERAGE)
-    set(JPEGXL_COVERAGE_FLAGS
+  if(JPEGLI_ENABLE_COVERAGE)
+    set(JPEGLI_COVERAGE_FLAGS
         -g -O0 -fprofile-arcs -ftest-coverage -fprofile-update=atomic
     )
-    set(JPEGXL_COVERAGE_LINK_FLAGS
+    set(JPEGLI_COVERAGE_LINK_FLAGS
         --coverage
     )
-  endif()  # JPEGXL_ENABLE_COVERAGE
+  endif()  # JPEGLI_ENABLE_COVERAGE
 endif ()  # !MSVC
 
 include(GNUInstallDirs)
@@ -383,7 +390,7 @@ include(GNUInstallDirs)
 # to allow disabling tests in those libraries.
 include(third_party/testing.cmake)
 add_subdirectory(third_party)
-# Copy the JXL license file to the output build directory.
+# Copy the JPEGLI license file to the output build directory.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
                ${PROJECT_BINARY_DIR}/LICENSE.jpeg-xl COPYONLY)
 
@@ -391,16 +398,16 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
 enable_testing()
 include(CTest)
 # Specify default location of `testdata`:
-if(NOT DEFINED JPEGXL_TEST_DATA_PATH)
-  set(JPEGXL_TEST_DATA_PATH "${PROJECT_SOURCE_DIR}/testdata")
+if(NOT DEFINED JPEGLI_TEST_DATA_PATH)
+  set(JPEGLI_TEST_DATA_PATH "${PROJECT_SOURCE_DIR}/testdata")
 endif()
 
 # Libraries.
 add_subdirectory(lib)
 
 if(BUILD_TESTING)
-  if (NOT EXISTS "${JPEGXL_TEST_DATA_PATH}/README.md")
-    message(FATAL_ERROR "testdata directory '${JPEGXL_TEST_DATA_PATH}' is not populated")
+  if (NOT EXISTS "${JPEGLI_TEST_DATA_PATH}/README.md")
+    message(FATAL_ERROR "testdata directory '${JPEGLI_TEST_DATA_PATH}' is not populated")
   endif()
   # Script to run tests over the source code in bash.
   find_program (BASH_PROGRAM bash)
@@ -412,11 +419,11 @@ if(BUILD_TESTING)
 endif() # BUILD_TESTING
 
 # Documentation generated by Doxygen
-if(JPEGXL_ENABLE_DOXYGEN)
+if(JPEGLI_ENABLE_DOXYGEN)
   add_subdirectory(doc)
-endif() # JPEGXL_ENABLE_DOXYGEN
+endif() # JPEGLI_ENABLE_DOXYGEN
 
-if(JPEGXL_ENABLE_MANPAGES)
+if(JPEGLI_ENABLE_MANPAGES)
   find_program(ASCIIDOC a2x)
   if(ASCIIDOC)
     file(STRINGS "${ASCIIDOC}" ASCIIDOC_SHEBANG LIMIT_COUNT 1)
@@ -449,7 +456,7 @@ if(JPEGXL_ENABLE_MANPAGES)
     if (ASCIIDOC_PY_FOUND)
       set(MANPAGE_FILES "")
       set(MANPAGES "")
-      foreach(PAGE IN ITEMS cjxl djxl)
+      foreach(PAGE IN ITEMS cjpegli djpegli)
         # Invoking the Python interpreter ourselves instead of running the a2x binary
         # directly is necessary on MSYS2, otherwise it is run through cmd.exe which
         # does not recognize it.
@@ -469,7 +476,7 @@ if(JPEGXL_ENABLE_MANPAGES)
   else()
     message(WARNING "asciidoc was not found, the man pages will not be installed.")
   endif()  # ASCIIDOC
-endif()  # JPEGXL_ENABLE_MANPAGES
+endif()  # JPEGLI_ENABLE_MANPAGES
 
 # Binary tools
 add_subdirectory(tools)

@@ -132,7 +132,8 @@ void SetDepth(const HuffmanTree& p, HuffmanTree* pool, uint8_t* depth,
 
 // Compare the root nodes, least popular first; indices are in decreasing order
 // before sorting is applied.
-static JXL_INLINE bool Compare(const HuffmanTree& v0, const HuffmanTree& v1) {
+static JPEGLI_INLINE bool Compare(const HuffmanTree& v0,
+                                  const HuffmanTree& v1) {
   return v0.total_count != v1.total_count
              ? v0.total_count < v1.total_count
              : v0.index_right_or_value > v1.index_right_or_value;
@@ -221,7 +222,7 @@ void CreateHuffmanTree(const uint32_t* data, const size_t length,
       // Add back the last sentinel node.
       tree.push_back(sentinel);
     }
-    JXL_DASSERT(tree.size() == 2 * n + 1);
+    JPEGLI_DASSERT(tree.size() == 2 * n + 1);
     SetDepth(tree[2 * n - 1], tree.data(), depth, 0);
 
     // We need to pack the Huffman tree in tree_limit bits.

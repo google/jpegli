@@ -73,7 +73,7 @@ Communicate the decision to the reporter.
 
 If the bug was not considered a security bug or not covered by this policy,
 explain why and direct the reporter to open a public [issue in
-GitHub](https://github.com/libjxl/libjxl/issues) or open one on their behalf.
+GitHub](https://github.com/google/jpegli/issues) or open one on their behalf.
 You don't need to follow the rest of the guide in this case.
 
 If the bug *is* a covered security bug then follow the rest of this guide.
@@ -83,13 +83,13 @@ company affiliation if any. Security researchers often value this recognition
 and helps them dedicate their time to finding security bugs in our project.
 
 There's no bug bounty (monetary compensation for security bugs) available for
-libjxl.
+jpegli.
 
 5. Create a Security Advisory draft in GitHub
 
 At this point it was established that the bug is a security issue that requires
 a vulnerability disclosure. Start by creating a Security Advisory draft in the
-[Security Advisories](https://github.com/libjxl/libjxl/security/advisories) page
+[Security Advisories](https://github.com/google/jpegli/security/advisories) page
 in GitHub.
 
 Add a short description of the bug explaining what's the issue and what's the
@@ -195,7 +195,7 @@ engineers on the required backports.
 A security bug is a bug that can potentially be exploited to let an attacker
 gain unauthorized access or privileges. For example, gaining code execution in
 libjxl decoder by decoding a malicious .jxl file is a security but hitting a
-`JXL_DASSERT` is not necessarily one.
+`JPEGLI_DASSERT` is not necessarily one.
 
 The supported use cases to consider in the context of security bugs that require
 a vulnerability disclosure are "release" builds. The disclosure is intended for
@@ -215,9 +215,9 @@ released software will not have the developer code. This developer code is in
 the same libjxl repository for convenience.
 
 When considering the impact of a bug, "release" mode should be assumed. In
-non-release mode `JXL_DASSERT` is enabled. This means that if a
-`JXL_DASSERT` protects an out-of-bounds (OOB) write, then the impact of a bug
-hitting the `JXL_DASSERT` is at least an OOB write.
+non-release mode `JPEGLI_DASSERT` is enabled. This means that if a
+`JPEGLI_DASSERT` protects an out-of-bounds (OOB) write, then the impact of a bug
+hitting the `JPEGLI_DASSERT` is at least an OOB write.
 
 Out-of-bounds (OOB) reads in process memory are considered security
 vulnerabilities. OOB reads may allow an attacker to read other buffers from the

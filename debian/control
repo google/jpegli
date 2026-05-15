@@ -1,4 +1,4 @@
-Source: jpeg-xl
+Source: jpegli
 Maintainer: JPEG XL Maintainers <jpegxl@google.com>
 Section: misc
 Priority: optional
@@ -7,7 +7,6 @@ Build-Depends:
  asciidoc,
  cmake,
  debhelper (>= 9),
- libbrotli-dev,
  libgif-dev,
  libgoogle-perftools-dev,
  libgtest-dev,
@@ -19,7 +18,7 @@ Build-Depends:
  pkg-config,
  xdg-utils,
  xmlto,
-Homepage: https://github.com/libjxl/libjxl
+Homepage: https://github.com/google/jpegli
 Rules-Requires-Root: no
 
 Package: jxl
@@ -35,10 +34,10 @@ Description: JPEG XL Image Coding System - "JXL" (command line utility)
  .
  This package installs the command line utilities.
 
-Package: libjxl-dev
+Package: libjpegli-dev
 Architecture: any
 Section: libdevel
-Depends: libjxl (= ${binary:Version}), ${misc:Depends}
+Depends: libjpegli (= ${binary:Version}), ${misc:Depends}
  libhwy-dev,
 Description: JPEG XL Image Coding System - "JXL" (development files)
  The JPEG XL Image Coding System (ISO/IEC 18181) is a lossy and
@@ -49,7 +48,7 @@ Description: JPEG XL Image Coding System - "JXL" (development files)
  .
  This package installs development files.
 
-Package: libjxl
+Package: libjpegli
 Architecture: any
 Multi-Arch: same
 Section: libs

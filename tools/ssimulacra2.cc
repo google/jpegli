@@ -48,38 +48,39 @@ Design:
 
 namespace {
 
-using ::jxl::ColorEncoding;
-using ::jxl::Image3F;
-using ::jxl::ImageF;
-using ::jxl::Rect;
-using ::jxl::Status;
-using ::jxl::StatusOr;
-using ::jxl::extras::PackedPixelFile;
+using ::jpegli::ColorEncoding;
+using ::jpegli::Image3F;
+using ::jpegli::ImageF;
+using ::jpegli::Rect;
+using ::jpegli::Status;
+using ::jpegli::StatusOr;
+using ::jpegli::extras::PackedPixelFile;
 
 const float kC2 = 0.0009f;
 const int kNumScales = 6;
 
 Status ToXYB(const ColorEncoding& c_current, float intensity_target,
-             const ImageF* black, jxl::ThreadPool* pool,
-             Image3F* JXL_RESTRICT image, const JxlCmsInterface& cms) {
-  if (black) JXL_ENSURE(SameSize(*image, *black));
+             const ImageF* black, jpegli::ThreadPool* pool,
+             Image3F* JPEGLI_RESTRICT image, const JpegliCmsInterface& cms) {
+  if (black) JPEGLI_ENSURE(SameSize(*image, *black));
   hwy::AlignedFreeUniquePtr<float[]> premul_absorb =
-      hwy::AllocateAligned<float>(jxl::MaxVectorSize() * 12);
-  jxl::ComputePremulAbsorb(intensity_target, premul_absorb.get());
+      hwy::AllocateAligned<float>(jpegli::MaxVectorSize() * 12);
+  jpegli::ComputePremulAbsorb(intensity_target, premul_absorb.get());
   const ColorEncoding& c_linear_srgb =
       ColorEncoding::LinearSRGB(c_current.IsGray());
-  JXL_ENSURE(jxl::ApplyColorTransform(c_current, intensity_target, *image,
-                                      black, Rect(*image), c_linear_srgb, cms,
-                                      pool, image));
-  JXL_ENSURE(RunOnPool(
-      pool, 0, static_cast<uint32_t>(image->ysize()), jxl::ThreadPool::NoInit,
+  JPEGLI_ENSURE(jpegli::ApplyColorTransform(c_current, intensity_target, *image,
+                                            black, Rect(*image), c_linear_srgb,
+                                            cms, pool, image));
+  JPEGLI_ENSURE(RunOnPool(
+      pool, 0, static_cast<uint32_t>(image->ysize()),
+      jpegli::ThreadPool::NoInit,
       [&](const uint32_t task, size_t /*thread*/) -> Status {
         const size_t y = static_cast<size_t>(task);
-        float* JXL_RESTRICT row0 = image->PlaneRow(0, y);
-        float* JXL_RESTRICT row1 = image->PlaneRow(1, y);
-        float* JXL_RESTRICT row2 = image->PlaneRow(2, y);
-        jxl::LinearRGBRowToXYB(row0, row1, row2, premul_absorb.get(),
-                               image->xsize());
+        float* JPEGLI_RESTRICT row0 = image->PlaneRow(0, y);
+        float* JPEGLI_RESTRICT row1 = image->PlaneRow(1, y);
+        float* JPEGLI_RESTRICT row2 = image->PlaneRow(2, y);
+        jpegli::LinearRGBRowToXYB(row0, row1, row2, premul_absorb.get(),
+                                  image->xsize());
         return true;
       },
       "LinearToXYB"));
@@ -89,13 +90,13 @@ Status ToXYB(const ColorEncoding& c_current, float intensity_target,
 Status Downsample(Image3F& in, size_t fx, size_t fy) {
   const size_t out_xsize = (in.xsize() + fx - 1) / fx;
   const size_t out_ysize = (in.ysize() + fy - 1) / fy;
-  JXL_ASSIGN_OR_RETURN(
+  JPEGLI_ASSIGN_OR_RETURN(
       Image3F out,
-      Image3F::Create(jpegxl::tools::NoMemoryManager(), out_xsize, out_ysize));
+      Image3F::Create(jpegli_tools::NoMemoryManager(), out_xsize, out_ysize));
   const float normalize = 1.0f / (fx * fy);
   for (size_t c = 0; c < 3; ++c) {
     for (size_t oy = 0; oy < out_ysize; ++oy) {
-      float* JXL_RESTRICT row_out = out.PlaneRow(c, oy);
+      float* JPEGLI_RESTRICT row_out = out.PlaneRow(c, oy);
       for (size_t ox = 0; ox < out_xsize; ++ox) {
         float sum = 0.0f;
         for (size_t iy = 0; iy < fy; ++iy) {
@@ -109,17 +110,17 @@ Status Downsample(Image3F& in, size_t fx, size_t fy) {
       }
     }
   }
-  JXL_RETURN_IF_ERROR(in.ShrinkTo(out_xsize, out_ysize));
-  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(out, &in));
+  JPEGLI_RETURN_IF_ERROR(in.ShrinkTo(out_xsize, out_ysize));
+  JPEGLI_RETURN_IF_ERROR(jpegli::CopyImageTo(out, &in));
   return true;
 }
 
 void Multiply(const Image3F& a, const Image3F& b, Image3F* mul) {
   for (size_t c = 0; c < 3; ++c) {
     for (size_t y = 0; y < a.ysize(); ++y) {
-      const float* JXL_RESTRICT in1 = a.PlaneRow(c, y);
-      const float* JXL_RESTRICT in2 = b.PlaneRow(c, y);
-      float* JXL_RESTRICT out = mul->PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT in1 = a.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT in2 = b.PlaneRow(c, y);
+      float* JPEGLI_RESTRICT out = mul->PlaneRow(c, y);
       for (size_t x = 0; x < a.xsize(); ++x) {
         out[x] = in1[x] * in2[x];
       }
@@ -131,15 +132,15 @@ void Multiply(const Image3F& a, const Image3F& b, Image3F* mul) {
 class Blur {
  public:
   static StatusOr<Blur> Create(const size_t xsize, const size_t ysize) {
-    JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+    JpegliMemoryManager* memory_manager = jpegli_tools::NoMemoryManager();
     Blur result;
-    JXL_ASSIGN_OR_RETURN(result.temp_,
-                         ImageF::Create(memory_manager, xsize, ysize));
+    JPEGLI_ASSIGN_OR_RETURN(result.temp_,
+                            ImageF::Create(memory_manager, xsize, ysize));
     return result;
   }
 
-  Status BlurPlane(const ImageF& in, ImageF* JXL_RESTRICT out) {
-    JXL_RETURN_IF_ERROR(FastGaussian(
+  Status BlurPlane(const ImageF& in, ImageF* JPEGLI_RESTRICT out) {
+    JPEGLI_RETURN_IF_ERROR(FastGaussian(
         in.memory_manager(), rg_, in.xsize(), in.ysize(),
         [&](size_t y) { return in.ConstRow(y); },
         [&](size_t y) { return temp_.Row(y); },
@@ -148,12 +149,12 @@ class Blur {
   }
 
   StatusOr<Image3F> operator()(const Image3F& in) {
-    JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
-    JXL_ASSIGN_OR_RETURN(
+    JpegliMemoryManager* memory_manager = jpegli_tools::NoMemoryManager();
+    JPEGLI_ASSIGN_OR_RETURN(
         Image3F out, Image3F::Create(memory_manager, in.xsize(), in.ysize()));
-    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(0), &out.Plane(0)));
-    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(1), &out.Plane(1)));
-    JXL_RETURN_IF_ERROR(BlurPlane(in.Plane(2), &out.Plane(2)));
+    JPEGLI_RETURN_IF_ERROR(BlurPlane(in.Plane(0), &out.Plane(0)));
+    JPEGLI_RETURN_IF_ERROR(BlurPlane(in.Plane(1), &out.Plane(1)));
+    JPEGLI_RETURN_IF_ERROR(BlurPlane(in.Plane(2), &out.Plane(2)));
     return out;
   }
 
@@ -163,8 +164,8 @@ class Blur {
   }
 
  private:
-  Blur() : rg_(jxl::CreateRecursiveGaussian(1.5)) {}
-  jxl::RecursiveGaussian rg_;
+  Blur() : rg_(jpegli::CreateRecursiveGaussian(1.5)) {}
+  jpegli::RecursiveGaussian rg_;
   ImageF temp_;
 };
 
@@ -179,11 +180,11 @@ void SSIMMap(const Image3F& m1, const Image3F& m2, const Image3F& s11,
   for (size_t c = 0; c < 3; ++c) {
     double sum1[2] = {0.0};
     for (size_t y = 0; y < m1.ysize(); ++y) {
-      const float* JXL_RESTRICT row_m1 = m1.PlaneRow(c, y);
-      const float* JXL_RESTRICT row_m2 = m2.PlaneRow(c, y);
-      const float* JXL_RESTRICT row_s11 = s11.PlaneRow(c, y);
-      const float* JXL_RESTRICT row_s22 = s22.PlaneRow(c, y);
-      const float* JXL_RESTRICT row_s12 = s12.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row_m1 = m1.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row_m2 = m2.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row_s11 = s11.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row_s22 = s22.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row_s12 = s12.PlaneRow(c, y);
       for (size_t x = 0; x < m1.xsize(); ++x) {
         float mu1 = row_m1[x];
         float mu2 = row_m2[x];
@@ -226,10 +227,10 @@ void EdgeDiffMap(const Image3F& img1, const Image3F& mu1, const Image3F& img2,
   for (size_t c = 0; c < 3; ++c) {
     double sum1[4] = {0.0};
     for (size_t y = 0; y < img1.ysize(); ++y) {
-      const float* JXL_RESTRICT row1 = img1.PlaneRow(c, y);
-      const float* JXL_RESTRICT row2 = img2.PlaneRow(c, y);
-      const float* JXL_RESTRICT rowm1 = mu1.PlaneRow(c, y);
-      const float* JXL_RESTRICT rowm2 = mu2.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row1 = img1.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT row2 = img2.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT rowm1 = mu1.PlaneRow(c, y);
+      const float* JPEGLI_RESTRICT rowm2 = mu2.PlaneRow(c, y);
       for (size_t x = 0; x < img1.xsize(); ++x) {
         double d1 = (1.0 + std::abs(row2[x] - rowm2[x])) /
                         (1.0 + std::abs(row1[x] - rowm1[x])) -
@@ -269,9 +270,9 @@ void EdgeDiffMap(const Image3F& img1, const Image3F& mu1, const Image3F& img2,
 */
 void MakePositiveXYB(Image3F& img) {
   for (size_t y = 0; y < img.ysize(); ++y) {
-    float* JXL_RESTRICT rowY = img.PlaneRow(1, y);
-    float* JXL_RESTRICT rowB = img.PlaneRow(2, y);
-    float* JXL_RESTRICT rowX = img.PlaneRow(0, y);
+    float* JPEGLI_RESTRICT rowY = img.PlaneRow(1, y);
+    float* JPEGLI_RESTRICT rowB = img.PlaneRow(2, y);
+    float* JPEGLI_RESTRICT rowX = img.PlaneRow(0, y);
     for (size_t x = 0; x < img.xsize(); ++x) {
       rowB[x] = (rowB[x] - rowY[x]) + 0.55f;
       rowX[x] = rowX[x] * 14.f + 0.42f;
@@ -467,97 +468,97 @@ double Msssim::Score() const {
 
 StatusOr<Msssim> ComputeSSIMULACRA2(const PackedPixelFile& orig,
                                     const PackedPixelFile& distorted) {
-  JxlMemoryManager* memory_manager = jpegxl::tools::NoMemoryManager();
+  JpegliMemoryManager* memory_manager = jpegli_tools::NoMemoryManager();
   Msssim msssim;
 
   if (orig.xsize() != distorted.xsize() || orig.ysize() != distorted.ysize()) {
-    return JXL_FAILURE("Images must have the same size for SSIMULACRA2.");
+    return JPEGLI_FAILURE("Images must have the same size for SSIMULACRA2.");
   }
   if (orig.info.num_color_channels != distorted.info.num_color_channels) {
-    return JXL_FAILURE("Grayscale vs RGB comparison not supported.");
+    return JPEGLI_FAILURE("Grayscale vs RGB comparison not supported.");
   }
   const size_t xsize = orig.xsize();
   const size_t ysize = distorted.ysize();
   const bool is_gray = orig.info.num_color_channels == 1;
   ColorEncoding c_desired = ColorEncoding::LinearSRGB(is_gray);
-  const JxlCmsInterface& cms = *JxlGetDefaultCms();
+  const JpegliCmsInterface& cms = *JpegliGetDefaultCms();
 
-  JXL_ASSIGN_OR_RETURN(Image3F orig2,
-                       Image3F::Create(memory_manager, xsize, ysize));
-  JXL_RETURN_IF_ERROR(
-      jxl::extras::ConvertPackedPixelFileToImage3F(orig, &orig2, nullptr));
-  JXL_ASSIGN_OR_RETURN(Image3F dist2,
-                       Image3F::Create(memory_manager, xsize, ysize));
-  JXL_RETURN_IF_ERROR(
-      jxl::extras::ConvertPackedPixelFileToImage3F(distorted, &dist2, nullptr));
+  JPEGLI_ASSIGN_OR_RETURN(Image3F orig2,
+                          Image3F::Create(memory_manager, xsize, ysize));
+  JPEGLI_RETURN_IF_ERROR(
+      jpegli::extras::ConvertPackedPixelFileToImage3F(orig, &orig2, nullptr));
+  JPEGLI_ASSIGN_OR_RETURN(Image3F dist2,
+                          Image3F::Create(memory_manager, xsize, ysize));
+  JPEGLI_RETURN_IF_ERROR(jpegli::extras::ConvertPackedPixelFileToImage3F(
+      distorted, &dist2, nullptr));
 
   ColorEncoding c_enc_orig;
   ColorEncoding c_enc_dist;
-  JXL_ENSURE(GetColorEncoding(orig, &c_enc_orig));
-  JXL_ENSURE(GetColorEncoding(distorted, &c_enc_dist));
+  JPEGLI_ENSURE(GetColorEncoding(orig, &c_enc_orig));
+  JPEGLI_ENSURE(GetColorEncoding(distorted, &c_enc_dist));
   float intensity_orig = GetIntensityTarget(orig, c_enc_orig);
   float intensity_dist = GetIntensityTarget(distorted, c_enc_dist);
 
   if (!c_enc_orig.SameColorEncoding(c_desired)) {
-    JXL_ENSURE(ApplyColorTransform(c_enc_orig, intensity_orig, orig2, nullptr,
-                                   Rect(orig2), c_desired, cms, nullptr,
-                                   &orig2));
+    JPEGLI_ENSURE(ApplyColorTransform(c_enc_orig, intensity_orig, orig2,
+                                      nullptr, Rect(orig2), c_desired, cms,
+                                      nullptr, &orig2));
   }
   if (!c_enc_dist.SameColorEncoding(c_desired)) {
-    JXL_ENSURE(ApplyColorTransform(c_enc_dist, intensity_dist, dist2, nullptr,
-                                   Rect(dist2), c_desired, cms, nullptr,
-                                   &dist2));
+    JPEGLI_ENSURE(ApplyColorTransform(c_enc_dist, intensity_dist, dist2,
+                                      nullptr, Rect(dist2), c_desired, cms,
+                                      nullptr, &dist2));
   }
 
-  JXL_ASSIGN_OR_RETURN(Image3F img1,
-                       Image3F::Create(memory_manager, xsize, ysize));
-  JXL_ASSIGN_OR_RETURN(Image3F img2,
-                       Image3F::Create(memory_manager, xsize, ysize));
-  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(orig2, &img1));
-  JXL_RETURN_IF_ERROR(jxl::CopyImageTo(dist2, &img2));
-  JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr, &img1,
-                            *JxlGetDefaultCms()));
-  JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_dist, nullptr, nullptr, &img2,
-                            *JxlGetDefaultCms()));
+  JPEGLI_ASSIGN_OR_RETURN(Image3F img1,
+                          Image3F::Create(memory_manager, xsize, ysize));
+  JPEGLI_ASSIGN_OR_RETURN(Image3F img2,
+                          Image3F::Create(memory_manager, xsize, ysize));
+  JPEGLI_RETURN_IF_ERROR(jpegli::CopyImageTo(orig2, &img1));
+  JPEGLI_RETURN_IF_ERROR(jpegli::CopyImageTo(dist2, &img2));
+  JPEGLI_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
+                               &img1, *JpegliGetDefaultCms()));
+  JPEGLI_RETURN_IF_ERROR(ToXYB(c_desired, intensity_dist, nullptr, nullptr,
+                               &img2, *JpegliGetDefaultCms()));
   MakePositiveXYB(img1);
   MakePositiveXYB(img2);
 
-  JXL_ASSIGN_OR_RETURN(
+  JPEGLI_ASSIGN_OR_RETURN(
       Image3F mul, Image3F::Create(memory_manager, img1.xsize(), img1.ysize()));
-  JXL_ASSIGN_OR_RETURN(Blur blur, Blur::Create(img1.xsize(), img1.ysize()));
+  JPEGLI_ASSIGN_OR_RETURN(Blur blur, Blur::Create(img1.xsize(), img1.ysize()));
 
   for (int scale = 0; scale < kNumScales; scale++) {
     if (img1.xsize() < 8 || img1.ysize() < 8) {
       break;
     }
     if (scale) {
-      JXL_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
-      JXL_RETURN_IF_ERROR(img1.ShrinkTo(orig2.xsize(), orig2.ysize()));
-      JXL_RETURN_IF_ERROR(jxl::CopyImageTo(orig2, &img1));
-      JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
-                                &img1, *JxlGetDefaultCms()));
-      JXL_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
-      JXL_RETURN_IF_ERROR(img2.ShrinkTo(dist2.xsize(), dist2.ysize()));
-      JXL_RETURN_IF_ERROR(jxl::CopyImageTo(dist2, &img2));
-      JXL_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
-                                &img2, *JxlGetDefaultCms()));
+      JPEGLI_RETURN_IF_ERROR(Downsample(orig2, 2, 2));
+      JPEGLI_RETURN_IF_ERROR(img1.ShrinkTo(orig2.xsize(), orig2.ysize()));
+      JPEGLI_RETURN_IF_ERROR(jpegli::CopyImageTo(orig2, &img1));
+      JPEGLI_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
+                                   &img1, *JpegliGetDefaultCms()));
+      JPEGLI_RETURN_IF_ERROR(Downsample(dist2, 2, 2));
+      JPEGLI_RETURN_IF_ERROR(img2.ShrinkTo(dist2.xsize(), dist2.ysize()));
+      JPEGLI_RETURN_IF_ERROR(jpegli::CopyImageTo(dist2, &img2));
+      JPEGLI_RETURN_IF_ERROR(ToXYB(c_desired, intensity_orig, nullptr, nullptr,
+                                   &img2, *JpegliGetDefaultCms()));
       MakePositiveXYB(img1);
       MakePositiveXYB(img2);
     }
-    JXL_RETURN_IF_ERROR(mul.ShrinkTo(img1.xsize(), img1.ysize()));
-    JXL_RETURN_IF_ERROR(blur.ShrinkTo(img1.xsize(), img1.ysize()));
+    JPEGLI_RETURN_IF_ERROR(mul.ShrinkTo(img1.xsize(), img1.ysize()));
+    JPEGLI_RETURN_IF_ERROR(blur.ShrinkTo(img1.xsize(), img1.ysize()));
 
     Multiply(img1, img1, &mul);
-    JXL_ASSIGN_OR_RETURN(Image3F sigma1_sq, blur(mul));
+    JPEGLI_ASSIGN_OR_RETURN(Image3F sigma1_sq, blur(mul));
 
     Multiply(img2, img2, &mul);
-    JXL_ASSIGN_OR_RETURN(Image3F sigma2_sq, blur(mul));
+    JPEGLI_ASSIGN_OR_RETURN(Image3F sigma2_sq, blur(mul));
 
     Multiply(img1, img2, &mul);
-    JXL_ASSIGN_OR_RETURN(Image3F sigma12, blur(mul));
+    JPEGLI_ASSIGN_OR_RETURN(Image3F sigma12, blur(mul));
 
-    JXL_ASSIGN_OR_RETURN(Image3F mu1, blur(img1));
-    JXL_ASSIGN_OR_RETURN(Image3F mu2, blur(img2));
+    JPEGLI_ASSIGN_OR_RETURN(Image3F mu1, blur(img1));
+    JPEGLI_ASSIGN_OR_RETURN(Image3F mu2, blur(img2));
 
     MsssimScale sscale;
     SSIMMap(mu1, mu2, sigma1_sq, sigma2_sq, sigma12, sscale.avg_ssim);

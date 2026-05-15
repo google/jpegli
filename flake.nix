@@ -26,7 +26,6 @@
               libpng
               giflib
               lcms2
-              brotli
               ninja
             ];
             shellHook = ''

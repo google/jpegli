@@ -220,7 +220,7 @@ struct FuzzTestSink {
   }
 };
 #define FUZZ_TEST(A, B) \
-  const JXL_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
+  const JPEGLI_MAYBE_UNUSED FuzzTestSink unused##A##B = FuzzTestSink()
 #endif
 
 }  // namespace

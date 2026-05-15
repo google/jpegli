@@ -3,17 +3,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef TOOLS_NO_MEMORY_MANAGER_H_
-#define TOOLS_NO_MEMORY_MANAGER_H_
+#ifndef JPEGLI_TOOLS_NO_MEMORY_MANAGER_H_
+#define JPEGLI_TOOLS_NO_MEMORY_MANAGER_H_
 
 #include "lib/base/memory_manager.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-JxlMemoryManager* NoMemoryManager();
+JpegliMemoryManager* NoMemoryManager();
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_NO_MEMORY_MANAGER_H_
+#endif  // JPEGLI_TOOLS_NO_MEMORY_MANAGER_H_

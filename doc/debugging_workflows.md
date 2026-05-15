@@ -28,9 +28,9 @@ locally. Here is a snippet that reflects how setup / compilation are (currently)
 done in the workflow:
 
 ```
-docker run -it -v`pwd`:/libjxl debian:bookworm bash
+docker run -it -v`pwd`:/jpegli debian:bookworm bash
 
-cd /libjxl
+cd /jpegli
 
 export ARCH=i386 # arm64 armhf
 export MAIN_LIST="amd64,${ARCH}"
@@ -48,7 +48,7 @@ python3 ./tools/scripts/transform_sources_list.py "${MAIN_LIST}"
 apt update
 
 apt-get install -y \
-  clang-14 cmake doxygen g++-aarch64-linux-gnu graphviz libbrotli-dev:${ARCH} \
+  clang-14 cmake doxygen g++-aarch64-linux-gnu graphviz \
   libc6-dev-${ARCH}-cross libgif-dev:${ARCH} libilmbase-dev:${ARCH} \
   libjpeg-dev:${ARCH} libopenexr-dev:${ARCH} libpng-dev:${ARCH} \
   libstdc++-12-dev-${ARCH}-cross libstdc++-12-dev:${ARCH} libwebp-dev:${ARCH} \
@@ -61,10 +61,7 @@ apt-get install -y \
 #export CMAKE_FLAGS="-march=armv8-a+sve"
 
 SKIP_TEST=1 ./ci.sh release \
-  -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
-  -DJPEGXL_ENABLE_JNI=OFF
+  -DJPEGLI_ENABLE_JNI=OFF
 #  -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-aarch64-static
-#  -DJPEGXL_ENABLE_OPENEXR=off
-#  -DJPEGXL_ENABLE_SIZELESS_VECTORS=on
-#  -DCMAKE_CXX_FLAGS=-DJXL_HIGH_PRECISION=0
+#  -DJPEGLI_ENABLE_OPENEXR=off
 ```

@@ -5,20 +5,19 @@
 // https://developers.google.com/open-source/licenses/bsd
 
 // File utilities for benchmarking and testing, but which are not needed for
-// main jxl itself.
+// main jpegli itself.
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_
-#define TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_
 
 #include <string>
 #include <vector>
 
 #include "lib/base/status.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::Status;
+using ::jpegli::Status;
 
 // Checks if the file exists, either as file or as directory
 bool PathExists(const std::string& fname);
@@ -51,7 +50,6 @@ Status MatchFiles(const std::string& pattern, std::vector<std::string>* list);
 
 std::string JoinPath(const std::string& first, const std::string& second);
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_FILE_IO_H_

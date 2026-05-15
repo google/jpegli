@@ -24,7 +24,7 @@
 #include "lib/extras/convolve-inl.h"
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 
 // These templates are not found via ADL.
@@ -86,7 +86,7 @@ class Separable5Impl {
 #endif
 
     if (rect.xsize() >= min_width) {
-      JXL_ENSURE(SameSize(rect, *out));
+      JPEGLI_ENSURE(SameSize(rect, *out));
 
       switch (rect.xsize() % Lanes(Simd())) {
         case 0:
@@ -109,17 +109,17 @@ class Separable5Impl {
   }
 
   template <size_t kSizeModN, bool kBorder>
-  JXL_NOINLINE void ConvolveRow(const uint32_t y) {
+  JPEGLI_NOINLINE void ConvolveRow(const uint32_t y) {
     const D d;
     const int64_t stride = in->PixelsPerRow();
     const int64_t neg_stride = -stride;  // allows LEA addressing.
     const size_t xsize = rect.xsize();
-    const float* const JXL_RESTRICT row_m = rect.ConstRow(*in, y);
-    float* const JXL_RESTRICT row_out = out->Row(y);
-    const float* JXL_RESTRICT row_t2 = row_m + 2 * neg_stride;
-    const float* JXL_RESTRICT row_t1 = row_m + 1 * neg_stride;
-    const float* JXL_RESTRICT row_b1 = row_m + 1 * stride;
-    const float* JXL_RESTRICT row_b2 = row_m + 2 * stride;
+    const float* const JPEGLI_RESTRICT row_m = rect.ConstRow(*in, y);
+    float* const JPEGLI_RESTRICT row_out = out->Row(y);
+    const float* JPEGLI_RESTRICT row_t2 = row_m + 2 * neg_stride;
+    const float* JPEGLI_RESTRICT row_t1 = row_m + 1 * neg_stride;
+    const float* JPEGLI_RESTRICT row_b1 = row_m + 1 * stride;
+    const float* JPEGLI_RESTRICT row_b2 = row_m + 2 * stride;
 
     if (kBorder) {
       size_t img_y = rect.y0() + y;
@@ -130,7 +130,7 @@ class Separable5Impl {
             1, 0, 0, 1, 2, 2,     1,     0xBAD,  // 3 rows
             1, 0, 0, 1, 2, 3,     3,     2,      // 4 rows
         };
-        JXL_DASSERT(in->ysize() <= 4);
+        JPEGLI_DASSERT(in->ysize() <= 4);
         size_t o = in->ysize() * 8 - 6 + img_y;
         row_t2 = in->ConstRow(kBorderLut[o - 2]) + rect.x0();
         row_t1 = in->ConstRow(kBorderLut[o - 1]) + rect.x0();
@@ -141,16 +141,16 @@ class Separable5Impl {
           row_t1 = row_m;
           row_t2 = row_b1;
         } else {
-          JXL_DASSERT(img_y == 1);
+          JPEGLI_DASSERT(img_y == 1);
           row_t2 = row_t1;
         }
       } else {
-        JXL_DASSERT(img_y + kRadius >= in->ysize());
+        JPEGLI_DASSERT(img_y + kRadius >= in->ysize());
         if (img_y + 1 == in->ysize()) {
           row_b1 = row_m;
           row_b2 = row_t1;
         } else {
-          JXL_DASSERT(img_y + 2 == in->ysize());
+          JPEGLI_DASSERT(img_y + 2 == in->ysize());
           row_b2 = row_b1;
         }
       }
@@ -223,8 +223,8 @@ class Separable5Impl {
 
     // If mod = 0, the above vector was the last.
     if (kSizeModN != 0) {
-      const float* JXL_RESTRICT rows[5] = {row_t2, row_t1, row_m, row_b1,
-                                           row_b2};
+      const float* JPEGLI_RESTRICT rows[5] = {row_t2, row_t1, row_m, row_b1,
+                                              row_b2};
       for (; x < xsize; ++x) {
         float mul = 0.0f;
         for (int64_t dy = -kRadius; dy <= kRadius; ++dy) {
@@ -243,7 +243,7 @@ class Separable5Impl {
 
  private:
   template <size_t kSizeModN>
-  JXL_INLINE void RunRows() {
+  JPEGLI_INLINE void RunRows() {
     // NB: borders are image-bound, not rect-bound.
     size_t ybegin = rect.y0();
     size_t yend = rect.y1();
@@ -265,21 +265,21 @@ class Separable5Impl {
   }
 
   template <size_t kSizeModN>
-  JXL_INLINE void RunBorderRows(const size_t ybegin, const size_t yend) {
+  JPEGLI_INLINE void RunBorderRows(const size_t ybegin, const size_t yend) {
     for (size_t y = ybegin; y < yend; ++y) {
       ConvolveRow<kSizeModN, true>(y);
     }
   }
 
   template <size_t kSizeModN>
-  JXL_INLINE void RunInteriorRows(const size_t ybegin, const size_t yend) {
+  JPEGLI_INLINE void RunInteriorRows(const size_t ybegin, const size_t yend) {
     const auto process_row = [&](const uint32_t y, size_t /*thread*/) HWY_ATTR {
       ConvolveRow<kSizeModN, false>(y);
       return true;
     };
     Status status = RunOnPool(pool, ybegin, yend, ThreadPool::NoInit,
                               process_row, "Convolve");
-    JXL_DASSERT(status);
+    JPEGLI_DASSERT(status);
     (void)status;
   }
 
@@ -287,7 +287,7 @@ class Separable5Impl {
   // rightmost unaligned vector (rightmost sample in its most-significant lane)
   // returns the mirrored values, with the mirror outside the last valid sample.
   template <size_t M>
-  static JXL_INLINE I MirrorLanes() {
+  static JPEGLI_INLINE I MirrorLanes() {
     static_assert(M >= 1 && M <= 2, "Only M in range {1..2} is supported");
     D d;
     DI32 di32;
@@ -297,9 +297,9 @@ class Separable5Impl {
   }
 
   // Same as HorzConvolve for the first/last vector in a row.
-  static JXL_MAYBE_INLINE V HorzConvolveFirst(
-      const float* const JXL_RESTRICT row, const int64_t x, const int64_t xsize,
-      const V wh0, const V wh1, const V wh2) {
+  static JPEGLI_MAYBE_INLINE V HorzConvolveFirst(
+      const float* const JPEGLI_RESTRICT row, const int64_t x,
+      const int64_t xsize, const V wh0, const V wh1, const V wh2) {
     const D d;
     const V c = LoadU(d, row + x);
     const V mul0 = Mul(c, wh0);
@@ -322,9 +322,10 @@ class Separable5Impl {
   }
 
   template <size_t kSizeModN>
-  static JXL_MAYBE_INLINE V HorzConvolveLast(
-      const float* const JXL_RESTRICT row, const int64_t x, const int64_t xsize,
-      const V wh0, const V wh1, const V wh2, const I ml1, const I ml2) {
+  static JPEGLI_MAYBE_INLINE V
+  HorzConvolveLast(const float* const JPEGLI_RESTRICT row, const int64_t x,
+                   const int64_t xsize, const V wh0, const V wh1, const V wh2,
+                   const I ml1, const I ml2) {
     const D d;
     const V c = LoadU(d, row + x);
     const V mul0 = Mul(c, wh0);
@@ -360,9 +361,9 @@ class Separable5Impl {
   }
 
   // Requires kRadius valid pixels before/after pos.
-  static JXL_MAYBE_INLINE V HorzConvolve(const float* const JXL_RESTRICT pos,
-                                         const V wh0, const V wh1,
-                                         const V wh2) {
+  static JPEGLI_MAYBE_INLINE V
+  HorzConvolve(const float* const JPEGLI_RESTRICT pos, const V wh0, const V wh1,
+               const V wh2) {
     const D d;
     const V c = LoadU(d, pos);
     const V mul0 = Mul(c, wh0);
@@ -396,11 +397,11 @@ Status Separable5(const ImageF& in, const Rect& rect,
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-namespace jxl {
+namespace jpegli {
 
 HWY_EXPORT(Separable5);
 Status Separable5(const ImageF& in, const Rect& rect,
@@ -409,5 +410,5 @@ Status Separable5(const ImageF& in, const Rect& rect,
   return HWY_DYNAMIC_DISPATCH(Separable5)(in, rect, weights, pool, out);
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 #endif  // HWY_ONCE

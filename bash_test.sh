@@ -21,14 +21,14 @@ test_includes() {
       continue
     fi
     # Check that the full paths to the public headers are not used, since users
-    # of the library will include the library as: #include "jxl/foobar.h".
-    if grep -i -H -n -E '#include\s*[<"]lib/include/jxl' "$f" >&2; then
+    # of the library will include the library as: #include "jpegli/foobar.h".
+    if grep -i -H -n -E '#include\s*[<"]lib/include/jpegli' "$f" >&2; then
       echo "Don't add \"include/\" to the include path of public headers." >&2
       ret=1
     fi
-    # Check that jxl and hwy includes are system-styled.
-    if grep -i -H -n -E '#include\s*"(hwy|jxl)' "$f" >&2; then
-      echo "Use system includes for hwy/ and jxl/ public headers." >&2
+    # Check that jpegli and hwy includes are system-styled.
+    if grep -i -H -n -E '#include\s*"(hwy|jpegli[^b])' "$f" >&2; then
+      echo "Use system includes for hwy/ and jpegli/ public headers." >&2
       ret=1
     fi
 
@@ -106,13 +106,21 @@ test_printf_size_t() {
       "'%\" PRIuS \"' or '%\" PRIdS \"'." >&2
     ret=1
   fi
+  return ${ret}
+}
 
+test_no_include_gtest() {
+  local ret=0
   if grep -n -E '[^_]gtest\.h' \
       $(git ls-files | grep -E '(\.c|\.cc|\.cpp|\.h)$' | grep -v -F /testing.h); then
     echo "Don't include gtest directly, instead include 'testing.h'. " >&2
     ret=1
   fi
+  return ${ret}
+}
 
+test_include_printf_macros() {
+  local ret=0
   local f
   for f in $(git ls-files | grep -E "\.cc$" | xargs grep 'PRI[udx]S' |
       cut -f 1 -d : | uniq); do
@@ -121,11 +129,15 @@ test_printf_size_t() {
     fi
     if ! grep -F printf_macros.h "$f" >/dev/null; then
       echo "$f: Add lib/base/printf_macros.h for PRI.S, or use other " \
-        "types for code outside lib/jxl library." >&2
+        "types for code outside lib/jpegli library." >&2
       ret=1
     fi
   done
+  return ${ret}
+}
 
+test_no_priudxs_in_headers() {
+  local ret=0
   for f in $(git ls-files | grep -E "\.h$" | grep -v -E '(printf_macros\.h|testing\.h)' |
       xargs grep -n 'PRI[udx]S'); do
     # Having PRIuS / PRIdS in a header file means that printf_macros.h may
@@ -134,7 +146,6 @@ test_printf_size_t() {
     echo "$f: Don't use PRI.S in header files. Sorry."
     ret=1
   done
-
   return ${ret}
 }
 
@@ -185,17 +196,17 @@ get_version() {
 }
 
 test_version() {
-  local major=$(get_version JPEGXL_MAJOR_VERSION)
-  local minor=$(get_version JPEGXL_MINOR_VERSION)
-  local patch=$(get_version JPEGXL_PATCH_VERSION)
+  local major=$(get_version JPEGLI_MAJOR_VERSION)
+  local minor=$(get_version JPEGLI_MINOR_VERSION)
+  local patch=$(get_version JPEGLI_PATCH_VERSION)
   # Check that the version is not empty
   if [[ -z "${major}${minor}${patch}" ]]; then
     echo "Couldn't parse version from CMakeLists.txt" >&2
     return 1
   fi
   local pkg_version=$(head -n 1 debian/changelog)
-  # Get only the part between the first "jpeg-xl (" and the following ")".
-  pkg_version="${pkg_version#jpeg-xl (}"
+  # Get only the part between the first "jpegli (" and the following ")".
+  pkg_version="${pkg_version#jpegli (}"
   pkg_version="${pkg_version%%)*}"
   if [[ -z "${pkg_version}" ]]; then
     echo "Couldn't parse version from debian package" >&2

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_RENDER_H_
-#define LIB_JPEGLI_RENDER_H_
+#ifndef JPEGLI_LIB_JPEGLI_RENDER_H_
+#define JPEGLI_LIB_JPEGLI_RENDER_H_
 
 #include <cstddef>
 
@@ -22,4 +22,4 @@ void ProcessRawOutput(j_decompress_ptr cinfo, JSAMPIMAGE data);
 
 }  // namespace jpegli
 
-#endif  // LIB_JPEGLI_RENDER_H_
+#endif  // JPEGLI_LIB_JPEGLI_RENDER_H_

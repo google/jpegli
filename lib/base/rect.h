@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_RECT_H_
-#define LIB_JXL_BASE_RECT_H_
+#ifndef JPEGLI_LIB_BASE_RECT_H_
+#define JPEGLI_LIB_BASE_RECT_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -18,7 +18,7 @@
 #include "lib/base/compiler_specific.h"
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 // Rectangular region in image(s). Factoring this out of Image instead of
 // shifting the pointer by x0/y0 allows this to apply to multiple images with
@@ -62,44 +62,44 @@ class RectT {
     return Intersection(RectT(0, 0, area_xsize, area_ysize));
   }
 
-  JXL_MUST_USE_RESULT RectT Intersection(const RectT& other) const {
+  JPEGLI_MUST_USE_RESULT RectT Intersection(const RectT& other) const {
     return RectT(std::max(x0_, other.x0_), std::max(y0_, other.y0_), xsize_,
                  ysize_, std::min(x1(), other.x1()),
                  std::min(y1(), other.y1()));
   }
 
-  JXL_MUST_USE_RESULT RectT Translate(int64_t x_offset,
-                                      int64_t y_offset) const {
+  JPEGLI_MUST_USE_RESULT RectT Translate(int64_t x_offset,
+                                         int64_t y_offset) const {
     return RectT(x0_ + x_offset, y0_ + y_offset, xsize_, ysize_);
   }
 
   template <template <class> class P, typename V>
   V* Row(P<V>* image, size_t y) const {
-    JXL_DASSERT(y + y0_ >= 0);
+    JPEGLI_DASSERT(y + y0_ >= 0);
     return image->Row(y + y0_) + x0_;
   }
 
   template <template <class> class P, typename V>
   const V* Row(const P<V>* image, size_t y) const {
-    JXL_DASSERT(y + y0_ >= 0);
+    JPEGLI_DASSERT(y + y0_ >= 0);
     return image->Row(y + y0_) + x0_;
   }
 
   template <template <class> class MP, typename V>
   V* PlaneRow(MP<V>* image, const size_t c, size_t y) const {
-    JXL_DASSERT(y + y0_ >= 0);
+    JPEGLI_DASSERT(y + y0_ >= 0);
     return image->PlaneRow(c, y + y0_) + x0_;
   }
 
   template <template <class> class P, typename V>
   const V* ConstRow(const P<V>& image, size_t y) const {
-    JXL_DASSERT(y + y0_ >= 0);
+    JPEGLI_DASSERT(y + y0_ >= 0);
     return image.ConstRow(y + y0_) + x0_;
   }
 
   template <template <class> class MP, typename V>
   const V* ConstPlaneRow(const MP<V>& image, size_t c, size_t y) const {
-    JXL_DASSERT(y + y0_ >= 0);
+    JPEGLI_DASSERT(y + y0_ >= 0);
     return image.ConstPlaneRow(c, y + y0_) + x0_;
   }
 
@@ -137,7 +137,7 @@ class RectT {
   StatusOr<RectT<T>> CeilShiftRight(std::pair<size_t, size_t> shift) const {
     size_t shiftx = shift.first;
     size_t shifty = shift.second;
-    JXL_ENSURE((x0_ % (1 << shiftx) == 0) && (y0_ % (1 << shifty) == 0));
+    JPEGLI_ENSURE((x0_ % (1 << shiftx) == 0) && (y0_ % (1 << shifty) == 0));
     return RectT<T>(x0_ / (1 << shiftx), y0_ / (1 << shifty),
                     DivCeil(xsize_, T{1} << shiftx),
                     DivCeil(ysize_, T{1} << shifty));
@@ -182,6 +182,6 @@ std::string Description(RectT<T> r) {
 
 using Rect = RectT<size_t>;
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_RECT_H_
+#endif  // JPEGLI_LIB_BASE_RECT_H_

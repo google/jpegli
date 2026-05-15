@@ -5,14 +5,14 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-/** @addtogroup libjxl_common
+/** @addtogroup libjpegli_common
  * @{
  * @file memory_manager.h
- * @brief Abstraction functions used by JPEG XL to allocate memory.
+ * @brief Abstraction functions used by JPEGLI to allocate memory.
  */
 
-#ifndef JXL_MEMORY_MANAGER_H_
-#define JXL_MEMORY_MANAGER_H_
+#ifndef JPEGLI_MEMORY_MANAGER_H_
+#define JPEGLI_MEMORY_MANAGER_H_
 
 #include <stddef.h>
 
@@ -31,7 +31,7 @@ extern "C" {
  * @return @c NULL if the memory can not be allocated,
  * @return pointer to the memory otherwise.
  */
-typedef void* (*jpegxl_alloc_func)(void* opaque, size_t size);
+typedef void* (*jpegli_alloc_func)(void* opaque, size_t size);
 
 /**
  * Deallocating function pointer type.
@@ -39,17 +39,17 @@ typedef void* (*jpegxl_alloc_func)(void* opaque, size_t size);
  * This function @b MUST do nothing if @p address is @c NULL.
  *
  * @param opaque custom memory manager handle provided by the caller.
- * @param address memory region pointer returned by ::jpegxl_alloc_func, or @c
+ * @param address memory region pointer returned by ::jpegli_alloc_func, or @c
  * NULL.
  */
-typedef void (*jpegxl_free_func)(void* opaque, void* address);
+typedef void (*jpegli_free_func)(void* opaque, void* address);
 
 /**
  * Memory Manager struct.
  * These functions, when provided by the caller, will be used to handle memory
  * allocations.
  */
-typedef struct JxlMemoryManagerStruct {
+typedef struct JpegliMemoryManagerStruct {
   /** The opaque pointer that will be passed as the first parameter to all the
    * functions in this struct. */
   void* opaque;
@@ -58,17 +58,17 @@ typedef struct JxlMemoryManagerStruct {
    * free() member in this class is NULL. All dynamic memory will be allocated
    * and freed with these functions if they are not NULL, otherwise with the
    * standard malloc/free. */
-  jpegxl_alloc_func alloc;
+  jpegli_alloc_func alloc;
   /** Free function matching the alloc() member. */
-  jpegxl_free_func free;
+  jpegli_free_func free;
 
   /* TODO(deymo): Add cache-aligned alloc/free functions here. */
-} JxlMemoryManager;
+} JpegliMemoryManager;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* JXL_MEMORY_MANAGER_H_ */
+#endif /* JPEGLI_MEMORY_MANAGER_H_ */
 
 /** @}*/

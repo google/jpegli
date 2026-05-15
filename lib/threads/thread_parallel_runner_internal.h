@@ -5,11 +5,11 @@
 // https://developers.google.com/open-source/licenses/bsd
 //
 
-// C++ implementation using std::thread of a ::JxlParallelRunner.
+// C++ implementation using std::thread of a ::JpegliParallelRunner.
 
 // The main class in this module, ThreadParallelRunner, implements a static
 // method ThreadParallelRunner::Runner than can be passed as a
-// JxlParallelRunner when using the JPEG XL library. This uses std::thread
+// JpegliParallelRunner when using the JPEGLI library. This uses std::thread
 // internally and related synchronization functions. The number of threads
 // created is fixed at construction time and the threads are re-used for every
 // ThreadParallelRunner::Runner call. Only one concurrent Runner() call per
@@ -27,11 +27,11 @@
 //
 // Usage:
 //   ThreadParallelRunner runner;
-//   JxlDecode(
+//   JpegliDecode(
 //       ... , &ThreadParallelRunner::Runner, static_cast<void*>(&runner));
 
-#ifndef LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
-#define LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
+#ifndef JPEGLI_LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
+#define JPEGLI_LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
 
 #include <atomic>
 #include <condition_variable>  //NOLINT
@@ -45,16 +45,16 @@
 #include "lib/base/memory_manager.h"
 #include "lib/base/parallel_runner.h"
 
-namespace jpegxl {
+namespace jpegli {
 
-// Main helper class implementing the ::JxlParallelRunner interface.
+// Main helper class implementing the ::JpegliParallelRunner interface.
 class ThreadParallelRunner {
  public:
-  // ::JxlParallelRunner interface.
-  static JxlParallelRetCode Runner(void* runner_opaque, void* jpegxl_opaque,
-                                   JxlParallelRunInit init,
-                                   JxlParallelRunFunction func,
-                                   uint32_t start_range, uint32_t end_range);
+  // ::JpegliParallelRunner interface.
+  static JpegliParallelRetCode Runner(void* runner_opaque, void* jpegli_opaque,
+                                      JpegliParallelRunInit init,
+                                      JpegliParallelRunFunction func,
+                                      uint32_t start_range, uint32_t end_range);
 
   // Starts the given number of worker threads and blocks until they are ready.
   // "num_worker_threads" defaults to one per hyperthread. If zero, all tasks
@@ -80,13 +80,14 @@ class ThreadParallelRunner {
       return;
     }
 
-    data_func_ = reinterpret_cast<JxlParallelRunFunction>(&CallClosure<Func>);
-    jpegxl_opaque_ = const_cast<void*>(static_cast<const void*>(&func));
+    data_func_ =
+        reinterpret_cast<JpegliParallelRunFunction>(&CallClosure<Func>);
+    jpegli_opaque_ = const_cast<void*>(static_cast<const void*>(&func));
     StartWorkers(kWorkerOnce);
     WorkersReadyBarrier();
   }
 
-  JxlMemoryManager memory_manager;
+  JpegliMemoryManager memory_manager;
 
  private:
   // After construction and between calls to Run, workers are "ready", i.e.
@@ -104,7 +105,7 @@ class ThreadParallelRunner {
   static constexpr WorkerCommand kWorkerExit = ~3ULL;
 
   // Calls f(task, thread). Used for type erasure of Func arguments. The
-  // signature must match JxlParallelRunFunction, hence a void* argument.
+  // signature must match JpegliParallelRunFunction, hence a void* argument.
   template <class Closure>
   static void CallClosure(void* f, const uint32_t task, const size_t thread) {
     (*reinterpret_cast<const Closure*>(f))(task, thread);
@@ -144,7 +145,8 @@ class ThreadParallelRunner {
   const uint32_t num_worker_threads_;  // == threads_.size()
   const uint32_t num_threads_;
 
-  std::atomic<int> depth_{0};  // detects if Run is re-entered (not supported).
+  std::atomic<uint32_t> depth_{
+      0};  // detects if Run is re-entered (not supported).
 
   std::mutex mutex_;  // guards both cv and their variables.
   std::condition_variable workers_ready_cv_;
@@ -153,8 +155,8 @@ class ThreadParallelRunner {
   WorkerCommand worker_start_command_;
 
   // Written by main thread, read by workers (after mutex lock/unlock).
-  JxlParallelRunFunction data_func_;
-  void* jpegxl_opaque_;
+  JpegliParallelRunFunction data_func_;
+  void* jpegli_opaque_;
 
   // Updated by workers; padding avoids false sharing.
   uint8_t padding1[64];
@@ -162,6 +164,6 @@ class ThreadParallelRunner {
   uint8_t padding2[64];
 };
 
-}  // namespace jpegxl
+}  // namespace jpegli
 
-#endif  // LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_
+#endif  // JPEGLI_LIB_THREADS_THREAD_PARALLEL_RUNNER_INTERNAL_H_

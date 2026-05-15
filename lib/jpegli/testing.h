@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_TESTING_H_
-#define LIB_JPEGLI_TESTING_H_
+#ifndef JPEGLI_LIB_JPEGLI_TESTING_H_
+#define JPEGLI_LIB_JPEGLI_TESTING_H_
 
 // GTest specific macros / wrappers.
 
@@ -35,4 +35,4 @@
     EXPECT_GE(_actual, 0.75 * _expected); \
   }
 
-#endif  // LIB_JPEGLI_TESTING_H_
+#endif  // JPEGLI_LIB_JPEGLI_TESTING_H_

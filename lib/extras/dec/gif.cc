@@ -14,9 +14,9 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
-#if !JPEGXL_ENABLE_GIF
+#if !JPEGLI_ENABLE_GIF
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 bool CanDecodeGIF() { return false; }
 Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
@@ -25,9 +25,9 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
   return false;
 }
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#else  // JPEGXL_ENABLE_GIF
+#else  // JPEGLI_ENABLE_GIF
 
 #include <gif_lib.h>
 
@@ -42,7 +42,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
 #include "lib/base/types.h"
 #include "lib/extras/codestream_header.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 namespace {
@@ -66,15 +66,15 @@ struct PackedRgb {
 
 Status ensure_have_alpha(PackedFrame* frame) {
   if (!frame->extra_channels.empty()) return true;
-  const JxlPixelFormat alpha_format{
+  const JpegliPixelFormat alpha_format{
       /*num_channels=*/1u,
-      /*data_type=*/JXL_TYPE_UINT8,
-      /*endianness=*/JXL_NATIVE_ENDIAN,
+      /*data_type=*/JPEGLI_TYPE_UINT8,
+      /*endianness=*/JPEGLI_NATIVE_ENDIAN,
       /*align=*/0,
   };
-  JXL_ASSIGN_OR_RETURN(PackedImage image,
-                       PackedImage::Create(frame->color.xsize,
-                                           frame->color.ysize, alpha_format));
+  JPEGLI_ASSIGN_OR_RETURN(
+      PackedImage image, PackedImage::Create(frame->color.xsize,
+                                             frame->color.ysize, alpha_format));
   frame->extra_channels.emplace_back(std::move(image));
   // We need to set opaque-by-default.
   std::fill_n(static_cast<uint8_t*>(frame->extra_channels[0].pixels()),
@@ -107,12 +107,12 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
       // Not an error.
       return false;
     } else {
-      return JXL_FAILURE("Failed to read GIF: %s", GifErrorString(error));
+      return JPEGLI_FAILURE("Failed to read GIF: %s", GifErrorString(error));
     }
   }
   error = DGifSlurp(gif.get());
   if (error != GIF_OK) {
-    return JXL_FAILURE("Failed to read GIF: %s", GifErrorString(gif->Error));
+    return JPEGLI_FAILURE("Failed to read GIF: %s", GifErrorString(gif->Error));
   }
 
   msan::UnpoisonMemory(gif.get(), sizeof(*gif));
@@ -125,7 +125,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
   msan::UnpoisonMemory(gif->SavedImages,
                        sizeof(*gif->SavedImages) * gif->ImageCount);
 
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       VerifyDimensions<uint32_t>(constraints, gif->SWidth, gif->SHeight));
   uint64_t total_pixel_count =
       static_cast<uint64_t>(gif->SWidth) * gif->SHeight;
@@ -133,27 +133,27 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
     const SavedImage& image = gif->SavedImages[i];
     uint32_t w = image.ImageDesc.Width;
     uint32_t h = image.ImageDesc.Height;
-    JXL_RETURN_IF_ERROR(VerifyDimensions<uint32_t>(constraints, w, h));
+    JPEGLI_RETURN_IF_ERROR(VerifyDimensions<uint32_t>(constraints, w, h));
     uint64_t pixel_count = static_cast<uint64_t>(w) * h;
     if (total_pixel_count + pixel_count < total_pixel_count) {
-      return JXL_FAILURE("Image too big");
+      return JPEGLI_FAILURE("Image too big");
     }
     total_pixel_count += pixel_count;
     if (constraints && (total_pixel_count > constraints->dec_max_pixels)) {
-      return JXL_FAILURE("Image too big");
+      return JPEGLI_FAILURE("Image too big");
     }
   }
 
   if (!gif->SColorMap) {
     for (int i = 0; i < gif->ImageCount; ++i) {
       if (!gif->SavedImages[i].ImageDesc.ColorMap) {
-        return JXL_FAILURE("Missing GIF color map");
+        return JPEGLI_FAILURE("Missing GIF color map");
       }
     }
   }
 
   if (gif->ImageCount > 1) {
-    ppf->info.have_animation = JXL_TRUE;
+    ppf->info.have_animation = JPEGLI_TRUE;
     // Delays in GIF are specified in censiseconds.
     ppf->info.animation.tps_numerator = 100;
     ppf->info.animation.tps_denominator = 1;
@@ -169,28 +169,29 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
   // alpha_bits is later set to 8 if we find a frame with transparent pixels.
   ppf->info.alpha_bits = 0;
   ppf->info.alpha_exponent_bits = 0;
-  JXL_RETURN_IF_ERROR(ApplyColorHints(color_hints, /*color_already_set=*/false,
-                                      /*is_gray=*/false, ppf));
+  JPEGLI_RETURN_IF_ERROR(ApplyColorHints(color_hints,
+                                         /*color_already_set=*/false,
+                                         /*is_gray=*/false, ppf));
 
   ppf->info.num_color_channels = 3;
 
   // Pixel format for the 'canvas' onto which we paint
   // the (potentially individually cropped) GIF frames
   // of an animation.
-  const JxlPixelFormat canvas_format{
+  const JpegliPixelFormat canvas_format{
       /*num_channels=*/4u,
-      /*data_type=*/JXL_TYPE_UINT8,
-      /*endianness=*/JXL_NATIVE_ENDIAN,
+      /*data_type=*/JPEGLI_TYPE_UINT8,
+      /*endianness=*/JPEGLI_NATIVE_ENDIAN,
       /*align=*/0,
   };
 
-  // Pixel format for the JXL PackedFrame that goes into the
+  // Pixel format for the JPEGLI PackedFrame that goes into the
   // PackedPixelFile. Here, we use 3 color channels, and provide
   // the alpha channel as an extra_channel wherever it is used.
-  const JxlPixelFormat packed_frame_format{
+  const JpegliPixelFormat packed_frame_format{
       /*num_channels=*/3u,
-      /*data_type=*/JXL_TYPE_UINT8,
-      /*endianness=*/JXL_NATIVE_ENDIAN,
+      /*data_type=*/JPEGLI_TYPE_UINT8,
+      /*endianness=*/JPEGLI_NATIVE_ENDIAN,
       /*align=*/0,
   };
 
@@ -203,7 +204,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
   }
   const PackedRgba background_rgba{background_color.Red, background_color.Green,
                                    background_color.Blue, 0};
-  JXL_ASSIGN_OR_RETURN(
+  JPEGLI_ASSIGN_OR_RETURN(
       PackedFrame canvas,
       PackedFrame::Create(gif->SWidth, gif->SHeight, canvas_format));
   std::fill_n(static_cast<PackedRgba*>(canvas.color.pixels()),
@@ -245,12 +246,12 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
       replace = false;
     }
     if (!image_rect.IsInside(canvas_rect)) {
-      return JXL_FAILURE("GIF frame extends outside of the canvas");
+      return JPEGLI_FAILURE("GIF frame extends outside of the canvas");
     }
 
     // Allocates the frame buffer.
     {
-      JXL_ASSIGN_OR_RETURN(
+      JPEGLI_ASSIGN_OR_RETURN(
           PackedFrame frame,
           PackedFrame::Create(total_rect.xsize(), total_rect.ysize(),
                               packed_frame_format));
@@ -267,7 +268,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
       // we can skip setting this pixel-value and rely on
       // "no alpha channel = no transparency".
       if (a == 255 && !frame->extra_channels.empty()) return true;
-      JXL_RETURN_IF_ERROR(ensure_have_alpha(frame));
+      JPEGLI_RETURN_IF_ERROR(ensure_have_alpha(frame));
       static_cast<uint8_t*>(
           frame->extra_channels[0].pixels())[y * frame->color.xsize + x] = a;
       return true;
@@ -275,7 +276,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
 
     const ColorMapObject* const color_map =
         image.ImageDesc.ColorMap ? image.ImageDesc.ColorMap : gif->SColorMap;
-    JXL_ENSURE(color_map);
+    JPEGLI_ENSURE(color_map);
     msan::UnpoisonMemory(color_map, sizeof(*color_map));
     msan::UnpoisonMemory(color_map->Colors,
                          sizeof(*color_map->Colors) * color_map->ColorCount);
@@ -296,7 +297,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
         replace = true;
       }
       frame->frame_info.layer_info.blend_info.blendmode =
-          replace ? JXL_BLEND_REPLACE : JXL_BLEND_BLEND;
+          replace ? JPEGLI_BLEND_REPLACE : JPEGLI_BLEND_BLEND;
       // We always only reference at most the last frame
       frame->frame_info.layer_info.blend_info.source =
           last_base_was_none ? 0u : 1u;
@@ -307,7 +308,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
           (total_rect.x0() != 0 || total_rect.y0() != 0 ||
            total_rect.xsize() != canvas.color.xsize ||
            total_rect.ysize() != canvas.color.ysize || !replace)) {
-        return JXL_FAILURE(
+        return JPEGLI_FAILURE(
             "GIF with dispose-to-0 is not supported for non-full or "
             "blended frames");
       }
@@ -327,7 +328,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
     }
 
     // Update the canvas by creating a copy first.
-    JXL_ASSIGN_OR_RETURN(
+    JPEGLI_ASSIGN_OR_RETURN(
         PackedImage new_canvas_image,
         PackedImage::Create(canvas.color.xsize, canvas.color.ysize,
                             canvas.color.format));
@@ -342,7 +343,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
       for (size_t x = 0; x < image_rect.xsize(); ++x, ++byte_index) {
         const GifByteType byte = image.RasterBits[byte_index];
         if (byte >= color_map->ColorCount) {
-          return JXL_FAILURE("GIF color is out of bounds");
+          return JPEGLI_FAILURE("GIF color is out of bounds");
         }
 
         if (byte == gcb.TransparentColor) continue;
@@ -366,7 +367,7 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
           row_out[x].r = row_in[x].r;
           row_out[x].g = row_in[x].g;
           row_out[x].b = row_in[x].b;
-          JXL_RETURN_IF_ERROR(set_pixel_alpha(x, y, row_in[x].a));
+          JPEGLI_RETURN_IF_ERROR(set_pixel_alpha(x, y, row_in[x].a));
         }
       }
     } else {
@@ -377,20 +378,20 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
         for (size_t x = 0; x < image_rect.xsize(); ++x, ++byte_index) {
           const GifByteType byte = image.RasterBits[byte_index];
           if (byte > color_map->ColorCount) {
-            return JXL_FAILURE("GIF color is out of bounds");
+            return JPEGLI_FAILURE("GIF color is out of bounds");
           }
           if (byte == gcb.TransparentColor) {
             row[x].r = 0;
             row[x].g = 0;
             row[x].b = 0;
-            JXL_RETURN_IF_ERROR(set_pixel_alpha(x, y, 0));
+            JPEGLI_RETURN_IF_ERROR(set_pixel_alpha(x, y, 0));
             continue;
           }
           GifColorType color = color_map->Colors[byte];
           row[x].r = color.Red;
           row[x].g = color.Green;
           row[x].b = color.Blue;
-          JXL_RETURN_IF_ERROR(set_pixel_alpha(x, y, 255));
+          JPEGLI_RETURN_IF_ERROR(set_pixel_alpha(x, y, 255));
         }
       }
     }
@@ -430,13 +431,13 @@ Status DecodeImageGIF(Span<const uint8_t> bytes, const ColorHints& color_hints,
   }
   if (seen_alpha) {
     for (PackedFrame& frame : ppf->frames) {
-      JXL_RETURN_IF_ERROR(ensure_have_alpha(&frame));
+      JPEGLI_RETURN_IF_ERROR(ensure_have_alpha(&frame));
     }
   }
   return true;
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // JPEGXL_ENABLE_GIF
+#endif  // JPEGLI_ENABLE_GIF
