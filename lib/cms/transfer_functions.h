@@ -6,15 +6,15 @@
 
 // Transfer functions for color encodings.
 
-#ifndef LIB_JXL_CMS_TRANSFER_FUNCTIONS_H_
-#define LIB_JXL_CMS_TRANSFER_FUNCTIONS_H_
+#ifndef JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_H_
+#define JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_H_
 
 #include <algorithm>
 #include <cmath>
 
 #include "lib/base/status.h"
 
-namespace jxl {
+namespace jpegli {
 
 // Definitions for BT.2100-2 transfer functions (used inside/outside SIMD):
 // "display" is linear light (nits) normalized to [0, 1].
@@ -47,7 +47,7 @@ class TF_HLG_Base {
     if (s <= kInv12) return copysignf(std::sqrt(3.0 * s), original_sign);
 
     const double e = kA * std::log(12 * s - kB) + kC;
-    JXL_DASSERT(e > 0.0);
+    JPEGLI_DASSERT(e > 0.0);
     return copysignf(e, original_sign);
   }
 
@@ -60,7 +60,7 @@ class TF_HLG_Base {
     if (e <= 0.5) return copysignf(e * e * (1.0 / 3), original_sign);
 
     const double s = (std::exp((e - kC) * kRA) + kB) * kInv12;
-    JXL_DASSERT(s >= 0);
+    JPEGLI_DASSERT(s >= 0);
     return copysignf(s, original_sign);
   }
 
@@ -98,9 +98,9 @@ class TF_PQ_Base {
     const double xp = std::pow(e, 1.0 / kM2);
     const double num = std::max(xp - kC1, 0.0);
     const double den = kC2 - kC3 * xp;
-    JXL_DASSERT(den != 0.0);
+    JPEGLI_DASSERT(den != 0.0);
     const double d = std::pow(num / den, 1.0 / kM1);
-    JXL_DASSERT(d >= 0.0);  // Equal for e ~= 1E-9
+    JPEGLI_DASSERT(d >= 0.0);  // Equal for e ~= 1E-9
     return copysignf(d * (10000.0f / display_intensity_target), original_sign);
   }
 
@@ -115,7 +115,7 @@ class TF_PQ_Base {
     const double num = kC1 + xp * kC2;
     const double den = 1.0 + xp * kC3;
     const double e = std::pow(num / den, kM2);
-    JXL_DASSERT(e > 0.0);
+    JPEGLI_DASSERT(e > 0.0);
     return copysignf(e, original_sign);
   }
 
@@ -127,6 +127,6 @@ class TF_PQ_Base {
   static constexpr double kC3 = (2392.0 / 4096) * 32;
 };
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_CMS_TRANSFER_FUNCTIONS_H_
+#endif  // JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_H_

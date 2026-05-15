@@ -292,7 +292,6 @@ If you checkout a different branch, you can spot that submodules changed
 when it shows a message similar to this:
 
 ```
-M       third_party/brotli
 M       third_party/lcms
 ```
 
@@ -300,7 +299,7 @@ If you do a rebase you may end up in a harder to solve situation, where
 `git submodule update --init --recursive` itself fails with errors such as:
 
 ```
-Unable to checkout '35ef5c554d888bef217d449346067de05e269b30' in submodule path 'third_party/brotli'
+Unable to checkout '35ef5c554d888bef217d449346067de05e269b30' in submodule path 'third_party/lcms'
 ```
 
 In that case, you can use the force flag:

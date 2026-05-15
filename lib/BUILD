@@ -4,54 +4,51 @@
 # license that can be found in the LICENSE file.
 
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 # Load sources/headers/tests lists.
 load(
-    "jxl_lists.bzl",
-    "libjxl_base_sources",
-    "libjxl_cms_sources",
-    "libjxl_codec_apng_sources",
-    "libjxl_codec_exr_sources",
-    "libjxl_codec_gif_sources",
-    "libjxl_codec_jpegli_sources",
-    "libjxl_codec_jpg_sources",
-    "libjxl_codec_npy_sources",
-    "libjxl_codec_pgx_sources",
-    "libjxl_codec_pnm_sources",
-    "libjxl_extras_for_tools_sources",
-    "libjxl_extras_sources",
-    # "libjxl_gbench_sources",
-    # "libjxl_jpegli_lib_version",
-    "libjxl_jpegli_libjpeg_helper_files",
-    "libjxl_jpegli_sources",
-    "libjxl_jpegli_testlib_files",
-    "libjxl_jpegli_tests",
-    "libjxl_major_version",
-    "libjxl_minor_version",
-    "libjxl_patch_version",
-    "libjxl_testlib_files",
-    "libjxl_tests",
-    "libjxl_threads_sources",
+    "jpegli_lists.bzl",
+    "libjpegli_base_sources",
+    "libjpegli_cms_sources",
+    "libjpegli_codec_apng_sources",
+    "libjpegli_codec_exr_sources",
+    "libjpegli_codec_gif_sources",
+    "libjpegli_codec_jpegli_sources",
+    "libjpegli_codec_jpg_sources",
+    "libjpegli_codec_npy_sources",
+    "libjpegli_codec_pgx_sources",
+    "libjpegli_codec_pnm_sources",
+    "libjpegli_extras_for_tools_sources",
+    "libjpegli_extras_sources",
+    # "libjpegli_gbench_sources",
+    # "libjpegli_jpegli_lib_version",
+    "libjpegli_jpegli_libjpeg_helper_files",
+    "libjpegli_jpegli_sources",
+    "libjpegli_jpegli_testlib_files",
+    "libjpegli_jpegli_tests",
+    "libjpegli_testlib_files",
+    "libjpegli_tests",
+    "libjpegli_threads_sources",
 )
 load(
-    "jxl_vars.bzl",
-    "libjxl_deps_brotli",
-    "libjxl_deps_exr",
-    "libjxl_deps_gif",
-    "libjxl_deps_gtest",
-    "libjxl_deps_hwy",
-    "libjxl_deps_hwy_nanobenchmark",
-    "libjxl_deps_hwy_test_util",
-    "libjxl_deps_jpeg",
-    "libjxl_deps_png",
-    "libjxl_deps_runfiles",
-    "libjxl_deps_skcms",
-    # "libjxl_deps_testdata",
-    # "libjxl_deps_webp",
+    "jpegli_vars.bzl",
+    # "libjpegli_deps_testdata",
+    # "libjpegli_deps_webp",
     "jpegli_root_package",
-    "libjxl_test_shards",
-    "libjxl_test_timeouts",
+    "libjpegli_deps_exr",
+    "libjpegli_deps_gif",
+    "libjpegli_deps_gtest",
+    "libjpegli_deps_hwy",
+    "libjpegli_deps_hwy_nanobenchmark",
+    "libjpegli_deps_hwy_test_util",
+    "libjpegli_deps_jpeg",
+    "libjpegli_deps_png",
+    "libjpegli_deps_runfiles",
+    "libjpegli_deps_skcms",
+    "libjpegli_test_shards",
+    "libjpegli_test_timeouts",
 )
 
 DEFAULT_VISIBILITY = ["//:__subpackages__"]
@@ -82,28 +79,28 @@ EXPORT_TEMPLATE = """
 #endif
 """
 
-JXL_CMS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_cms_export.h"
+JPEGLI_CMS_EXPORT_H = INCLUDES_DIR + "/jpegli/jpegli_cms_export.h"
 
 genrule(
-    name = "create_jxl_cms_export",
-    outs = [JXL_CMS_EXPORT_H],
-    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL_CMS") + "' > $@",
+    name = "create_jpegli_cms_export",
+    outs = [JPEGLI_CMS_EXPORT_H],
+    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JPEGLI_CMS") + "' > $@",
     compatible_with = DEFAULT_COMPATIBILITY,
 )
 
 cc_library(
     name = "cms_includes",
-    hdrs = [JXL_CMS_EXPORT_H],
+    hdrs = [JPEGLI_CMS_EXPORT_H],
     compatible_with = DEFAULT_COMPATIBILITY,
     strip_include_prefix = INCLUDES_DIR,
 )
 
-JXL_THREADS_EXPORT_H = INCLUDES_DIR + "/jxl/jxl_threads_export.h"
+JPEGLI_THREADS_EXPORT_H = INCLUDES_DIR + "/jpegli/jpegli_threads_export.h"
 
 genrule(
-    name = "create_jxl_threads_export",
-    outs = [JXL_THREADS_EXPORT_H],
-    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JXL_THREADS") + "' > $@",
+    name = "create_jpegli_threads_export",
+    outs = [JPEGLI_THREADS_EXPORT_H],
+    cmd = "echo '" + EXPORT_TEMPLATE.replace("@", "JPEGLI_THREADS") + "' > $@",
     compatible_with = DEFAULT_COMPATIBILITY,
 )
 
@@ -147,16 +144,16 @@ cc_library(
 
 cc_library(
     name = "base",
-    srcs = [path for path in libjxl_base_sources if path.endswith(".cc")],
-    hdrs = [path for path in libjxl_base_sources if path.endswith(".h")],
+    srcs = [path for path in libjpegli_base_sources if path.endswith(".cc")],
+    hdrs = [path for path in libjpegli_base_sources if path.endswith(".h")],
     compatible_with = DEFAULT_COMPATIBILITY,
-    deps = libjxl_deps_hwy,
+    deps = libjpegli_deps_hwy,
 )
 
 cc_library(
-    name = "jpegxl_threads",
-    srcs = libjxl_threads_sources,
-    hdrs = [JXL_THREADS_EXPORT_H],
+    name = "jpegli_threads",
+    srcs = libjpegli_threads_sources,
+    hdrs = [JPEGLI_THREADS_EXPORT_H],
     compatible_with = DEFAULT_COMPATIBILITY,
     strip_include_prefix = INCLUDES_DIR,
     deps = [
@@ -164,7 +161,7 @@ cc_library(
     ],
 )
 
-CODEC_FILES = libjxl_codec_apng_sources + libjxl_codec_exr_sources + libjxl_codec_gif_sources + libjxl_codec_jpegli_sources + libjxl_codec_jpg_sources + libjxl_codec_npy_sources + libjxl_codec_pgx_sources + libjxl_codec_pnm_sources
+CODEC_FILES = libjpegli_codec_apng_sources + libjpegli_codec_exr_sources + libjpegli_codec_gif_sources + libjpegli_codec_jpegli_sources + libjpegli_codec_jpg_sources + libjpegli_codec_npy_sources + libjpegli_codec_pgx_sources + libjpegli_codec_pnm_sources
 
 CODEC_SRCS = [path for path in CODEC_FILES if path.endswith(".cc")]
 
@@ -172,7 +169,7 @@ CODEC_HDRS = [path for path in CODEC_FILES if path.endswith(".h")]
 
 cc_library(
     name = "jpegli",
-    srcs = libjxl_jpegli_sources,
+    srcs = libjpegli_jpegli_sources,
     hdrs = [
         "jpegli/common_internal.h",  # TODO(eustas): should not be here
     ],
@@ -180,7 +177,7 @@ cc_library(
     deps = [
         ":base",
         ":libjpeg_includes",
-    ] + libjxl_deps_hwy,
+    ] + libjpegli_deps_hwy,
 )
 
 genrule(
@@ -198,28 +195,28 @@ genrule(
 
 # TODO(eustas): build codecs separately?
 cc_library(
-    name = "jpegxl_extras",
-    srcs = libjxl_extras_sources + libjxl_extras_for_tools_sources + libjxl_cms_sources + CODEC_SRCS + [
+    name = "jpegli_extras",
+    srcs = libjpegli_extras_sources + libjpegli_extras_for_tools_sources + libjpegli_cms_sources + CODEC_SRCS + [
         "apngdis/dec.cc",
         "apngdis/enc.cc",
     ],
     hdrs = CODEC_HDRS,
     compatible_with = DEFAULT_COMPATIBILITY,
     defines = [
-        "JPEGXL_ENABLE_APNG=1",
-        "JPEGXL_ENABLE_EXR=1",
-        "JPEGXL_ENABLE_GIF=1",
-        "JPEGXL_ENABLE_JPEG=1",
-        "JPEGXL_ENABLE_SKCMS=1",
+        "JPEGLI_ENABLE_APNG=1",
+        "JPEGLI_ENABLE_EXR=1",
+        "JPEGLI_ENABLE_GIF=1",
+        "JPEGLI_ENABLE_JPEG=1",
+        "JPEGLI_ENABLE_SKCMS=1",
     ],
     deps = [
         ":cms_includes",
         ":jpegli",
-        ":jpegxl_threads",
-    ] + libjxl_deps_exr + libjxl_deps_gif + libjxl_deps_jpeg + libjxl_deps_png + libjxl_deps_skcms,
+        ":jpegli_threads",
+    ] + libjpegli_deps_exr + libjpegli_deps_gif + libjpegli_deps_jpeg + libjpegli_deps_png + libjpegli_deps_skcms,
 )
 
-TESTLIB_FILES = libjxl_testlib_files + libjxl_jpegli_testlib_files + libjxl_jpegli_libjpeg_helper_files
+TESTLIB_FILES = libjpegli_testlib_files + libjpegli_jpegli_testlib_files + libjpegli_jpegli_libjpeg_helper_files
 
 cc_library(
     name = "test_utils",
@@ -232,28 +229,28 @@ cc_library(
     ],
     deps = [
         ":jpegli",
-        ":jpegxl_extras",
-    ] + libjxl_deps_runfiles,
+        ":jpegli_extras",
+    ] + libjpegli_deps_runfiles,
 )
 
-TESTS = [path.partition(".")[0] for path in libjxl_tests + libjxl_jpegli_tests]
+TESTS = [path.partition(".")[0] for path in libjpegli_tests + libjpegli_jpegli_tests]
 
 [
     cc_test(
         name = test,
-        timeout = libjxl_test_timeouts.get(test, "moderate"),
+        timeout = libjpegli_test_timeouts.get(test, "moderate"),
         srcs = [
             test + ".cc",
             "base/testing.h",
             "jpegli/testing.h",
         ],
         data = ["//:testdata"],
-        shard_count = libjxl_test_shards.get(test, 1),
+        shard_count = libjpegli_test_shards.get(test, 1),
         deps = [
-            ":jpegxl_extras",
-            ":jpegxl_threads",
+            ":jpegli_extras",
+            ":jpegli_threads",
             ":test_utils",
-        ] + libjxl_deps_gtest + libjxl_deps_hwy_test_util + libjxl_deps_hwy_nanobenchmark,
+        ] + libjpegli_deps_gtest + libjpegli_deps_hwy_test_util + libjpegli_deps_hwy_nanobenchmark,
     )
     for test in TESTS
 ]

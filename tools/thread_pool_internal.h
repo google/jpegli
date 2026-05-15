@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_THREAD_POOL_INTERNAL_H_
-#define TOOLS_THREAD_POOL_INTERNAL_H_
+#ifndef JPEGLI_TOOLS_THREAD_POOL_INTERNAL_H_
+#define JPEGLI_TOOLS_THREAD_POOL_INTERNAL_H_
 
 #include <cstddef>
 #include <memory>
@@ -16,10 +16,9 @@
 #include "lib/threads/thread_parallel_runner.h"
 #include "lib/threads/thread_parallel_runner_cxx.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::ThreadPool;
+using ::jpegli::ThreadPool;
 
 // Helper class to pass an internal ThreadPool-like object using threads.
 class ThreadPoolInternal {
@@ -29,10 +28,10 @@ class ThreadPoolInternal {
   // run on the main thread.
   explicit ThreadPoolInternal(
       size_t num_threads = std::thread::hardware_concurrency()) {
-    runner_ =
-        JxlThreadParallelRunnerMake(/* memory_manager */ nullptr, num_threads);
-    pool_ =
-        jxl::make_unique<ThreadPool>(JxlThreadParallelRunner, runner_.get());
+    runner_ = JpegliThreadParallelRunnerMake(/* memory_manager */ nullptr,
+                                             num_threads);
+    pool_ = jpegli::make_unique<ThreadPool>(JpegliThreadParallelRunner,
+                                            runner_.get());
   }
 
   ThreadPoolInternal(const ThreadPoolInternal&) = delete;
@@ -40,11 +39,10 @@ class ThreadPoolInternal {
   ThreadPool* get() { return pool_.get(); }
 
  private:
-  JxlThreadParallelRunnerPtr runner_;
+  JpegliThreadParallelRunnerPtr runner_;
   std::unique_ptr<ThreadPool> pool_;
 };
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_THREAD_POOL_INTERNAL_H_
+#endif  // JPEGLI_TOOLS_THREAD_POOL_INTERNAL_H_

@@ -9,11 +9,12 @@
 #include <cstdint>
 
 #include "lib/base/common.h"
-#if defined(LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_) == defined(HWY_TARGET_TOGGLE)
-#ifdef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
-#undef LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
+#if defined(JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_INL_H_) == \
+    defined(HWY_TARGET_TOGGLE)
+#ifdef JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_INL_H_
+#undef JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_INL_H_
 #else
-#define LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
+#define JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_INL_H_
 #endif
 
 #include <cmath>
@@ -25,7 +26,7 @@
 #include "lib/cms/transfer_functions.h"
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 
 // These templates are not found via ADL.
@@ -55,7 +56,7 @@ class TF_HLG : TF_HLG_Base {
  public:
   // Maximum error 5e-7.
   template <class D, class V>
-  JXL_INLINE V EncodedFromDisplay(D d, V x) const {
+  JPEGLI_INLINE V EncodedFromDisplay(D d, V x) const {
     const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
@@ -70,7 +71,7 @@ class TF_HLG : TF_HLG_Base {
   }
 
   template <class D, class V>
-  JXL_INLINE V DisplayFromEncoded(D d, V x) const {
+  JPEGLI_INLINE V DisplayFromEncoded(D d, V x) const {
     const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
@@ -96,14 +97,14 @@ class TF_HLG : TF_HLG_Base {
 
 class TF_709 {
  public:
-  static JXL_INLINE double EncodedFromDisplay(const double d) {
+  static JPEGLI_INLINE double EncodedFromDisplay(const double d) {
     if (d < kThresh) return kMulLow * d;
     return kMulHi * std::pow(d, kPowHi) + kSub;
   }
 
   // Maximum error 1e-6.
   template <class D, class V>
-  JXL_INLINE V EncodedFromDisplay(D d, V x) const {
+  JPEGLI_INLINE V EncodedFromDisplay(D d, V x) const {
     auto low = Mul(Set(d, kMulLow), x);
     auto hi =
         MulAdd(Set(d, kMulHi), FastPowf(d, x, Set(d, kPowHi)), Set(d, kSub));
@@ -111,7 +112,7 @@ class TF_709 {
   }
 
   template <class D, class V>
-  JXL_INLINE V DisplayFromEncoded(D d, V x) const {
+  JPEGLI_INLINE V DisplayFromEncoded(D d, V x) const {
     auto low = Mul(Set(d, kInvMulLow), x);
     auto hi = FastPowf(d, MulAdd(x, Set(d, kInvMulHi), Set(d, kInvAdd)),
                        Set(d, kInvPowHi));
@@ -143,7 +144,7 @@ class TF_PQ : TF_PQ_Base {
 
   // Maximum error 3e-6
   template <class D, class V>
-  JXL_INLINE V DisplayFromEncoded(D d, V x) const {
+  JPEGLI_INLINE V DisplayFromEncoded(D d, V x) const {
     const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
@@ -170,7 +171,7 @@ class TF_PQ : TF_PQ_Base {
 
   // Maximum error 7e-7.
   template <class D, class V>
-  JXL_INLINE V EncodedFromDisplay(D d, V x) const {
+  JPEGLI_INLINE V EncodedFromDisplay(D d, V x) const {
     const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
@@ -216,7 +217,7 @@ class TF_PQ : TF_PQ_Base {
 class TF_SRGB {
  public:
   template <typename V>
-  JXL_INLINE V DisplayFromEncoded(V x) const {
+  JPEGLI_INLINE V DisplayFromEncoded(V x) const {
     const HWY_FULL(float) d;
     const HWY_FULL(uint32_t) du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
@@ -244,7 +245,7 @@ class TF_SRGB {
 
   // Error ~5e-07
   template <class D, class V>
-  JXL_INLINE V EncodedFromDisplay(D d, V x) const {
+  JPEGLI_INLINE V EncodedFromDisplay(D d, V x) const {
     const hwy::HWY_NAMESPACE::Rebind<uint32_t, D> du;
     const V kSign = BitCast(d, Set(du, 0x80000000u));
     const V original_sign = And(x, kSign);
@@ -343,7 +344,7 @@ V FastLinearToSRGB(D d, V v) {
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
-#endif  // LIB_JXL_CMS_TRANSFER_FUNCTIONS_INL_H_
+#endif  // JPEGLI_LIB_CMS_TRANSFER_FUNCTIONS_INL_H_

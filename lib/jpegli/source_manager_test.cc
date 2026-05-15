@@ -59,8 +59,8 @@ FILE* MemOpen(const std::vector<uint8_t>& data) {
 
 TEST_P(SourceManagerTestParam, TestStdioSourceManager) {
   TestConfig config = GetParam();
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, ReadTestData(config.fn),
-                     "Failed to read test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        ReadTestData(config.fn), "Failed to read test data.");
   if (config.dparams.size_factor < 1.0) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
   }
@@ -87,8 +87,8 @@ TEST_P(SourceManagerTestParam, TestStdioSourceManager) {
 
 TEST_P(SourceManagerTestParam, TestMemSourceManager) {
   TestConfig config = GetParam();
-  JXL_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed, ReadTestData(config.fn),
-                     "Failed to read test data.");
+  JPEGLI_ASSIGN_OR_QUIT(std::vector<uint8_t> compressed,
+                        ReadTestData(config.fn), "Failed to read test data.");
   if (config.dparams.size_factor < 1.0f) {
     compressed.resize(compressed.size() * config.dparams.size_factor);
   }

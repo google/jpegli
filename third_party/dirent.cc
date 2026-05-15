@@ -30,7 +30,7 @@
 int mkdir(const char* path, mode_t /*mode*/) {
   const LPSECURITY_ATTRIBUTES sec = nullptr;
   if (!CreateDirectory(path, sec)) {
-    JXL_NOTIFY_ERROR("Failed to create directory %s", path);
+    JPEGLI_NOTIFY_ERROR("Failed to create directory %s", path);
     return -1;
   }
   return 0;
@@ -108,7 +108,7 @@ DIR* opendir(const char* path) {
   if (d->hFind != INVALID_HANDLE_VALUE) return d.release();
   if (GetLastError() == ERROR_NO_MORE_FILES) return d.release();  // empty
 
-  JXL_NOTIFY_ERROR("Failed to open directory %s", searchPath.c_str());
+  JPEGLI_NOTIFY_ERROR("Failed to open directory %s", searchPath.c_str());
   return nullptr;
 }
 
@@ -126,7 +126,7 @@ dirent* readdir(DIR* d) {
     if (d->numCalls++ != 0)  // (skip first call to FindNextFile - see opendir)
     {
       if (!FindNextFile(d->hFind, &d->findData)) {
-        JXL_DASSERT(GetLastError() == ERROR_NO_MORE_FILES);
+        JPEGLI_DASSERT(GetLastError() == ERROR_NO_MORE_FILES);
         SetLastError(0);
         return nullptr;  // end of directory or error
       }

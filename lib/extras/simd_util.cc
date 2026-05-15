@@ -18,7 +18,7 @@
 #include "lib/base/status.h"
 
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 
 size_t MaxVectorSize() {
@@ -28,11 +28,11 @@ size_t MaxVectorSize() {
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-namespace jxl {
+namespace jpegli {
 
 HWY_EXPORT(MaxVectorSize);
 
@@ -43,5 +43,5 @@ size_t MaxVectorSize() {
   return HWY_DYNAMIC_DISPATCH(MaxVectorSize)();
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 #endif

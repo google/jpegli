@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JPEGLI_DECODE_INTERNAL_H_
-#define LIB_JPEGLI_DECODE_INTERNAL_H_
+#ifndef JPEGLI_LIB_JPEGLI_DECODE_INTERNAL_H_
+#define JPEGLI_LIB_JPEGLI_DECODE_INTERNAL_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -116,9 +116,10 @@ struct jpeg_decomp_master {
   jpegli::RowBuffer<float> render_output_[jpegli::kMaxComponents];
 
   void (*inverse_transform[jpegli::kMaxComponents])(
-      const int16_t* JXL_RESTRICT qblock, const float* JXL_RESTRICT dequant,
-      const float* JXL_RESTRICT biases, float* JXL_RESTRICT scratch_space,
-      float* JXL_RESTRICT output, size_t output_stride, size_t dctsize);
+      const int16_t* JPEGLI_RESTRICT qblock,
+      const float* JPEGLI_RESTRICT dequant, const float* JPEGLI_RESTRICT biases,
+      float* JPEGLI_RESTRICT scratch_space, float* JPEGLI_RESTRICT output,
+      size_t output_stride, size_t dctsize);
 
   void (*color_transform)(float* row[jpegli::kMaxComponents], size_t len);
 
@@ -154,4 +155,4 @@ struct jpeg_decomp_master {
   int (*prev_coef_bits_latch)[SAVED_COEFS];
 };
 
-#endif  // LIB_JPEGLI_DECODE_INTERNAL_H_
+#endif  // JPEGLI_LIB_JPEGLI_DECODE_INTERNAL_H_

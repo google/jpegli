@@ -24,7 +24,7 @@
 #include "lib/extras/packed_image.h"
 #include "lib/extras/size_constraints.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 namespace {
 
@@ -41,8 +41,17 @@ class Parser {
     pos_ += 2;
 
     switch (type) {
+      case '1':
+        return JPEGLI_FAILURE("ascii pbm not supported");
+
+      case '2':
+        return JPEGLI_FAILURE("ascii pgm not supported");
+
+      case '3':
+        return JPEGLI_FAILURE("ascii ppm not supported");
+
       case '4':
-        return JXL_FAILURE("pbm not supported");
+        return JPEGLI_FAILURE("pbm not supported");
 
       case '5':
         header->is_gray = true;
@@ -70,8 +79,8 @@ class Parser {
 
   // Exposed for testing
   Status ParseUnsigned(size_t* number) {
-    if (pos_ == end_) return JXL_FAILURE("PNM: reached end before number");
-    if (!IsDigit(*pos_)) return JXL_FAILURE("PNM: expected unsigned number");
+    if (pos_ == end_) return JPEGLI_FAILURE("PNM: reached end before number");
+    if (!IsDigit(*pos_)) return JPEGLI_FAILURE("PNM: expected unsigned number");
 
     *number = 0;
     while (pos_ < end_ && *pos_ >= '0' && *pos_ <= '9') {
@@ -84,17 +93,17 @@ class Parser {
   }
 
   Status ParseSigned(double* number) {
-    if (pos_ == end_) return JXL_FAILURE("PNM: reached end before signed");
+    if (pos_ == end_) return JPEGLI_FAILURE("PNM: reached end before signed");
 
     if (*pos_ != '-' && *pos_ != '+' && !IsDigit(*pos_)) {
-      return JXL_FAILURE("PNM: expected signed number");
+      return JPEGLI_FAILURE("PNM: expected signed number");
     }
 
     // Skip sign
     const bool is_neg = *pos_ == '-';
     if (is_neg || *pos_ == '+') {
       ++pos_;
-      if (pos_ == end_) return JXL_FAILURE("PNM: reached end before digits");
+      if (pos_ == end_) return JPEGLI_FAILURE("PNM: reached end before digits");
     }
 
     // Leading digits
@@ -128,24 +137,26 @@ class Parser {
   }
 
   Status SkipBlank() {
-    if (pos_ == end_) return JXL_FAILURE("PNM: reached end before blank");
+    if (pos_ == end_) return JPEGLI_FAILURE("PNM: reached end before blank");
     const uint8_t c = *pos_;
-    if (c != ' ' && c != '\n') return JXL_FAILURE("PNM: expected blank");
+    if (c != ' ' && c != '\n') return JPEGLI_FAILURE("PNM: expected blank");
     ++pos_;
     return true;
   }
 
   Status SkipSingleWhitespace() {
-    if (pos_ == end_) return JXL_FAILURE("PNM: reached end before whitespace");
-    if (!IsWhitespace(*pos_)) return JXL_FAILURE("PNM: expected whitespace");
+    if (pos_ == end_)
+      return JPEGLI_FAILURE("PNM: reached end before whitespace");
+    if (!IsWhitespace(*pos_)) return JPEGLI_FAILURE("PNM: expected whitespace");
     ++pos_;
     return true;
   }
 
   Status SkipWhitespace() {
-    if (pos_ == end_) return JXL_FAILURE("PNM: reached end before whitespace");
+    if (pos_ == end_)
+      return JPEGLI_FAILURE("PNM: reached end before whitespace");
     if (!IsWhitespace(*pos_) && *pos_ != '#') {
-      return JXL_FAILURE("PNM: expected whitespace/comment");
+      return JPEGLI_FAILURE("PNM: expected whitespace/comment");
     }
 
     while (pos_ < end_ && IsWhitespace(*pos_)) {
@@ -171,16 +182,16 @@ class Parser {
     const uint8_t* ppos = pos_;
     const uint8_t* kw = reinterpret_cast<const uint8_t*>(keyword);
     while (*kw) {
-      if (ppos >= end_) return JXL_FAILURE("PAM: unexpected end of input");
+      if (ppos >= end_) return JPEGLI_FAILURE("PAM: unexpected end of input");
       if (*kw != *ppos) return false;
       ppos++;
       kw++;
     }
     pos_ = ppos;
     if (skipws) {
-      JXL_RETURN_IF_ERROR(SkipWhitespace());
+      JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
     } else {
-      JXL_RETURN_IF_ERROR(SkipSingleWhitespace());
+      JPEGLI_RETURN_IF_ERROR(SkipSingleWhitespace());
     }
     return true;
   }
@@ -188,20 +199,20 @@ class Parser {
   Status ParseHeaderPAM(HeaderPNM* header, const uint8_t** pos) {
     size_t depth = 3;
     size_t max_val = 255;
-    JXL_RETURN_IF_ERROR(SkipWhitespace());
+    JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
     while (!MatchString("ENDHDR", /*skipws=*/false)) {
       if (MatchString("WIDTH")) {
-        JXL_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
-        JXL_RETURN_IF_ERROR(SkipWhitespace());
+        JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
+        JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("HEIGHT")) {
-        JXL_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
-        JXL_RETURN_IF_ERROR(SkipWhitespace());
+        JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
+        JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("DEPTH")) {
-        JXL_RETURN_IF_ERROR(ParseUnsigned(&depth));
-        JXL_RETURN_IF_ERROR(SkipWhitespace());
+        JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&depth));
+        JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("MAXVAL")) {
-        JXL_RETURN_IF_ERROR(ParseUnsigned(&max_val));
-        JXL_RETURN_IF_ERROR(SkipWhitespace());
+        JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&max_val));
+        JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
       } else if (MatchString("TUPLTYPE")) {
         if (MatchString("RGB_ALPHA")) {
           header->has_alpha = true;
@@ -219,25 +230,25 @@ class Parser {
           header->is_gray = true;
           max_val = 1;
         } else if (MatchString("Alpha")) {
-          header->ec_types.push_back(JXL_CHANNEL_ALPHA);
+          header->ec_types.push_back(JPEGLI_CHANNEL_ALPHA);
         } else if (MatchString("Depth")) {
-          header->ec_types.push_back(JXL_CHANNEL_DEPTH);
+          header->ec_types.push_back(JPEGLI_CHANNEL_DEPTH);
         } else if (MatchString("SpotColor")) {
-          header->ec_types.push_back(JXL_CHANNEL_SPOT_COLOR);
+          header->ec_types.push_back(JPEGLI_CHANNEL_SPOT_COLOR);
         } else if (MatchString("SelectionMask")) {
-          header->ec_types.push_back(JXL_CHANNEL_SELECTION_MASK);
+          header->ec_types.push_back(JPEGLI_CHANNEL_SELECTION_MASK);
         } else if (MatchString("Black")) {
-          header->ec_types.push_back(JXL_CHANNEL_BLACK);
+          header->ec_types.push_back(JPEGLI_CHANNEL_BLACK);
         } else if (MatchString("CFA")) {
-          header->ec_types.push_back(JXL_CHANNEL_CFA);
+          header->ec_types.push_back(JPEGLI_CHANNEL_CFA);
         } else if (MatchString("Thermal")) {
-          header->ec_types.push_back(JXL_CHANNEL_THERMAL);
+          header->ec_types.push_back(JPEGLI_CHANNEL_THERMAL);
         } else if (MatchString("Unknown")) {
-          header->ec_types.push_back(JXL_CHANNEL_UNKNOWN);
+          header->ec_types.push_back(JPEGLI_CHANNEL_UNKNOWN);
         } else if (MatchString("Optional")) {
-          header->ec_types.push_back(JXL_CHANNEL_OPTIONAL);
+          header->ec_types.push_back(JPEGLI_CHANNEL_OPTIONAL);
         } else {
-          return JXL_FAILURE("PAM: unknown TUPLTYPE");
+          return JPEGLI_FAILURE("PAM: unknown TUPLTYPE");
         }
       } else {
         constexpr size_t kMaxHeaderLength = 20;
@@ -245,21 +256,22 @@ class Parser {
         size_t len = std::min<size_t>(kMaxHeaderLength, end_ - pos_);
         strncpy(unknown_header, reinterpret_cast<const char*>(pos_), len);
         unknown_header[len] = 0;
-        return JXL_FAILURE("PAM: unknown header keyword: %s", unknown_header);
+        return JPEGLI_FAILURE("PAM: unknown header keyword: %s",
+                              unknown_header);
       }
     }
     size_t num_channels = header->is_gray ? 1 : 3;
     if (header->has_alpha) num_channels++;
     if (num_channels + header->ec_types.size() != depth) {
-      return JXL_FAILURE("PAM: bad DEPTH");
+      return JPEGLI_FAILURE("PAM: bad DEPTH");
     }
     if (max_val == 0 || max_val >= 65536) {
-      return JXL_FAILURE("PAM: bad MAXVAL");
+      return JPEGLI_FAILURE("PAM: bad MAXVAL");
     }
     // e.g. When `max_val` is 1 , we want 1 bit:
     header->bits_per_sample = FloorLog2Nonzero(max_val) + 1;
     if ((1u << header->bits_per_sample) - 1 != max_val)
-      return JXL_FAILURE("PNM: unsupported MaxVal (expected 2^n - 1)");
+      return JPEGLI_FAILURE("PNM: unsupported MaxVal (expected 2^n - 1)");
     // PAM does not pack bits as in PBM.
 
     header->floating_point = false;
@@ -269,52 +281,52 @@ class Parser {
   }
 
   Status ParseHeaderPNM(HeaderPNM* header, const uint8_t** pos) {
-    JXL_RETURN_IF_ERROR(SkipWhitespace());
-    JXL_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
+    JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
+    JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
 
-    JXL_RETURN_IF_ERROR(SkipWhitespace());
-    JXL_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
+    JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
+    JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
 
-    JXL_RETURN_IF_ERROR(SkipWhitespace());
+    JPEGLI_RETURN_IF_ERROR(SkipWhitespace());
     size_t max_val;
-    JXL_RETURN_IF_ERROR(ParseUnsigned(&max_val));
+    JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&max_val));
     if (max_val == 0 || max_val >= 65536) {
-      return JXL_FAILURE("PNM: bad MaxVal");
+      return JPEGLI_FAILURE("PNM: bad MaxVal");
     }
     header->bits_per_sample = FloorLog2Nonzero(max_val) + 1;
     if ((1u << header->bits_per_sample) - 1 != max_val)
-      return JXL_FAILURE("PNM: unsupported MaxVal (expected 2^n - 1)");
+      return JPEGLI_FAILURE("PNM: unsupported MaxVal (expected 2^n - 1)");
     header->floating_point = false;
     header->big_endian = true;
 
-    JXL_RETURN_IF_ERROR(SkipSingleWhitespace());
+    JPEGLI_RETURN_IF_ERROR(SkipSingleWhitespace());
 
     *pos = pos_;
     return true;
   }
 
   Status ParseHeaderPFM(HeaderPNM* header, const uint8_t** pos) {
-    JXL_RETURN_IF_ERROR(SkipSingleWhitespace());
-    JXL_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
+    JPEGLI_RETURN_IF_ERROR(SkipSingleWhitespace());
+    JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->xsize));
 
-    JXL_RETURN_IF_ERROR(SkipBlank());
-    JXL_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
+    JPEGLI_RETURN_IF_ERROR(SkipBlank());
+    JPEGLI_RETURN_IF_ERROR(ParseUnsigned(&header->ysize));
 
-    JXL_RETURN_IF_ERROR(SkipSingleWhitespace());
+    JPEGLI_RETURN_IF_ERROR(SkipSingleWhitespace());
     // The scale has no meaning as multiplier, only its sign is used to
     // indicate endianness. All software expects nominal range 0..1.
     double scale;
-    JXL_RETURN_IF_ERROR(ParseSigned(&scale));
+    JPEGLI_RETURN_IF_ERROR(ParseSigned(&scale));
     if (scale == 0.0) {
-      return JXL_FAILURE("PFM: bad scale factor value.");
+      return JPEGLI_FAILURE("PFM: bad scale factor value.");
     } else if (std::abs(scale) != 1.0) {
-      JXL_WARNING("PFM: Discarding non-unit scale factor");
+      JPEGLI_WARNING("PFM: Discarding non-unit scale factor");
     }
     header->big_endian = scale > 0.0;
     header->bits_per_sample = 32;
     header->floating_point = true;
 
-    JXL_RETURN_IF_ERROR(SkipSingleWhitespace());
+    JPEGLI_RETURN_IF_ERROR(SkipSingleWhitespace());
 
     *pos = pos_;
     return true;
@@ -333,18 +345,18 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
   HeaderPNM header = {};
   const uint8_t* pos = nullptr;
   if (!parser.ParseHeader(&header, &pos)) return false;
-  JXL_RETURN_IF_ERROR(
+  JPEGLI_RETURN_IF_ERROR(
       VerifyDimensions(constraints, header.xsize, header.ysize));
 
   if (header.bits_per_sample == 0 || header.bits_per_sample > 32) {
-    return JXL_FAILURE("PNM: bits_per_sample invalid");
+    return JPEGLI_FAILURE("PNM: bits_per_sample invalid");
   }
 
   // PPM specifies that in the raster, the sample values are "nonlinear"
   // (BP.709, with gamma number of 2.2). Deviate from the specification and
   // assume `sRGB` in our implementation.
-  JXL_RETURN_IF_ERROR(ApplyColorHints(color_hints, /*color_already_set=*/false,
-                                      header.is_gray, ppf));
+  JPEGLI_RETURN_IF_ERROR(ApplyColorHints(
+      color_hints, /*color_already_set=*/false, header.is_gray, ppf));
 
   ppf->info.xsize = header.xsize;
   ppf->info.ysize = header.ysize;
@@ -356,7 +368,7 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
     ppf->info.exponent_bits_per_sample = 0;
   }
 
-  ppf->info.orientation = JXL_ORIENT_IDENTITY;
+  ppf->info.orientation = JPEGLI_ORIENT_IDENTITY;
 
   // No alpha in PNM and PFM
   ppf->info.alpha_bits = (header.has_alpha ? ppf->info.bits_per_sample : 0);
@@ -374,75 +386,95 @@ Status DecodeImagePNM(const Span<const uint8_t> bytes,
     ppf->extra_channels_info.emplace_back(std::move(pec));
   }
 
-  JxlDataType data_type;
+  JpegliDataType data_type;
   if (header.floating_point) {
     // There's no float16 pnm version.
-    data_type = JXL_TYPE_FLOAT;
+    data_type = JPEGLI_TYPE_FLOAT;
   } else {
     if (header.bits_per_sample > 8) {
-      data_type = JXL_TYPE_UINT16;
+      data_type = JPEGLI_TYPE_UINT16;
     } else {
-      data_type = JXL_TYPE_UINT8;
+      data_type = JPEGLI_TYPE_UINT8;
     }
   }
 
-  const JxlPixelFormat format{
+  // No align - pixels are tightly packed.
+  constexpr size_t kAlign = 0;
+  size_t twidth = PackedImage::BitsPerChannel(data_type) / 8;
+  const JpegliPixelFormat format{
       /*num_channels=*/num_interleaved_channels,
       /*data_type=*/data_type,
-      /*endianness=*/header.big_endian ? JXL_BIG_ENDIAN : JXL_LITTLE_ENDIAN,
-      /*align=*/0,
+      /*endianness=*/header.big_endian ? JPEGLI_BIG_ENDIAN
+                                       : JPEGLI_LITTLE_ENDIAN,
+      kAlign,
   };
-  const JxlPixelFormat ec_format{1, format.data_type, format.endianness, 0};
+  // EC format is same as color, but 1-channel.
+  JpegliPixelFormat ec_format = format;
+  ec_format.num_channels = 1;
+  size_t required_pnm_size =
+      header.ysize * header.xsize *
+      (num_interleaved_channels + header.ec_types.size()) * twidth;
+  size_t pnm_remaining_size = bytes.data() + bytes.size() - pos;
+  if (pnm_remaining_size < required_pnm_size) {
+    return JPEGLI_FAILURE("PNM file too small");
+  }
+
   ppf->frames.clear();
   {
-    JXL_ASSIGN_OR_RETURN(
+    JPEGLI_ASSIGN_OR_RETURN(
         PackedFrame frame,
         PackedFrame::Create(header.xsize, header.ysize, format));
     ppf->frames.emplace_back(std::move(frame));
   }
   auto* frame = &ppf->frames.back();
+  uint8_t* out = reinterpret_cast<uint8_t*>(frame->color.pixels());
+  std::vector<uint8_t*> ec_out;
   for (size_t i = 0; i < header.ec_types.size(); ++i) {
-    JXL_ASSIGN_OR_RETURN(
+    JPEGLI_ASSIGN_OR_RETURN(
         PackedImage ec,
         PackedImage::Create(header.xsize, header.ysize, ec_format));
     frame->extra_channels.emplace_back(std::move(ec));
+    ec_out.emplace_back(
+        reinterpret_cast<uint8_t*>(frame->extra_channels.back().pixels()));
+    JPEGLI_DASSERT(frame->extra_channels.back().stride ==
+                   header.xsize * twidth);
   }
-  size_t pnm_remaining_size = bytes.data() + bytes.size() - pos;
-  if (pnm_remaining_size < frame->color.pixels_size) {
-    return JXL_FAILURE("PNM file too small");
-  }
-
-  uint8_t* out = reinterpret_cast<uint8_t*>(frame->color.pixels());
-  std::vector<uint8_t*> ec_out(header.ec_types.size());
-  for (size_t i = 0; i < ec_out.size(); ++i) {
-    ec_out[i] = reinterpret_cast<uint8_t*>(frame->extra_channels[i].pixels());
-  }
+  JPEGLI_DASSERT(frame->color.stride ==
+                 header.xsize * num_interleaved_channels * twidth);
   if (ec_out.empty()) {
-    const bool flipped_y = header.bits_per_sample == 32;  // PFMs are flipped
-    for (size_t y = 0; y < header.ysize; ++y) {
-      size_t y_in = flipped_y ? header.ysize - 1 - y : y;
-      const uint8_t* row_in = &pos[y_in * frame->color.stride];
-      uint8_t* row_out = &out[y * frame->color.stride];
-      memcpy(row_out, row_in, frame->color.stride);
+    const bool flipped_y = (header.bits_per_sample == 32);  // PFMs are flipped
+    if (!flipped_y) {
+      // When there are no EC and input is not flipped we can copy the whole
+      // image at once.
+      memcpy(out, pos, header.ysize * frame->color.stride);
+    } else {
+      // Otherwise copy row-by-row.
+      for (size_t y = 0; y < header.ysize; ++y) {
+        size_t y_out = header.ysize - 1 - y;
+        const uint8_t* row_in = pos + y * frame->color.stride;
+        uint8_t* row_out = out + y_out * frame->color.stride;
+        memcpy(row_out, row_in, frame->color.stride);
+      }
     }
   } else {
-    JXL_RETURN_IF_ERROR(PackedImage::ValidateDataType(data_type));
-    size_t pwidth = PackedImage::BitsPerChannel(data_type) / 8;
+    // In case there are EC, we have to deinterleave data pixel-wise.
+    JPEGLI_RETURN_IF_ERROR(PackedImage::ValidateDataType(data_type));
+    size_t color_stride = twidth * num_interleaved_channels;
     for (size_t y = 0; y < header.ysize; ++y) {
       for (size_t x = 0; x < header.xsize; ++x) {
         memcpy(out, pos, frame->color.pixel_stride());
-        out += frame->color.pixel_stride();
-        pos += frame->color.pixel_stride();
+        out += color_stride;
+        pos += color_stride;
         for (auto& p : ec_out) {
-          memcpy(p, pos, pwidth);
-          pos += pwidth;
-          p += pwidth;
+          memcpy(p, pos, twidth);
+          pos += twidth;
+          p += twidth;
         }
       }
     }
   }
   if (ppf->info.exponent_bits_per_sample == 0) {
-    ppf->input_bitdepth.type = JXL_BIT_DEPTH_FROM_CODESTREAM;
+    ppf->input_bitdepth.type = JPEGLI_BIT_DEPTH_FROM_CODESTREAM;
   }
   return true;
 }
@@ -457,4 +489,4 @@ Status PnmParseUnsigned(Bytes str, size_t* v) {
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli

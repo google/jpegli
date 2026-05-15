@@ -16,7 +16,7 @@
 #include "lib/cms/color_encoding_internal.h"
 #include "lib/extras/test_utils.h"
 
-namespace jxl {
+namespace jpegli {
 
 // A POD descriptor of a ColorEncoding. Only used in tests as the return value
 // of AllEncodings().
@@ -32,14 +32,14 @@ ColorEncoding ColorEncodingFromDescriptor(const ColorEncodingDescriptor& desc) {
   ColorEncoding c;
   c.SetColorSpace(desc.color_space);
   if (desc.color_space != ColorSpace::kXYB) {
-    ::jxl::test::Check(c.SetWhitePointType(desc.white_point));
+    ::jpegli::test::Check(c.SetWhitePointType(desc.white_point));
     if (desc.color_space != ColorSpace::kGray) {
-      ::jxl::test::Check(c.SetPrimariesType(desc.primaries));
+      ::jpegli::test::Check(c.SetPrimariesType(desc.primaries));
     }
     c.Tf().SetTransferFunction(desc.tf);
   }
   c.SetRenderingIntent(desc.rendering_intent);
-  ::jxl::test::Check(c.CreateICC());
+  ::jpegli::test::Check(c.CreateICC());
   return c;
 }
 
@@ -86,7 +86,7 @@ TEST(ColorDescriptionTest, RoundTripAll) {
     const std::string description = Description(c_original);
     printf("%s\n", description.c_str());
 
-    JxlColorEncoding c_external = {};
+    JpegliColorEncoding c_external = {};
     EXPECT_TRUE(ParseDescription(description, &c_external));
     ColorEncoding c_internal;
     EXPECT_TRUE(c_internal.FromExternal(c_external));
@@ -98,8 +98,8 @@ TEST(ColorDescriptionTest, RoundTripAll) {
 
 TEST(ColorDescriptionTest, NanGamma) {
   const std::string description = "Gra_2_Per_gnan";
-  JxlColorEncoding c;
+  JpegliColorEncoding c;
   EXPECT_FALSE(ParseDescription(description, &c));
 }
 
-}  // namespace jxl
+}  // namespace jpegli

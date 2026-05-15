@@ -25,10 +25,10 @@
 #include <hwy/highway.h>
 
 #include "lib/base/common.h"             // RoundUpTo
-#include "lib/base/compiler_specific.h"  // JXL_RESTRICT
+#include "lib/base/compiler_specific.h"  // JPEGLI_RESTRICT
 #include "lib/base/matrix_ops.h"         // Inv3x3Matrix
 HWY_BEFORE_NAMESPACE();
-namespace jxl {
+namespace jpegli {
 namespace HWY_NAMESPACE {
 
 // These templates are not found via ADL.
@@ -43,14 +43,15 @@ using hwy::HWY_NAMESPACE::ShiftLeftLanes;
 #endif
 using hwy::HWY_NAMESPACE::Vec;
 
-void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
-                    const float* JXL_RESTRICT in, float* JXL_RESTRICT out) {
+void FastGaussian1D(const RecursiveGaussian& rg, const ptrdiff_t xsize,
+                    const float* JPEGLI_RESTRICT in,
+                    float* JPEGLI_RESTRICT out) {
   // Although the current output depends on the previous output, we can unroll
   // up to 4x by precomputing up to fourth powers of the constants. Beyond that,
   // numerical precision might become a problem. Macro because this is tested
   // in #if alongside HWY_TARGET.
-#define JXL_GAUSS_MAX_LANES 4
-  using D = HWY_CAPPED(float, JXL_GAUSS_MAX_LANES);
+#define JPEGLI_GAUSS_MAX_LANES 4
+  using D = HWY_CAPPED(float, JPEGLI_GAUSS_MAX_LANES);
   using V = Vec<D>;
   const D d;
   const V mul_in_1 = Load(d, rg.mul_in + 0 * 4);
@@ -69,14 +70,14 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
   V prev2_3 = Zero(d);
   V prev2_5 = Zero(d);
 
-  const intptr_t N = static_cast<intptr_t>(rg.radius);
+  const ptrdiff_t N = static_cast<ptrdiff_t>(rg.radius);
 
-  intptr_t n = -N + 1;
+  ptrdiff_t n = -N + 1;
   // Left side with bounds checks and only write output after n >= 0.
-  const intptr_t first_aligned = RoundUpTo(N + 1, Lanes(d));
+  const ptrdiff_t first_aligned = RoundUpTo(N + 1, Lanes(d));
   for (; n < std::min(first_aligned, xsize); ++n) {
-    const intptr_t left = n - N - 1;
-    const intptr_t right = n + N - 1;
+    const ptrdiff_t left = n - N - 1;
+    const ptrdiff_t right = n + N - 1;
     const float left_val = left >= 0 ? in[left] : 0.0f;
     const float right_val = (right < xsize) ? in[right] : 0.0f;
     const V sum = Set(d, left_val + right_val);
@@ -107,7 +108,7 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
 
   // The above loop is effectively scalar but it is convenient to use the same
   // prev/prev2 variables, so broadcast to each lane before the unrolled loop.
-#if HWY_TARGET != HWY_SCALAR && JXL_GAUSS_MAX_LANES > 1
+#if HWY_TARGET != HWY_SCALAR && JPEGLI_GAUSS_MAX_LANES > 1
   prev2_1 = Broadcast<0>(prev2_1);
   prev2_3 = Broadcast<0>(prev2_3);
   prev2_5 = Broadcast<0>(prev2_5);
@@ -117,7 +118,7 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
 #endif
 
   // Unrolled, no bounds checking needed.
-  for (; n < xsize - N + 1 - (JXL_GAUSS_MAX_LANES - 1); n += Lanes(d)) {
+  for (; n < xsize - N + 1 - (JPEGLI_GAUSS_MAX_LANES - 1); n += Lanes(d)) {
     const V sum = Add(LoadU(d, in + n - N - 1), LoadU(d, in + n + N - 1));
 
     // To get a vector of output(s), we multiply broadcasted vectors (of each
@@ -130,13 +131,13 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
     V out_3 = Mul(in0, mul_in_3);
     V out_5 = Mul(in0, mul_in_5);
 
-#if HWY_TARGET != HWY_SCALAR && JXL_GAUSS_MAX_LANES >= 2
+#if HWY_TARGET != HWY_SCALAR && JPEGLI_GAUSS_MAX_LANES >= 2
     const V in1 = Broadcast<1>(sum);
     out_1 = MulAdd(ShiftLeftLanes<1>(mul_in_1), in1, out_1);
     out_3 = MulAdd(ShiftLeftLanes<1>(mul_in_3), in1, out_3);
     out_5 = MulAdd(ShiftLeftLanes<1>(mul_in_5), in1, out_5);
 
-#if JXL_GAUSS_MAX_LANES >= 4
+#if JPEGLI_GAUSS_MAX_LANES >= 4
     const V in2 = Broadcast<2>(sum);
     out_1 = MulAdd(ShiftLeftLanes<2>(mul_in_1), in2, out_1);
     out_3 = MulAdd(ShiftLeftLanes<2>(mul_in_3), in2, out_3);
@@ -156,7 +157,7 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
     out_1 = MulAdd(mul_prev_1, prev_1, out_1);
     out_3 = MulAdd(mul_prev_3, prev_3, out_3);
     out_5 = MulAdd(mul_prev_5, prev_5, out_5);
-#if HWY_TARGET == HWY_SCALAR || JXL_GAUSS_MAX_LANES == 1
+#if HWY_TARGET == HWY_SCALAR || JPEGLI_GAUSS_MAX_LANES == 1
     prev2_1 = prev_1;
     prev2_3 = prev_3;
     prev2_5 = prev_5;
@@ -164,12 +165,12 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
     prev_3 = out_3;
     prev_5 = out_5;
 #else
-    prev2_1 = Broadcast<JXL_GAUSS_MAX_LANES - 2>(out_1);
-    prev2_3 = Broadcast<JXL_GAUSS_MAX_LANES - 2>(out_3);
-    prev2_5 = Broadcast<JXL_GAUSS_MAX_LANES - 2>(out_5);
-    prev_1 = Broadcast<JXL_GAUSS_MAX_LANES - 1>(out_1);
-    prev_3 = Broadcast<JXL_GAUSS_MAX_LANES - 1>(out_3);
-    prev_5 = Broadcast<JXL_GAUSS_MAX_LANES - 1>(out_5);
+    prev2_1 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 2>(out_1);
+    prev2_3 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 2>(out_3);
+    prev2_5 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 2>(out_5);
+    prev_1 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 1>(out_1);
+    prev_3 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 1>(out_3);
+    prev_5 = Broadcast<JPEGLI_GAUSS_MAX_LANES - 1>(out_5);
 #endif
 
     Store(Add(out_1, Add(out_3, out_5)), d, out + n);
@@ -177,8 +178,8 @@ void FastGaussian1D(const RecursiveGaussian& rg, const intptr_t xsize,
 
   // Remainder handling with bounds checks
   for (; n < xsize; ++n) {
-    const intptr_t left = n - N - 1;
-    const intptr_t right = n + N - 1;
+    const ptrdiff_t left = n - N - 1;
+    const ptrdiff_t right = n + N - 1;
     const float left_val = left >= 0 ? in[left] : 0.0f;
     const float right_val = (right < xsize) ? in[right] : 0.0f;
     const V sum = Set(d, left_val + right_val);
@@ -213,14 +214,14 @@ constexpr size_t kRingBufferMask = kRingBufferLen - 1;
 // Avoids an unnecessary store during warmup.
 struct OutputNone {
   template <class V>
-  void operator()(const V& /*unused*/, float* JXL_RESTRICT /*pos*/,
+  void operator()(const V& /*unused*/, float* JPEGLI_RESTRICT /*pos*/,
                   ptrdiff_t /*offset*/) const {}
 };
 
 // Common case: write output vectors in all VerticalBlock except warmup.
 struct OutputStore {
   template <class V>
-  void operator()(const V& out, float* JXL_RESTRICT pos,
+  void operator()(const V& out, float* JPEGLI_RESTRICT pos,
                   ptrdiff_t offset) const {
     // Stream helps for large images but is slower for images that fit in cache.
     const HWY_FULL(float) df;
@@ -263,15 +264,15 @@ class TwoInputs {
 template <size_t kVectors, class V, class Input, class Output>
 void VerticalBlock(const V& d1_1, const V& d1_3, const V& d1_5, const V& n2_1,
                    const V& n2_3, const V& n2_5, const Input& input,
-                   const ssize_t n, float* ring_buffer, const Output output,
-                   float* JXL_RESTRICT out_pos) {
+                   const ptrdiff_t n, float* ring_buffer, const Output output,
+                   float* JPEGLI_RESTRICT out_pos) {
   const HWY_FULL(float) d;
   // More cache-friendly to process an entirely cache line at a time
   const size_t kLanes = kVectors * Lanes(d);
 
-  float* JXL_RESTRICT y_1 = ring_buffer + 0 * kLanes * kRingBufferLen;
-  float* JXL_RESTRICT y_3 = ring_buffer + 1 * kLanes * kRingBufferLen;
-  float* JXL_RESTRICT y_5 = ring_buffer + 2 * kLanes * kRingBufferLen;
+  float* JPEGLI_RESTRICT y_1 = ring_buffer + 0 * kLanes * kRingBufferLen;
+  float* JPEGLI_RESTRICT y_3 = ring_buffer + 1 * kLanes * kRingBufferLen;
+  float* JPEGLI_RESTRICT y_5 = ring_buffer + 2 * kLanes * kRingBufferLen;
 
   const size_t n_0 = (n - 0) & kRingBufferMask;
   const size_t n_1 = (n - 1) & kRingBufferMask;
@@ -332,7 +333,7 @@ void VerticalStrip(const RecursiveGaussian& rg, const size_t x,
          3 * kVectors * Lanes(d) * kRingBufferLen * sizeof(float));
 
   // Warmup: top is out of bounds (zero padded), bottom is usually in-bounds.
-  ssize_t n = -static_cast<ssize_t>(N) + 1;
+  ptrdiff_t n = -static_cast<ptrdiff_t>(N) + 1;
   for (; n < 0; ++n) {
     // bottom is always non-negative since n is initialized in -N + 1.
     const size_t bottom = n + N - 1;
@@ -351,7 +352,7 @@ void VerticalStrip(const RecursiveGaussian& rg, const size_t x,
 
   // Interior outputs with prefetching and without bounds checks.
   constexpr size_t kPrefetchRows = 8;
-  for (; n < static_cast<ssize_t>(ysize - N + 1 - kPrefetchRows); ++n) {
+  for (; n < static_cast<ptrdiff_t>(ysize - N + 1 - kPrefetchRows); ++n) {
     const size_t top = n - N - 1;
     const size_t bottom = n + N - 1;
     VerticalBlock<kVectors>(d1_1, d1_3, d1_5, n2_1, n2_3, n2_5,
@@ -374,7 +375,7 @@ void VerticalStrip(const RecursiveGaussian& rg, const size_t x,
 
 // Apply 1D vertical scan to multiple columns (one per vector lane).
 // Not yet parallelized.
-Status FastGaussianVertical(JxlMemoryManager* memory_manager,
+Status FastGaussianVertical(JpegliMemoryManager* memory_manager,
                             const RecursiveGaussian& rg, const size_t xsize,
                             const size_t ysize, const GetConstRow& in,
                             const GetRow& out, ThreadPool* /* pool */) {
@@ -384,8 +385,8 @@ Status FastGaussianVertical(JxlMemoryManager* memory_manager,
   const size_t fast_pace = unroll * Lanes(df);
   const size_t scratch_size =
       fast_pace * sizeof(float) * (1 + 3 * kRingBufferLen);
-  JXL_ASSIGN_OR_RETURN(AlignedMemory mem,
-                       AlignedMemory::Create(memory_manager, scratch_size));
+  JPEGLI_ASSIGN_OR_RETURN(AlignedMemory mem,
+                          AlignedMemory::Create(memory_manager, scratch_size));
   float* zero = mem.address<float>();
   float* ring_buffer = zero + fast_pace;
   memset(zero, 0, fast_pace * sizeof(float));
@@ -403,7 +404,7 @@ Status FastGaussianVertical(JxlMemoryManager* memory_manager,
       VerticalStrip<16>(rg, x, ysize, ring_buffer, zero, in, out);
     }
   } else {
-    JXL_UNREACHABLE("Unexpected vector size");
+    return JPEGLI_UNREACHABLE("Unexpected vector size");
   }
   for (; x < xsize; x += Lanes(df)) {
     VerticalStrip<1>(rg, x, ysize, ring_buffer, zero, in, out);
@@ -413,17 +414,18 @@ Status FastGaussianVertical(JxlMemoryManager* memory_manager,
 
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
-}  // namespace jxl
+}  // namespace jpegli
 HWY_AFTER_NAMESPACE();
 
 #if HWY_ONCE
-namespace jxl {
+namespace jpegli {
 
 HWY_EXPORT(FastGaussian1D);
 void FastGaussian1D(const RecursiveGaussian& rg, const size_t xsize,
-                    const float* JXL_RESTRICT in, float* JXL_RESTRICT out) {
+                    const float* JPEGLI_RESTRICT in,
+                    float* JPEGLI_RESTRICT out) {
   HWY_DYNAMIC_DISPATCH(FastGaussian1D)
-  (rg, static_cast<intptr_t>(xsize), in, out);
+  (rg, static_cast<ptrdiff_t>(xsize), in, out);
 }
 
 HWY_EXPORT(FastGaussianVertical);  // Local function.
@@ -434,7 +436,7 @@ RecursiveGaussian CreateRecursiveGaussian(double sigma) {
   RecursiveGaussian rg;
   constexpr double kPi = 3.141592653589793238;
 
-  const double radius = roundf(3.2795 * sigma + 0.2546);  // (57), "N"
+  const double radius = std::round(3.2795 * sigma + 0.2546);  // (57), "N"
 
   // Table I, first row
   const double pi_div_2r = kPi / (2.0 * radius);
@@ -472,7 +474,7 @@ RecursiveGaussian CreateRecursiveGaussian(double sigma) {
       {{p_1, p_3, p_5}, {r_1, r_3, r_5} /* (56) */, {zeta_15, zeta_35, 1}}};
   Status status = Inv3x3Matrix(A);
   (void)status;
-  JXL_DASSERT(status);
+  JPEGLI_DASSERT(status);
   const Vector3d gamma{1, radius * radius - sigma * sigma,  // (55)
                        zeta_15 * rho[0] + zeta_35 * rho[1] + rho[2]};
   Vector3d beta;
@@ -480,7 +482,7 @@ RecursiveGaussian CreateRecursiveGaussian(double sigma) {
 
   // Sanity check: correctly solved for beta (IIR filter weights are normalized)
   const double sum = beta[0] * p_1 + beta[1] * p_3 + beta[2] * p_5;  // (39)
-  JXL_DASSERT(std::abs(sum - 1) < 1E-12);
+  JPEGLI_DASSERT(std::abs(sum - 1) < 1E-12);
   (void)sum;
 
   rg.radius = static_cast<int>(radius);
@@ -532,27 +534,28 @@ Status FastGaussianHorizontal(const RecursiveGaussian& rg, const size_t xsize,
   const auto process_line = [&](const uint32_t task,
                                 size_t /*thread*/) -> Status {
     const size_t y = task;
-    FastGaussian1D(rg, static_cast<intptr_t>(xsize), in(y), out(y));
+    FastGaussian1D(rg, static_cast<ptrdiff_t>(xsize), in(y), out(y));
     return true;
   };
 
-  JXL_RETURN_IF_ERROR(RunOnPool(pool, 0, ysize, ThreadPool::NoInit,
-                                process_line, "FastGaussianHorizontal"));
+  JPEGLI_RETURN_IF_ERROR(RunOnPool(pool, 0, ysize, ThreadPool::NoInit,
+                                   process_line, "FastGaussianHorizontal"));
   return true;
 }
 
 }  // namespace
 
-Status FastGaussian(JxlMemoryManager* memory_manager,
+Status FastGaussian(JpegliMemoryManager* memory_manager,
                     const RecursiveGaussian& rg, const size_t xsize,
                     const size_t ysize, const GetConstRow& in,
                     const GetRow& temp, const GetRow& out, ThreadPool* pool) {
-  JXL_RETURN_IF_ERROR(FastGaussianHorizontal(rg, xsize, ysize, in, temp, pool));
+  JPEGLI_RETURN_IF_ERROR(
+      FastGaussianHorizontal(rg, xsize, ysize, in, temp, pool));
   GetConstRow temp_in = [&](size_t y) { return temp(y); };
-  JXL_RETURN_IF_ERROR(HWY_DYNAMIC_DISPATCH(FastGaussianVertical)(
+  JPEGLI_RETURN_IF_ERROR(HWY_DYNAMIC_DISPATCH(FastGaussianVertical)(
       memory_manager, rg, xsize, ysize, temp_in, out, pool));
   return true;
 }
 
-}  // namespace jxl
+}  // namespace jpegli
 #endif  // HWY_ONCE

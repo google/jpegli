@@ -4,18 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_BENCHMARK_BENCHMARK_UTILS_H_
-#define TOOLS_BENCHMARK_BENCHMARK_UTILS_H_
+#ifndef JPEGLI_TOOLS_BENCHMARK_BENCHMARK_UTILS_H_
+#define JPEGLI_TOOLS_BENCHMARK_BENCHMARK_UTILS_H_
 
 #include <string>
 #include <vector>
 
 #include "lib/base/status.h"
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-using ::jxl::Status;
+using ::jpegli::Status;
 
 class TemporaryFile final {
  public:
@@ -37,7 +36,6 @@ Status RunCommand(const std::string& command,
                   const std::vector<std::string>& arguments,
                   bool quiet = false);
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_BENCHMARK_BENCHMARK_UTILS_H_
+#endif  // JPEGLI_TOOLS_BENCHMARK_BENCHMARK_UTILS_H_

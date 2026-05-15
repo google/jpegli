@@ -4,17 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_EXTRAS_TIME_H_
-#define LIB_EXTRAS_TIME_H_
+#ifndef JPEGLI_LIB_EXTRAS_TIME_H_
+#define JPEGLI_LIB_EXTRAS_TIME_H_
 
 // OS-specific function for timing.
 
-namespace jxl {
+namespace jpegli {
 
 // Returns current time [seconds] from a monotonic clock with unspecified
 // starting point - only suitable for computing elapsed time.
 double Now();
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_EXTRAS_TIME_H_
+#endif  // JPEGLI_LIB_EXTRAS_TIME_H_

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_COMMON_H_
-#define LIB_JXL_BASE_COMMON_H_
+#ifndef JPEGLI_LIB_BASE_COMMON_H_
+#define JPEGLI_LIB_BASE_COMMON_H_
 
 // Shared constants and helper functions.
 
@@ -13,13 +13,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include "lib/base/compiler_specific.h"
 
-namespace jxl {
+namespace jpegli {
 // Some enums and typedefs used by more than one header file.
 
 constexpr size_t kBitsPerByte = 8;  // more clear than CHAR_BIT
@@ -32,10 +34,21 @@ constexpr inline size_t RoundUpToBlockDim(size_t dim) {
   return (dim + 7) & ~static_cast<size_t>(7);
 }
 
-static inline bool JXL_MAYBE_UNUSED SafeAdd(const uint64_t a, const uint64_t b,
-                                            uint64_t& sum) {
+template <typename U,
+          class = typename std::enable_if<std::is_unsigned<U>::value>::type>
+static inline bool SafeAdd(const U a, const U b, U& sum) {
   sum = a + b;
   return sum >= a;  // no need to check b - either sum >= both or < both.
+}
+
+template <typename U,
+          class = typename std::enable_if<std::is_unsigned<U>::value>::type>
+static inline bool SafeMul(const U a, const U b, U& product) {
+  product = 0;
+  if (a == 0 || b == 0) return true;
+  if (b > (std::numeric_limits<U>::max() / a)) return false;
+  product = a * b;
+  return true;
 }
 
 template <typename T1, typename T2>
@@ -75,6 +88,40 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 using std::make_unique;
 #endif
 
+template <typename T>
+struct UninitializedAllocator : std::allocator<T> {
+  static_assert(std::is_trivially_copyable<T>::value,
+                "Uninitialized values have to be trivially destructible");
+  using value_type = T;
+
+  UninitializedAllocator() noexcept = default;
+  UninitializedAllocator(const UninitializedAllocator& other) noexcept =
+      default;
+
+  template <typename U>
+  explicit UninitializedAllocator(
+      const UninitializedAllocator<U>& other) noexcept {}
+
+  template <typename U>
+  struct rebind {
+    using other = UninitializedAllocator<U>;
+  };
+
+  template <typename U, typename... Args>
+  void construct(U* place, Args&&... args) {}
+
+  template <typename U>
+  void destroy(U* place) {}
+};
+
+template <typename T>
+using uninitialized_vector = std::vector<T, UninitializedAllocator<T>>;
+
+template <typename T>
+uninitialized_vector<T> make_uninitialized_vector(size_t n) {
+  return uninitialized_vector<T>(n, UninitializedAllocator<T>());
+}
+
 typedef std::array<float, 3> Color;
 
 // Backported std::experimental::to_array
@@ -107,7 +154,7 @@ constexpr auto to_array(T (&&arr)[N]) -> std::array<remove_cv_t<T>, N> {
 }
 
 template <typename T>
-JXL_INLINE T Clamp1(T val, T low, T hi) {
+JPEGLI_INLINE T Clamp1(T val, T low, T hi) {
   return val < low ? low : val > hi ? hi : val;
 }
 
@@ -128,9 +175,9 @@ std::string ToString(T n) {
   return data;
 }
 
-#define JXL_JOIN(x, y) JXL_DO_JOIN(x, y)
-#define JXL_DO_JOIN(x, y) x##y
+#define JPEGLI_JOIN(x, y) JPEGLI_DO_JOIN(x, y)
+#define JPEGLI_DO_JOIN(x, y) x##y
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_BASE_COMMON_H_
+#endif  // JPEGLI_LIB_BASE_COMMON_H_

@@ -95,9 +95,9 @@ void YCbCrToABGR(float* row[kMaxComponents], size_t xsize) {
 
 void YCCKToCMYK(float* row[kMaxComponents], size_t xsize) {
   const HWY_CAPPED(float, 8) df;
-  float* JXL_RESTRICT row0 = row[0];
-  float* JXL_RESTRICT row1 = row[1];
-  float* JXL_RESTRICT row2 = row[2];
+  float* JPEGLI_RESTRICT row0 = row[0];
+  float* JPEGLI_RESTRICT row1 = row[1];
+  float* JPEGLI_RESTRICT row2 = row[2];
   YCbCrToRGB(row, xsize);
   const auto offset = Set(df, -1.0f / 255.0f);
   for (size_t x = 0; x < xsize; x += Lanes(df)) {
@@ -165,9 +165,9 @@ void ABGRToYCbCr(float* row[kMaxComponents], size_t xsize) {
 
 void CMYKToYCCK(float* row[kMaxComponents], size_t xsize) {
   const HWY_CAPPED(float, 8) df;
-  float* JXL_RESTRICT row0 = row[0];
-  float* JXL_RESTRICT row1 = row[1];
-  float* JXL_RESTRICT row2 = row[2];
+  float* JPEGLI_RESTRICT row0 = row[0];
+  float* JPEGLI_RESTRICT row1 = row[1];
+  float* JPEGLI_RESTRICT row2 = row[2];
   const auto unity = Set(df, 255.0f);
   for (size_t x = 0; x < xsize; x += Lanes(df)) {
     Store(Sub(unity, Load(df, row0 + x)), df, row0 + x);

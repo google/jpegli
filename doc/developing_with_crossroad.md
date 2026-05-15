@@ -26,7 +26,7 @@ If there are errors while running crossroad, it may need to be downloaded and in
 
 ## Update Debian Alternatives
 
-Since `libjxl` uses C++ features that require posix threads, the symlinks used by the Debian alternative system need to be updated:
+Since `jpegli` uses C++ features that require posix threads, the symlinks used by the Debian alternative system need to be updated:
 
 ```bash
 sudo update-alternatives --config x86_64-w64-mingw32-g++
@@ -64,16 +64,16 @@ crossroad w64 [project-name]
 
 ## Install Dependencies
 
-Since the `gimp` development package is required to build the GIMP plugin and also includes most of the packages required by `libjxl`, install it first.
+Since the `gimp` development package is required to build the GIMP plugin and also includes most of the packages required by `jpegli`, install it first.
 
 ```bash
 crossroad install gimp
 ```
 
-`gtest` and `brotli` are also required.
+`gtest` is also required.
 
 ```bash
-crossroad install gtest brotli
+crossroad install gtest
 ```
 
 If any packages are later found to be missing, you may search for them using:
@@ -82,24 +82,23 @@ If any packages are later found to be missing, you may search for them using:
 crossroad search [...]
 ```
 
-## Build `libjxl`
+## Build `jpegli`
 
-Download the source from the libjxl [releases](https://github.com/libjxl/libjxl/releases) page.  Alternatively, you may obtain the latest development version with `git`.  Run `./deps.sh` to ensure additional third-party dependencies are downloaded.  Unfortunately, the script `./ci.sh` does not work with Crossroad, so `cmake` will need to be called directly.
+Download the source from the jpegli [releases](https://github.com/google/jpegli/releases) page.  Alternatively, you may obtain the latest development version with `git`.  Run `./deps.sh` to ensure additional third-party dependencies are downloaded.  Unfortunately, the script `./ci.sh` does not work with Crossroad, so `cmake` will need to be called directly.
 
 Create a build directory within the source directory.  If you haven't already, start your crossroad project and run `cmake`:
 
 ```bash
 mkdir build
 cd build
-crossroad w64 libjxl
+crossroad w64 jpegli
 crossroad cmake -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF \
-   -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_MANPAGES=OFF \
-   -DJPEGXL_ENABLE_PLUGINS=ON -DJPEGXL_FORCE_SYSTEM_BROTLI=ON \
-   -DJPEGXL_FORCE_SYSTEM_GTEST=ON ..
+   -DJPEGLI_ENABLE_BENCHMARK=OFF -DJPEGLI_ENABLE_MANPAGES=OFF \
+   -DJPEGLI_FORCE_SYSTEM_GTEST=ON ..
 ```
 
-Check the output to see if any dependencies were missed and need to be installed.  If all went well, you may now run `cmake` to build `libjxl`:
+Check the output to see if any dependencies were missed and need to be installed.  If all went well, you may now run `cmake` to build `jpegli`:
 
 ```bash
 cmake --build .

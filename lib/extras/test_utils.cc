@@ -24,12 +24,12 @@
 #include "tools/cpp/runfiles/runfiles.h"
 #endif
 
-namespace jxl {
+namespace jpegli {
 namespace test {
 
 void Check(bool ok) {
   if (!ok) {
-    JXL_CRASH();
+    JPEGLI_CRASH();
   }
 }
 
@@ -61,13 +61,13 @@ std::vector<uint8_t> ReadTestData(const std::string& filename) {
 }
 
 StatusOr<Image3F> GetColorImage(const extras::PackedPixelFile& ppf) {
-  JxlMemoryManager* memory_manager = jxl::test::MemoryManager();
-  JXL_ENSURE(!ppf.frames.empty());
-  JXL_TEST_ASSIGN_OR_DIE(
+  JpegliMemoryManager* memory_manager = jpegli::test::MemoryManager();
+  JPEGLI_ENSURE(!ppf.frames.empty());
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       Image3F color, Image3F::Create(memory_manager, ppf.xsize(), ppf.ysize()));
-  JXL_ENSURE(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
+  JPEGLI_ENSURE(ConvertPackedPixelFileToImage3F(ppf, &color, nullptr));
   return color;
 }
 
 }  // namespace test
-}  // namespace jxl
+}  // namespace jpegli

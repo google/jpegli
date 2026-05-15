@@ -4,18 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_TOOL_VERSION_H_
-#define TOOLS_TOOL_VERSION_H_
+#ifndef JPEGLI_TOOLS_TOOL_VERSION_H_
+#define JPEGLI_TOOLS_TOOL_VERSION_H_
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
-// Package version as defined by the JPEGXL_VERSION macro. This is not the
+// Package version as defined by the JPEGLI_VERSION macro. This is not the
 // library semantic versioning number, but instead additional information on the
 // tool version.
-extern const char* kJpegxlVersion;
+extern const char* kJpegliVersion;
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_TOOL_VERSION_H_
+#endif  // JPEGLI_TOOLS_TOOL_VERSION_H_

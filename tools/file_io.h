@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef TOOLS_FILE_IO_H_
-#define TOOLS_FILE_IO_H_
+#ifndef JPEGLI_TOOLS_FILE_IO_H_
+#define JPEGLI_TOOLS_FILE_IO_H_
 
 #include <sys/stat.h>
 
@@ -25,8 +25,7 @@
 #include <io.h>
 #endif
 
-namespace jpegxl {
-namespace tools {
+namespace jpegli_tools {
 
 // RAII, ensures files are closed even when returning early.
 class FileWrapper {
@@ -80,7 +79,8 @@ class FileWrapper {
 };
 
 template <typename ContainerType>
-static inline bool ReadFile(FileWrapper& f, ContainerType* JXL_RESTRICT bytes) {
+static inline bool ReadFile(FileWrapper& f,
+                            ContainerType* JPEGLI_RESTRICT bytes) {
   if (!f) return false;
 
   // Get size of file in bytes
@@ -126,7 +126,7 @@ static inline bool ReadFile(FileWrapper& f, ContainerType* JXL_RESTRICT bytes) {
 
 template <typename ContainerType>
 static inline bool ReadFile(const std::string& filename,
-                            ContainerType* JXL_RESTRICT bytes) {
+                            ContainerType* JPEGLI_RESTRICT bytes) {
   FileWrapper f(filename, "rb");
   return ReadFile(f, bytes);
 }
@@ -152,7 +152,6 @@ static inline bool WriteFile(const std::string& filename,
   return true;
 }
 
-}  // namespace tools
-}  // namespace jpegxl
+}  // namespace jpegli_tools
 
-#endif  // TOOLS_FILE_IO_H_
+#endif  // JPEGLI_TOOLS_FILE_IO_H_

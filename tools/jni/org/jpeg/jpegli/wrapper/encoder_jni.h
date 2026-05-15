@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI
-#define TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI
+#ifndef JPEGLI_TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI
+#define JPEGLI_TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI
 
 #include <jni.h>
 
@@ -34,4 +34,4 @@ JNIEXPORT jint JNICALL Java_org_jpeg_jpegli_wrapper_Encoder_nativeEncode(
 }
 #endif
 
-#endif  // TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI
+#endif  // JPEGLI_TOOLS_JNI_ORG_JPEG_JPEGLI_WRAPPER_ENCODER_JNI

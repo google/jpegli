@@ -6,11 +6,11 @@
 
 #include <cstddef>
 
-#if defined(LIB_JPEGLI_TRANSPOSE_INL_H_) == defined(HWY_TARGET_TOGGLE)
-#ifdef LIB_JPEGLI_TRANSPOSE_INL_H_
-#undef LIB_JPEGLI_TRANSPOSE_INL_H_
+#if defined(JPEGLI_LIB_JPEGLI_TRANSPOSE_INL_H_) == defined(HWY_TARGET_TOGGLE)
+#ifdef JPEGLI_LIB_JPEGLI_TRANSPOSE_INL_H_
+#undef JPEGLI_LIB_JPEGLI_TRANSPOSE_INL_H_
 #else
-#define LIB_JPEGLI_TRANSPOSE_INL_H_
+#define JPEGLI_LIB_JPEGLI_TRANSPOSE_INL_H_
 #endif
 
 #include <hwy/highway.h>
@@ -23,8 +23,8 @@ namespace HWY_NAMESPACE {
 namespace {
 
 #if HWY_CAP_GE256
-JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
-                                  float* JXL_RESTRICT to) {
+JPEGLI_INLINE void Transpose8x8Block(const float* JPEGLI_RESTRICT from,
+                                     float* JPEGLI_RESTRICT to) {
   const HWY_CAPPED(float, 8) d;
   auto i0 = Load(d, from);
   auto i1 = Load(d, from + 1 * 8);
@@ -72,8 +72,8 @@ JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
   Store(i7, d, to + 7 * 8);
 }
 #elif HWY_TARGET != HWY_SCALAR
-JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
-                                  float* JXL_RESTRICT to) {
+JPEGLI_INLINE void Transpose8x8Block(const float* JPEGLI_RESTRICT from,
+                                     float* JPEGLI_RESTRICT to) {
   const HWY_CAPPED(float, 4) d;
   for (size_t n = 0; n < 8; n += 4) {
     for (size_t m = 0; m < 8; m += 4) {
@@ -98,8 +98,8 @@ JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
   }
 }
 #else
-static JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
-                                         float* JXL_RESTRICT to) {
+static JPEGLI_INLINE void Transpose8x8Block(const float* JPEGLI_RESTRICT from,
+                                            float* JPEGLI_RESTRICT to) {
   for (size_t n = 0; n < 8; ++n) {
     for (size_t m = 0; m < 8; ++m) {
       to[8 * n + m] = from[8 * m + n];
@@ -113,4 +113,4 @@ static JXL_INLINE void Transpose8x8Block(const float* JXL_RESTRICT from,
 }  // namespace HWY_NAMESPACE
 }  // namespace jpegli
 HWY_AFTER_NAMESPACE();
-#endif  // LIB_JPEGLI_TRANSPOSE_INL_H_
+#endif  // JPEGLI_LIB_JPEGLI_TRANSPOSE_INL_H_

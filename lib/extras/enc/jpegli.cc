@@ -36,7 +36,7 @@
 #include "lib/jpegli/encode.h"
 #include "lib/jpegli/types.h"
 
-namespace jxl {
+namespace jpegli {
 namespace extras {
 
 namespace {
@@ -49,27 +49,31 @@ void MyErrorExit(j_common_ptr cinfo) {
 }
 
 Status VerifyInput(const PackedPixelFile& ppf) {
-  const JxlBasicInfo& info = ppf.info;
-  JXL_RETURN_IF_ERROR(Encoder::VerifyBasicInfo(info));
+  const JpegliBasicInfo& info = ppf.info;
+  JPEGLI_RETURN_IF_ERROR(Encoder::VerifyBasicInfo(info));
   if (ppf.frames.size() != 1) {
-    return JXL_FAILURE("JPEG input must have exactly one frame.");
+    return JPEGLI_FAILURE("JPEG input must have exactly one frame.");
   }
   if (info.num_color_channels != 1 && info.num_color_channels != 3) {
-    return JXL_FAILURE("Invalid number of color channels %d",
-                       info.num_color_channels);
+    return JPEGLI_FAILURE("Invalid number of color channels %d",
+                          info.num_color_channels);
   }
   const PackedImage& image = ppf.frames[0].color;
-  JXL_RETURN_IF_ERROR(Encoder::VerifyImageSize(image, info));
-  if (image.format.data_type == JXL_TYPE_FLOAT16) {
-    return JXL_FAILURE("FLOAT16 input is not supported.");
+  JPEGLI_RETURN_IF_ERROR(Encoder::VerifyImageSize(image, info));
+  if (image.xsize != info.xsize || image.ysize != info.ysize) {
+    return JPEGLI_FAILURE("Frame size does not match image size.");
   }
-  JXL_RETURN_IF_ERROR(Encoder::VerifyBitDepth(image.format.data_type,
-                                              info.bits_per_sample,
-                                              info.exponent_bits_per_sample));
-  if ((image.format.data_type == JXL_TYPE_UINT8 && info.bits_per_sample != 8) ||
-      (image.format.data_type == JXL_TYPE_UINT16 &&
+  if (image.format.data_type == JPEGLI_TYPE_FLOAT16) {
+    return JPEGLI_FAILURE("FLOAT16 input is not supported.");
+  }
+  JPEGLI_RETURN_IF_ERROR(
+      Encoder::VerifyBitDepth(image.format.data_type, info.bits_per_sample,
+                              info.exponent_bits_per_sample));
+  if ((image.format.data_type == JPEGLI_TYPE_UINT8 &&
+       info.bits_per_sample != 8) ||
+      (image.format.data_type == JPEGLI_TYPE_UINT16 &&
        info.bits_per_sample != 16)) {
-    return JXL_FAILURE("Only full bit depth unsigned types are supported.");
+    return JPEGLI_FAILURE("Only full bit depth unsigned types are supported.");
   }
   return true;
 }
@@ -78,13 +82,13 @@ Status GetColorEncoding(const PackedPixelFile& ppf,
                         ColorEncoding* color_encoding) {
   if (ppf.primary_color_representation == PackedPixelFile::kIccIsPrimary) {
     IccBytes icc = ppf.icc;
-    JXL_RETURN_IF_ERROR(
-        color_encoding->SetICC(std::move(icc), JxlGetDefaultCms()));
+    JPEGLI_RETURN_IF_ERROR(
+        color_encoding->SetICC(std::move(icc), JpegliGetDefaultCms()));
   } else {
-    JXL_RETURN_IF_ERROR(color_encoding->FromExternal(ppf.color_encoding));
+    JPEGLI_RETURN_IF_ERROR(color_encoding->FromExternal(ppf.color_encoding));
   }
   if (color_encoding->ICC().empty()) {
-    return JXL_FAILURE("Invalid color encoding.");
+    return JPEGLI_FAILURE("Invalid color encoding.");
   }
   return true;
 }
@@ -108,18 +112,19 @@ Status WriteAppData(j_compress_ptr cinfo,
   size_t pos = 0;
   while (pos < app_data.size()) {
     if (pos + 4 > app_data.size()) {
-      return JXL_FAILURE("Incomplete APP header.");
+      return JPEGLI_FAILURE("Incomplete APP header.");
     }
     uint8_t marker = app_data[pos + 1];
     size_t marker_len = (app_data[pos + 2] << 8) + app_data[pos + 3] + 2;
     if (app_data[pos] != 0xff || marker < 0xe0 || marker > 0xef) {
-      return JXL_FAILURE("Invalid APP marker %02x %02x", app_data[pos], marker);
+      return JPEGLI_FAILURE("Invalid APP marker %02x %02x", app_data[pos],
+                            marker);
     }
     if (marker_len <= 4) {
-      return JXL_FAILURE("Invalid APP marker length.");
+      return JPEGLI_FAILURE("Invalid APP marker length.");
     }
     if (pos + marker_len > app_data.size()) {
-      return JXL_FAILURE("Incomplete APP data");
+      return JPEGLI_FAILURE("Incomplete APP data");
     }
     jpegli_write_marker(cinfo, marker, &app_data[pos + 4], marker_len - 4);
     pos += marker_len;
@@ -227,69 +232,43 @@ uint8_t LookupCICPTransferFunctionFromICCProfile(const uint8_t* icc_data,
   return kUnknownTf;
 }
 
-JpegliDataType ConvertDataType(JxlDataType type) {
-  switch (type) {
-    case JXL_TYPE_UINT8:
-      return JPEGLI_TYPE_UINT8;
-    case JXL_TYPE_UINT16:
-      return JPEGLI_TYPE_UINT16;
-    case JXL_TYPE_FLOAT:
-      return JPEGLI_TYPE_FLOAT;
-    default:
-      return JPEGLI_TYPE_UINT8;
-  }
-}
-
-JpegliEndianness ConvertEndianness(JxlEndianness endianness) {
-  switch (endianness) {
-    case JXL_NATIVE_ENDIAN:
-      return JPEGLI_NATIVE_ENDIAN;
-    case JXL_LITTLE_ENDIAN:
-      return JPEGLI_LITTLE_ENDIAN;
-    case JXL_BIG_ENDIAN:
-      return JPEGLI_BIG_ENDIAN;
-    default:
-      return JPEGLI_NATIVE_ENDIAN;
-  }
-}
-
-void ToFloatRow(const uint8_t* row_in, JxlPixelFormat format, size_t xsize,
+void ToFloatRow(const uint8_t* row_in, JpegliPixelFormat format, size_t xsize,
                 size_t c_out, float* row_out) {
   bool is_little_endian =
-      (format.endianness == JXL_LITTLE_ENDIAN ||
-       (format.endianness == JXL_NATIVE_ENDIAN && IsLittleEndian()));
+      (format.endianness == JPEGLI_LITTLE_ENDIAN ||
+       (format.endianness == JPEGLI_NATIVE_ENDIAN && IsLittleEndian()));
   static constexpr double kMul8 = 1.0 / 255.0;
   static constexpr double kMul16 = 1.0 / 65535.0;
   const size_t c_in = format.num_channels;
-  if (format.data_type == JXL_TYPE_UINT8) {
+  if (format.data_type == JPEGLI_TYPE_UINT8) {
     for (size_t x = 0; x < xsize; ++x) {
       for (size_t c = 0; c < c_out; ++c) {
         const size_t ix = c_in * x + c;
         row_out[c_out * x + c] = row_in[ix] * kMul8;
       }
     }
-  } else if (format.data_type == JXL_TYPE_UINT16 && is_little_endian) {
+  } else if (format.data_type == JPEGLI_TYPE_UINT16 && is_little_endian) {
     for (size_t x = 0; x < xsize; ++x) {
       for (size_t c = 0; c < c_out; ++c) {
         const size_t ix = c_in * x + c;
         row_out[c_out * x + c] = LoadLE16(&row_in[2 * ix]) * kMul16;
       }
     }
-  } else if (format.data_type == JXL_TYPE_UINT16 && !is_little_endian) {
+  } else if (format.data_type == JPEGLI_TYPE_UINT16 && !is_little_endian) {
     for (size_t x = 0; x < xsize; ++x) {
       for (size_t c = 0; c < c_out; ++c) {
         const size_t ix = c_in * x + c;
         row_out[c_out * x + c] = LoadBE16(&row_in[2 * ix]) * kMul16;
       }
     }
-  } else if (format.data_type == JXL_TYPE_FLOAT && is_little_endian) {
+  } else if (format.data_type == JPEGLI_TYPE_FLOAT && is_little_endian) {
     for (size_t x = 0; x < xsize; ++x) {
       for (size_t c = 0; c < c_out; ++c) {
         const size_t ix = c_in * x + c;
         row_out[c_out * x + c] = LoadLEFloat(&row_in[4 * ix]);
       }
     }
-  } else if (format.data_type == JXL_TYPE_FLOAT && !is_little_endian) {
+  } else if (format.data_type == JPEGLI_TYPE_FLOAT && !is_little_endian) {
     for (size_t x = 0; x < xsize; ++x) {
       for (size_t c = 0; c < c_out; ++c) {
         const size_t ix = c_in * x + c;
@@ -314,7 +293,7 @@ Status EncodeJpegToTargetSize(const PackedPixelFile& ppf,
     settings.distance = distance;
     settings.target_size = 0;
     std::vector<uint8_t> compressed;
-    JXL_RETURN_IF_ERROR(EncodeJpeg(ppf, settings, pool, &compressed));
+    JPEGLI_RETURN_IF_ERROR(EncodeJpeg(ppf, settings, pool, &compressed));
     size_t size = compressed.size();
     // prefer being under the target size to being over it
     size_t error = size < target_size
@@ -356,7 +335,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
                          jpeg_settings.libjpeg_chroma_subsampling);
     }
     EncodedImage encoded;
-    JXL_RETURN_IF_ERROR(encoder->Encode(ppf, &encoded, pool));
+    JPEGLI_RETURN_IF_ERROR(encoder->Encode(ppf, &encoded, pool));
     size_t target_size = encoded.bitstreams[0].size();
     return EncodeJpegToTargetSize(ppf, jpeg_settings, target_size, pool,
                                   compressed);
@@ -365,23 +344,24 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     return EncodeJpegToTargetSize(ppf, jpeg_settings, jpeg_settings.target_size,
                                   pool, compressed);
   }
-  JXL_RETURN_IF_ERROR(VerifyInput(ppf));
+  JPEGLI_RETURN_IF_ERROR(VerifyInput(ppf));
 
   ColorEncoding color_encoding;
-  JXL_RETURN_IF_ERROR(GetColorEncoding(ppf, &color_encoding));
+  JPEGLI_RETURN_IF_ERROR(GetColorEncoding(ppf, &color_encoding));
 
-  ColorSpaceTransform c_transform(*JxlGetDefaultCms());
+  ColorSpaceTransform c_transform(*JpegliGetDefaultCms());
   ColorEncoding xyb_encoding;
   if (jpeg_settings.xyb) {
     if (HasICCProfile(jpeg_settings.app_data)) {
-      return JXL_FAILURE("APP data ICC profile is not supported in XYB mode.");
+      return JPEGLI_FAILURE(
+          "APP data ICC profile is not supported in XYB mode.");
     }
     const ColorEncoding& c_desired = ColorEncoding::LinearSRGB(false);
-    JXL_RETURN_IF_ERROR(
+    JPEGLI_RETURN_IF_ERROR(
         c_transform.Init(color_encoding, c_desired, 255.0f, ppf.info.xsize, 1));
-    xyb_encoding.SetColorSpace(jxl::ColorSpace::kXYB);
-    xyb_encoding.SetRenderingIntent(jxl::RenderingIntent::kPerceptual);
-    JXL_RETURN_IF_ERROR(xyb_encoding.CreateICC());
+    xyb_encoding.SetColorSpace(jpegli::ColorSpace::kXYB);
+    xyb_encoding.SetRenderingIntent(jpegli::RenderingIntent::kPerceptual);
+    JPEGLI_RETURN_IF_ERROR(xyb_encoding.CreateICC());
   }
   const ColorEncoding& output_encoding =
       jpeg_settings.xyb ? xyb_encoding : color_encoding;
@@ -411,7 +391,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     cinfo.client_data = static_cast<void*>(&env);
     jpegli_create_compress(&cinfo);
     jpegli_mem_dest(&cinfo, &output_buffer, &output_size);
-    const JxlBasicInfo& info = ppf.info;
+    const JpegliBasicInfo& info = ppf.info;
     cinfo.image_width = info.xsize;
     cinfo.image_height = info.ysize;
     cinfo.input_components = info.num_color_channels;
@@ -460,7 +440,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       cinfo.comp_info[0].v_samp_factor = 1;
     }
     jpegli_enable_adaptive_quantization(
-        &cinfo, TO_JXL_BOOL(jpeg_settings.use_adaptive_quantization));
+        &cinfo, TO_JPEGLI_BOOL(jpeg_settings.use_adaptive_quantization));
     if (jpeg_settings.psnr_target > 0.0) {
       jpegli_set_psnr(&cinfo, jpeg_settings.psnr_target,
                       jpeg_settings.search_tolerance,
@@ -472,22 +452,22 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       jpegli_set_distance(&cinfo, jpeg_settings.distance, TRUE);
     }
     jpegli_set_progressive_level(&cinfo, jpeg_settings.progressive_level);
-    cinfo.optimize_coding = TO_JXL_BOOL(jpeg_settings.optimize_coding);
+    cinfo.optimize_coding = TO_JPEGLI_BOOL(jpeg_settings.optimize_coding);
     if (!jpeg_settings.app_data.empty()) {
       // Make sure jpegli_start_compress() does not write any APP markers.
-      cinfo.write_JFIF_header = JXL_FALSE;
-      cinfo.write_Adobe_marker = JXL_FALSE;
+      cinfo.write_JFIF_header = JPEGLI_FALSE;
+      cinfo.write_Adobe_marker = JPEGLI_FALSE;
     }
     const PackedImage& image = ppf.frames[0].color;
     if (jpeg_settings.xyb) {
       jpegli_set_input_format(&cinfo, JPEGLI_TYPE_FLOAT, JPEGLI_NATIVE_ENDIAN);
     } else {
-      jpegli_set_input_format(&cinfo, ConvertDataType(image.format.data_type),
-                              ConvertEndianness(image.format.endianness));
+      jpegli_set_input_format(&cinfo, image.format.data_type,
+                              image.format.endianness);
     }
     jpegli_start_compress(&cinfo, TRUE);
     if (!jpeg_settings.app_data.empty()) {
-      JXL_RETURN_IF_ERROR(WriteAppData(&cinfo, jpeg_settings.app_data));
+      JPEGLI_RETURN_IF_ERROR(WriteAppData(&cinfo, jpeg_settings.app_data));
     }
     if ((jpeg_settings.app_data.empty() && !output_encoding.IsSRGB()) ||
         jpeg_settings.xyb) {
@@ -540,7 +520,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
         }
       } else {
         for (size_t y = 0; y < info.ysize; ++y) {
-          JXL_RETURN_IF_ERROR(
+          JPEGLI_RETURN_IF_ERROR(
               PackedImage::ValidateDataType(image.format.data_type));
           int bytes_per_channel =
               PackedImage::BitsPerChannel(image.format.data_type) / 8;
@@ -567,4 +547,4 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
 }
 
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli

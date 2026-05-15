@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_IMAGE_H_
-#define LIB_JXL_IMAGE_H_
+#ifndef JPEGLI_LIB_EXTRAS_IMAGE_H_
+#define JPEGLI_LIB_EXTRAS_IMAGE_H_
 
 // SIMD/multicore-friendly planar image representation with row accessors.
 
@@ -25,7 +25,7 @@
 #include "lib/base/status.h"
 #include "lib/extras/memory_manager_internal.h"
 
-namespace jxl {
+namespace jpegli {
 
 // DO NOT use PlaneBase outside of image.{h|cc}
 namespace detail {
@@ -61,8 +61,8 @@ struct PlaneBase {
   // un-shrink the image. Caller is responsible for ensuring xsize/ysize are <=
   // the original dimensions.
   Status ShrinkTo(const size_t xsize, const size_t ysize) {
-    JXL_ENSURE(xsize <= orig_xsize_);
-    JXL_ENSURE(ysize <= orig_ysize_);
+    JPEGLI_ENSURE(xsize <= orig_xsize_);
+    JPEGLI_ENSURE(ysize <= orig_ysize_);
     xsize_ = static_cast<uint32_t>(xsize);
     ysize_ = static_cast<uint32_t>(ysize);
     // NOTE: we can't recompute bytes_per_row for more compact storage and
@@ -71,36 +71,37 @@ struct PlaneBase {
   }
 
   // How many pixels.
-  JXL_INLINE size_t xsize() const { return xsize_; }
-  JXL_INLINE size_t ysize() const { return ysize_; }
+  JPEGLI_INLINE size_t xsize() const { return xsize_; }
+  JPEGLI_INLINE size_t ysize() const { return ysize_; }
 
   // NOTE: do not use this for copying rows - the valid xsize may be much less.
-  JXL_INLINE size_t bytes_per_row() const { return bytes_per_row_; }
+  JPEGLI_INLINE size_t bytes_per_row() const { return bytes_per_row_; }
 
-  JXL_INLINE JxlMemoryManager* memory_manager() const {
+  JPEGLI_INLINE JpegliMemoryManager* memory_manager() const {
     return bytes_.memory_manager();
   }
 
   // Raw access to byte contents, for interfacing with other libraries.
   // Unsigned char instead of char to avoid surprises (sign extension).
-  JXL_INLINE uint8_t* bytes() {
+  JPEGLI_INLINE uint8_t* bytes() {
     uint8_t* p = bytes_.address<uint8_t>();
-    return static_cast<uint8_t * JXL_RESTRICT>(JXL_ASSUME_ALIGNED(p, 64));
+    return static_cast<uint8_t* JPEGLI_RESTRICT>(JPEGLI_ASSUME_ALIGNED(p, 64));
   }
-  JXL_INLINE const uint8_t* bytes() const {
+  JPEGLI_INLINE const uint8_t* bytes() const {
     const uint8_t* p = bytes_.address<uint8_t>();
-    return static_cast<const uint8_t * JXL_RESTRICT>(JXL_ASSUME_ALIGNED(p, 64));
+    return static_cast<const uint8_t* JPEGLI_RESTRICT>(
+        JPEGLI_ASSUME_ALIGNED(p, 64));
   }
 
  protected:
   PlaneBase(uint32_t xsize, uint32_t ysize, size_t sizeof_t);
-  Status Allocate(JxlMemoryManager* memory_manager, size_t pre_padding);
+  Status Allocate(JpegliMemoryManager* memory_manager, size_t pre_padding);
 
   // Returns pointer to the start of a row.
-  JXL_INLINE void* VoidRow(const size_t y) const {
-    JXL_DASSERT(y < ysize_);
+  JPEGLI_INLINE void* VoidRow(const size_t y) const {
+    JPEGLI_DASSERT(y < ysize_);
     uint8_t* row = bytes_.address<uint8_t>() + y * bytes_per_row_;
-    return JXL_ASSUME_ALIGNED(row, 64);
+    return JPEGLI_ASSUME_ALIGNED(row, 64);
   }
 
   // (Members are non-const to enable assignment during move-assignment.)
@@ -144,7 +145,7 @@ class Plane : public detail::PlaneBase {
 
   Plane() = default;
 
-  static StatusOr<Plane> Create(JxlMemoryManager* memory_manager,
+  static StatusOr<Plane> Create(JpegliMemoryManager* memory_manager,
                                 const size_t xsize, const size_t ysize,
                                 const size_t pre_padding = 0) {
     static_assert(
@@ -152,30 +153,30 @@ class Plane : public detail::PlaneBase {
         "Only 1/2/4/8-byte samples are supported");
     uint32_t xsize32 = static_cast<uint32_t>(xsize);
     uint32_t ysize32 = static_cast<uint32_t>(ysize);
-    JXL_ENSURE(xsize32 == xsize);
-    JXL_ENSURE(ysize32 == ysize);
+    JPEGLI_ENSURE(xsize32 == xsize);
+    JPEGLI_ENSURE(ysize32 == ysize);
     Plane plane(xsize32, ysize32, sizeof(T));
-    JXL_RETURN_IF_ERROR(plane.Allocate(memory_manager, pre_padding));
+    JPEGLI_RETURN_IF_ERROR(plane.Allocate(memory_manager, pre_padding));
     return plane;
   }
 
-  JXL_INLINE T* Row(const size_t y) { return static_cast<T*>(VoidRow(y)); }
+  JPEGLI_INLINE T* Row(const size_t y) { return static_cast<T*>(VoidRow(y)); }
 
   // Returns pointer to const (see above).
-  JXL_INLINE const T* Row(const size_t y) const {
+  JPEGLI_INLINE const T* Row(const size_t y) const {
     return static_cast<const T*>(VoidRow(y));
   }
 
   // Documents that the access is const.
-  JXL_INLINE const T* ConstRow(const size_t y) const {
+  JPEGLI_INLINE const T* ConstRow(const size_t y) const {
     return static_cast<const T*>(VoidRow(y));
   }
 
   // Returns number of pixels (some of which are padding) per row. Useful for
   // computing other rows via pointer arithmetic. WARNING: this must
   // NOT be used to determine xsize.
-  JXL_INLINE intptr_t PixelsPerRow() const {
-    return static_cast<intptr_t>(bytes_per_row_ / sizeof(T));
+  JPEGLI_INLINE ptrdiff_t PixelsPerRow() const {
+    return static_cast<ptrdiff_t>(bytes_per_row_ / sizeof(T));
   }
 
  private:
@@ -213,7 +214,7 @@ template <typename ComponentType>
 class Image3 {
  public:
   using T = ComponentType;
-  using PlaneT = jxl::Plane<T>;
+  using PlaneT = jpegli::Plane<T>;
   static constexpr size_t kNumPlanes = 3;
 
   Image3() : planes_{PlaneT(), PlaneT(), PlaneT()} {}
@@ -235,44 +236,45 @@ class Image3 {
     return *this;
   }
 
-  static StatusOr<Image3> Create(JxlMemoryManager* memory_manager,
+  static StatusOr<Image3> Create(JpegliMemoryManager* memory_manager,
                                  const size_t xsize, const size_t ysize) {
-    JXL_ASSIGN_OR_RETURN(PlaneT plane0,
-                         PlaneT::Create(memory_manager, xsize, ysize));
-    JXL_ASSIGN_OR_RETURN(PlaneT plane1,
-                         PlaneT::Create(memory_manager, xsize, ysize));
-    JXL_ASSIGN_OR_RETURN(PlaneT plane2,
-                         PlaneT::Create(memory_manager, xsize, ysize));
+    JPEGLI_ASSIGN_OR_RETURN(PlaneT plane0,
+                            PlaneT::Create(memory_manager, xsize, ysize));
+    JPEGLI_ASSIGN_OR_RETURN(PlaneT plane1,
+                            PlaneT::Create(memory_manager, xsize, ysize));
+    JPEGLI_ASSIGN_OR_RETURN(PlaneT plane2,
+                            PlaneT::Create(memory_manager, xsize, ysize));
     return Image3(std::move(plane0), std::move(plane1), std::move(plane2));
   }
 
   // Returns row pointer; usage: PlaneRow(idx_plane, y)[x] = val.
-  JXL_INLINE T* PlaneRow(const size_t c, const size_t y) {
+  JPEGLI_INLINE T* PlaneRow(const size_t c, const size_t y) {
     // Custom implementation instead of calling planes_[c].Row ensures only a
     // single multiplication is needed for PlaneRow(0..2, y).
     PlaneRowBoundsCheck(c, y);
     const size_t row_offset = y * planes_[0].bytes_per_row();
     void* row = planes_[c].bytes() + row_offset;
-    return static_cast<T * JXL_RESTRICT>(JXL_ASSUME_ALIGNED(row, 64));
+    return static_cast<T * JPEGLI_RESTRICT>(JPEGLI_ASSUME_ALIGNED(row, 64));
   }
 
   // Returns const row pointer; usage: val = PlaneRow(idx_plane, y)[x].
-  JXL_INLINE const T* PlaneRow(const size_t c, const size_t y) const {
+  JPEGLI_INLINE const T* PlaneRow(const size_t c, const size_t y) const {
     PlaneRowBoundsCheck(c, y);
     const size_t row_offset = y * planes_[0].bytes_per_row();
     const void* row = planes_[c].bytes() + row_offset;
-    return static_cast<const T * JXL_RESTRICT>(JXL_ASSUME_ALIGNED(row, 64));
+    return static_cast<const T * JPEGLI_RESTRICT>(
+        JPEGLI_ASSUME_ALIGNED(row, 64));
   }
 
   // Returns const row pointer, even if called from a non-const Image3.
-  JXL_INLINE const T* ConstPlaneRow(const size_t c, const size_t y) const {
+  JPEGLI_INLINE const T* ConstPlaneRow(const size_t c, const size_t y) const {
     PlaneRowBoundsCheck(c, y);
     return PlaneRow(c, y);
   }
 
-  JXL_INLINE const PlaneT& Plane(size_t idx) const { return planes_[idx]; }
+  JPEGLI_INLINE const PlaneT& Plane(size_t idx) const { return planes_[idx]; }
 
-  JXL_INLINE PlaneT& Plane(size_t idx) { return planes_[idx]; }
+  JPEGLI_INLINE PlaneT& Plane(size_t idx) { return planes_[idx]; }
 
   void Swap(Image3& other) {
     for (size_t c = 0; c < 3; ++c) {
@@ -286,25 +288,29 @@ class Image3 {
   // the original dimensions.
   Status ShrinkTo(const size_t xsize, const size_t ysize) {
     for (PlaneT& plane : planes_) {
-      JXL_RETURN_IF_ERROR(plane.ShrinkTo(xsize, ysize));
+      JPEGLI_RETURN_IF_ERROR(plane.ShrinkTo(xsize, ysize));
     }
     return true;
   }
 
   // Sizes of all three images are guaranteed to be equal.
-  JXL_INLINE JxlMemoryManager* memory_manager() const {
+  JPEGLI_INLINE JpegliMemoryManager* memory_manager() const {
     return planes_[0].memory_manager();
   }
-  JXL_INLINE size_t xsize() const { return planes_[0].xsize(); }
-  JXL_INLINE size_t ysize() const { return planes_[0].ysize(); }
+  JPEGLI_INLINE size_t xsize() const { return planes_[0].xsize(); }
+  JPEGLI_INLINE size_t ysize() const { return planes_[0].ysize(); }
   // Returns offset [bytes] from one row to the next row of the same plane.
   // WARNING: this must NOT be used to determine xsize, nor for copying rows -
   // the valid xsize may be much less.
-  JXL_INLINE size_t bytes_per_row() const { return planes_[0].bytes_per_row(); }
+  JPEGLI_INLINE size_t bytes_per_row() const {
+    return planes_[0].bytes_per_row();
+  }
   // Returns number of pixels (some of which are padding) per row. Useful for
   // computing other rows via pointer arithmetic. WARNING: this must NOT be used
   // to determine xsize.
-  JXL_INLINE intptr_t PixelsPerRow() const { return planes_[0].PixelsPerRow(); }
+  JPEGLI_INLINE ptrdiff_t PixelsPerRow() const {
+    return planes_[0].PixelsPerRow();
+  }
 
  private:
   Image3(PlaneT&& plane0, PlaneT&& plane1, PlaneT&& plane2) {
@@ -314,7 +320,7 @@ class Image3 {
   }
 
   void PlaneRowBoundsCheck(const size_t c, const size_t y) const {
-    JXL_DASSERT(c < kNumPlanes && y < ysize());
+    JPEGLI_DASSERT(c < kNumPlanes && y < ysize());
   }
 
   PlaneT planes_[kNumPlanes];
@@ -327,6 +333,6 @@ using Image3I = Image3<int32_t>;
 using Image3F = Image3<float>;
 using Image3D = Image3<double>;
 
-}  // namespace jxl
+}  // namespace jpegli
 
-#endif  // LIB_JXL_IMAGE_H_
+#endif  // JPEGLI_LIB_EXTRAS_IMAGE_H_

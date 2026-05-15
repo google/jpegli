@@ -4,12 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
-#ifndef LIB_JXL_BASE_C_CALLBACK_SUPPORT_H_
-#define LIB_JXL_BASE_C_CALLBACK_SUPPORT_H_
+#ifndef JPEGLI_LIB_BASE_C_CALLBACK_SUPPORT_H_
+#define JPEGLI_LIB_BASE_C_CALLBACK_SUPPORT_H_
 
 #include <utility>
 
-namespace jxl {
+namespace jpegli {
 namespace detail {
 
 template <typename T>
@@ -25,9 +25,9 @@ struct MethodToCCallbackHelper<R (T::*)(Args...)> {
 };
 
 }  // namespace detail
-}  // namespace jxl
+}  // namespace jpegli
 
 #define METHOD_TO_C_CALLBACK(method) \
-  ::jxl::detail::MethodToCCallbackHelper<decltype(method)>::Call<method>
+  ::jpegli::detail::MethodToCCallbackHelper<decltype(method)>::Call<method>
 
-#endif  // LIB_JXL_BASE_C_CALLBACK_SUPPORT_H_
+#endif  // JPEGLI_LIB_BASE_C_CALLBACK_SUPPORT_H_

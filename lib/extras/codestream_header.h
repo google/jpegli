@@ -5,8 +5,8 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-#ifndef JXL_CODESTREAM_HEADER_H_
-#define JXL_CODESTREAM_HEADER_H_
+#ifndef JPEGLI_CODESTREAM_HEADER_H_
+#define JPEGLI_CODESTREAM_HEADER_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -23,37 +23,37 @@ extern "C" {
  * image to the display image.
  */
 typedef enum {
-  JXL_ORIENT_IDENTITY = 1,
-  JXL_ORIENT_FLIP_HORIZONTAL = 2,
-  JXL_ORIENT_ROTATE_180 = 3,
-  JXL_ORIENT_FLIP_VERTICAL = 4,
-  JXL_ORIENT_TRANSPOSE = 5,
-  JXL_ORIENT_ROTATE_90_CW = 6,
-  JXL_ORIENT_ANTI_TRANSPOSE = 7,
-  JXL_ORIENT_ROTATE_90_CCW = 8,
-} JxlOrientation;
+  JPEGLI_ORIENT_IDENTITY = 1,
+  JPEGLI_ORIENT_FLIP_HORIZONTAL = 2,
+  JPEGLI_ORIENT_ROTATE_180 = 3,
+  JPEGLI_ORIENT_FLIP_VERTICAL = 4,
+  JPEGLI_ORIENT_TRANSPOSE = 5,
+  JPEGLI_ORIENT_ROTATE_90_CW = 6,
+  JPEGLI_ORIENT_ANTI_TRANSPOSE = 7,
+  JPEGLI_ORIENT_ROTATE_90_CCW = 8,
+} JpegliOrientation;
 
 /** Given type of an extra channel.
  */
 typedef enum {
-  JXL_CHANNEL_ALPHA,
-  JXL_CHANNEL_DEPTH,
-  JXL_CHANNEL_SPOT_COLOR,
-  JXL_CHANNEL_SELECTION_MASK,
-  JXL_CHANNEL_BLACK,
-  JXL_CHANNEL_CFA,
-  JXL_CHANNEL_THERMAL,
-  JXL_CHANNEL_RESERVED0,
-  JXL_CHANNEL_RESERVED1,
-  JXL_CHANNEL_RESERVED2,
-  JXL_CHANNEL_RESERVED3,
-  JXL_CHANNEL_RESERVED4,
-  JXL_CHANNEL_RESERVED5,
-  JXL_CHANNEL_RESERVED6,
-  JXL_CHANNEL_RESERVED7,
-  JXL_CHANNEL_UNKNOWN,
-  JXL_CHANNEL_OPTIONAL
-} JxlExtraChannelType;
+  JPEGLI_CHANNEL_ALPHA,
+  JPEGLI_CHANNEL_DEPTH,
+  JPEGLI_CHANNEL_SPOT_COLOR,
+  JPEGLI_CHANNEL_SELECTION_MASK,
+  JPEGLI_CHANNEL_BLACK,
+  JPEGLI_CHANNEL_CFA,
+  JPEGLI_CHANNEL_THERMAL,
+  JPEGLI_CHANNEL_RESERVED0,
+  JPEGLI_CHANNEL_RESERVED1,
+  JPEGLI_CHANNEL_RESERVED2,
+  JPEGLI_CHANNEL_RESERVED3,
+  JPEGLI_CHANNEL_RESERVED4,
+  JPEGLI_CHANNEL_RESERVED5,
+  JPEGLI_CHANNEL_RESERVED6,
+  JPEGLI_CHANNEL_RESERVED7,
+  JPEGLI_CHANNEL_UNKNOWN,
+  JPEGLI_CHANNEL_OPTIONAL
+} JpegliExtraChannelType;
 
 /** The codestream preview header */
 typedef struct {
@@ -62,11 +62,11 @@ typedef struct {
 
   /** Preview height in pixels */
   uint32_t ysize;
-} JxlPreviewHeader;
+} JpegliPreviewHeader;
 
 /** The codestream animation header, optionally present in the beginning of
  * the codestream, and if it is it applies to all animation frames, unlike @ref
- * JxlFrameHeader which applies to an individual frame.
+ * JpegliFrameHeader which applies to an individual frame.
  */
 typedef struct {
   /** Numerator of ticks per second of a single animation frame time unit */
@@ -80,8 +80,8 @@ typedef struct {
 
   /** Whether animation time codes are present at animation frames in the
    * codestream */
-  JXL_BOOL have_timecodes;
-} JxlAnimationHeader;
+  JPEGLI_BOOL have_timecodes;
+} JpegliAnimationHeader;
 
 /** Basic image information. This information is available from the file
  * signature and first part of the codestream header.
@@ -99,7 +99,7 @@ typedef struct {
    * metadata information and extensions may be available in addition to the
    * codestream.
    */
-  JXL_BOOL have_container;
+  JPEGLI_BOOL have_container;
 
   /** Width of the image in pixels, before applying orientation.
    */
@@ -126,7 +126,7 @@ typedef struct {
    * representable value. The image does not necessarily contain a pixel
    * actually this bright. An encoder is allowed to set 255 for SDR images
    * without computing a histogram.
-   * Leaving this set to its default of 0 lets libjxl choose a sensible default
+   * Leaving this set to its default of 0 lets jpegli choose a sensible default
    * value based on the color encoding.
    */
   float intensity_target;
@@ -139,7 +139,7 @@ typedef struct {
 
   /** See the description of @see linear_below.
    */
-  JXL_BOOL relative_to_max_display;
+  JPEGLI_BOOL relative_to_max_display;
 
   /** The tone mapping will leave unchanged (linear mapping) any pixels whose
    * brightness is strictly below this. The interpretation depends on
@@ -159,30 +159,30 @@ typedef struct {
    * transfer function if outputting to unsigned integers) but will not convert
    * it to to the original color profile.
    */
-  JXL_BOOL uses_original_profile;
+  JPEGLI_BOOL uses_original_profile;
 
   /** Indicates a preview image exists near the beginning of the codestream.
    * The preview itself or its dimensions are not included in the basic info.
    */
-  JXL_BOOL have_preview;
+  JPEGLI_BOOL have_preview;
 
   /** Indicates animation frames exist in the codestream. The animation
    * information is not included in the basic info.
    */
-  JXL_BOOL have_animation;
+  JPEGLI_BOOL have_animation;
 
   /** Image orientation, value 1-8 matching the values used by JEITA CP-3451C
    * (Exif version 2.3).
    */
-  JxlOrientation orientation;
+  JpegliOrientation orientation;
 
   /** Number of color channels encoded in the image, this is either 1 for
    * grayscale data, or 3 for colored data. This count does not include
    * the alpha channel or other extra channels. To check presence of an alpha
    * channel, such as in the case of RGBA color, check alpha_bits != 0.
-   * If and only if this is 1, the @ref JxlColorSpace in the @ref
-   * JxlColorEncoding is
-   * ::JXL_COLOR_SPACE_GRAY.
+   * If and only if this is 1, the @ref JpegliColorSpace in the @ref
+   * JpegliColorEncoding is
+   * ::JPEGLI_COLOR_SPACE_GRAY.
    */
   uint32_t num_color_channels;
 
@@ -193,32 +193,32 @@ typedef struct {
   uint32_t num_extra_channels;
 
   /** Bit depth of the encoded alpha channel, or 0 if there is no alpha channel.
-   * If present, matches the alpha_bits value of the JxlExtraChannelInfo
+   * If present, matches the alpha_bits value of the JpegliExtraChannelInfo
    * associated with this alpha channel.
    */
   uint32_t alpha_bits;
 
   /** Alpha channel floating point exponent bits, or 0 if they are unsigned. If
-   * present, matches the alpha_bits value of the JxlExtraChannelInfo associated
-   * with this alpha channel. integer.
+   * present, matches the alpha_bits value of the JpegliExtraChannelInfo
+   * associated with this alpha channel. integer.
    */
   uint32_t alpha_exponent_bits;
 
   /** Whether the alpha channel is premultiplied. Only used if there is a main
    * alpha channel. Matches the alpha_premultiplied value of the
-   * JxlExtraChannelInfo associated with this alpha channel.
+   * JpegliExtraChannelInfo associated with this alpha channel.
    */
-  JXL_BOOL alpha_premultiplied;
+  JPEGLI_BOOL alpha_premultiplied;
 
   /** Dimensions of encoded preview image, only used if have_preview is
-   * JXL_TRUE.
+   * JPEGLI_TRUE.
    */
-  JxlPreviewHeader preview;
+  JpegliPreviewHeader preview;
 
   /** Animation header with global animation properties for all frames, only
-   * used if have_animation is JXL_TRUE.
+   * used if have_animation is JPEGLI_TRUE.
    */
-  JxlAnimationHeader animation;
+  JpegliAnimationHeader animation;
 
   /** Intrinsic width of the image.
    * The intrinsic size can be different from the actual size in pixels
@@ -240,14 +240,14 @@ typedef struct {
    * in a future version of the library.
    */
   uint8_t padding[100];
-} JxlBasicInfo;
+} JpegliBasicInfo;
 
 /** Information for a single extra channel.
  */
 typedef struct {
   /** Given type of an extra channel.
    */
-  JxlExtraChannelType type;
+  JpegliExtraChannelType type;
 
   /** Total bits per sample for this channel.
    */
@@ -271,59 +271,59 @@ typedef struct {
   uint32_t name_length;
 
   /** Whether alpha channel uses premultiplied alpha. Only applicable if
-   * type is JXL_CHANNEL_ALPHA.
+   * type is JPEGLI_CHANNEL_ALPHA.
    */
-  JXL_BOOL alpha_premultiplied;
+  JPEGLI_BOOL alpha_premultiplied;
 
   /** Spot color of the current spot channel in linear RGBA. Only applicable if
-   * type is JXL_CHANNEL_SPOT_COLOR.
+   * type is JPEGLI_CHANNEL_SPOT_COLOR.
    */
   float spot_color[4];
 
-  /** Only applicable if type is JXL_CHANNEL_CFA.
+  /** Only applicable if type is JPEGLI_CHANNEL_CFA.
    * TODO(lode): add comment about the meaning of this field.
    */
   uint32_t cfa_channel;
-} JxlExtraChannelInfo;
+} JpegliExtraChannelInfo;
 
 /* TODO(lode): add API to get the codestream header extensions. */
 /** Extensions in the codestream header. */
 typedef struct {
   /** Extension bits. */
   uint64_t extensions;
-} JxlHeaderExtensions;
+} JpegliHeaderExtensions;
 
 /** Frame blend modes.
  * When decoding, if coalescing is enabled (default), this can be ignored.
  */
 typedef enum {
-  JXL_BLEND_REPLACE = 0,
-  JXL_BLEND_ADD = 1,
-  JXL_BLEND_BLEND = 2,
-  JXL_BLEND_MULADD = 3,
-  JXL_BLEND_MUL = 4,
-} JxlBlendMode;
+  JPEGLI_BLEND_REPLACE = 0,
+  JPEGLI_BLEND_ADD = 1,
+  JPEGLI_BLEND_BLEND = 2,
+  JPEGLI_BLEND_MULADD = 3,
+  JPEGLI_BLEND_MUL = 4,
+} JpegliBlendMode;
 
 /** The information about blending the color channels or a single extra channel.
  * When decoding, if coalescing is enabled (default), this can be ignored and
- * the blend mode is considered to be JXL_BLEND_REPLACE.
+ * the blend mode is considered to be JPEGLI_BLEND_REPLACE.
  * When encoding, these settings apply to the pixel data given to the encoder.
  */
 typedef struct {
   /** Blend mode.
    */
-  JxlBlendMode blendmode;
+  JpegliBlendMode blendmode;
   /** Reference frame ID to use as the 'bottom' layer (0-3).
    */
   uint32_t source;
   /** Which extra channel to use as the 'alpha' channel for blend modes
-   * JXL_BLEND_BLEND and JXL_BLEND_MULADD.
+   * JPEGLI_BLEND_BLEND and JPEGLI_BLEND_MULADD.
    */
   uint32_t alpha;
   /** Clamp values to [0,1] for the purpose of blending.
    */
-  JXL_BOOL clamp;
-} JxlBlendInfo;
+  JPEGLI_BOOL clamp;
+} JpegliBlendInfo;
 
 /** The information about layers.
  * When decoding, if coalescing is enabled (default), this can be ignored.
@@ -337,7 +337,7 @@ typedef struct {
    * ignored. When decoding, if coalescing is enabled (default), this is always
    * false, regardless of the internal encoding in the JPEG XL codestream.
    */
-  JXL_BOOL have_crop;
+  JPEGLI_BOOL have_crop;
 
   /** Horizontal offset of the frame (can be negative).
    */
@@ -356,9 +356,9 @@ typedef struct {
   uint32_t ysize;
 
   /** The blending info for the color channels. Blending info for extra channels
-   * has to be retrieved separately using JxlDecoderGetExtraChannelBlendInfo.
+   * has to be retrieved separately using JpegliDecoderGetExtraChannelBlendInfo.
    */
-  JxlBlendInfo blend_info;
+  JpegliBlendInfo blend_info;
 
   /** After blending, save the frame as reference frame with this ID (0-3).
    * Special case: if the frame duration is nonzero, ID 0 means "will not be
@@ -367,13 +367,13 @@ typedef struct {
    * the encoder, and should not be used by applications.
    */
   uint32_t save_as_reference;
-} JxlLayerInfo;
+} JpegliLayerInfo;
 
 /** The header of one displayed frame or non-coalesced layer. */
 typedef struct {
   /** How long to wait after rendering in ticks. The duration in seconds of a
    * tick is given by tps_numerator and tps_denominator in @ref
-   * JxlAnimationHeader.
+   * JpegliAnimationHeader.
    */
   uint32_t duration;
 
@@ -381,9 +381,9 @@ typedef struct {
    * interpreted from most-significant to least-significant as hour, minute,
    * second, and frame. If timecode is nonzero, it is strictly larger than that
    * of a previous frame with nonzero duration. These values are only available
-   * if have_timecodes in @ref JxlAnimationHeader is ::JXL_TRUE.
-   * This value is only used if have_timecodes in @ref JxlAnimationHeader is
-   * ::JXL_TRUE.
+   * if have_timecodes in @ref JpegliAnimationHeader is ::JPEGLI_TRUE.
+   * This value is only used if have_timecodes in @ref JpegliAnimationHeader is
+   * ::JPEGLI_TRUE.
    */
   uint32_t timecode;
 
@@ -395,15 +395,15 @@ typedef struct {
   /** Indicates this is the last animation frame. This value is set by the
    * decoder to indicate no further frames follow.
    */
-  JXL_BOOL is_last;
+  JPEGLI_BOOL is_last;
 
   /** Information about the layer in case of no coalescing.
    */
-  JxlLayerInfo layer_info;
-} JxlFrameHeader;
+  JpegliLayerInfo layer_info;
+} JpegliFrameHeader;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* JXL_CODESTREAM_HEADER_H_ */
+#endif /* JPEGLI_CODESTREAM_HEADER_H_ */

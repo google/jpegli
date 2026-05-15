@@ -36,9 +36,9 @@
 #include "lib/extras/test_utils.h"
 #include "lib/threads/test_utils.h"
 
-namespace jxl {
+namespace jpegli {
 
-using ::jxl::test::ThreadPoolForTests;
+using ::jpegli::test::ThreadPoolForTests;
 
 namespace extras {
 
@@ -57,56 +57,57 @@ float LoadBEFloat16(const uint8_t* p) {
   return detail::LoadFloat16(bits16);
 }
 
-size_t GetPrecision(JxlDataType data_type) {
+size_t GetPrecision(JpegliDataType data_type) {
   switch (data_type) {
-    case JXL_TYPE_UINT8:
+    case JPEGLI_TYPE_UINT8:
       return 8;
-    case JXL_TYPE_UINT16:
+    case JPEGLI_TYPE_UINT16:
       return 16;
-    case JXL_TYPE_FLOAT:
+    case JPEGLI_TYPE_FLOAT:
       // Floating point mantissa precision
       return 24;
-    case JXL_TYPE_FLOAT16:
+    case JPEGLI_TYPE_FLOAT16:
       return 11;
     default:
-      return jxl::test::Check(false), 8;
+      return jpegli::test::Check(false), 8;
   }
 }
 
-size_t GetDataBits(JxlDataType data_type) {
+size_t GetDataBits(JpegliDataType data_type) {
   switch (data_type) {
-    case JXL_TYPE_UINT8:
+    case JPEGLI_TYPE_UINT8:
       return 8;
-    case JXL_TYPE_UINT16:
+    case JPEGLI_TYPE_UINT16:
       return 16;
-    case JXL_TYPE_FLOAT:
+    case JPEGLI_TYPE_FLOAT:
       return 32;
-    case JXL_TYPE_FLOAT16:
+    case JPEGLI_TYPE_FLOAT16:
       return 16;
     default:
-      return jxl::test::Check(false), 8;
+      return jpegli::test::Check(false), 8;
   }
 }
 
 std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
-                                    size_t ysize, const JxlPixelFormat& format,
+                                    size_t ysize,
+                                    const JpegliPixelFormat& format,
                                     double factor) {
   std::vector<double> result(xsize * ysize * 4);
   size_t num_channels = format.num_channels;
   bool gray = num_channels == 1 || num_channels == 2;
   bool alpha = num_channels == 2 || num_channels == 4;
-  JxlEndianness endianness = format.endianness;
+  JpegliEndianness endianness = format.endianness;
   // Compute actual type:
-  if (endianness == JXL_NATIVE_ENDIAN) {
-    endianness = IsLittleEndian() ? JXL_LITTLE_ENDIAN : JXL_BIG_ENDIAN;
+  if (endianness == JPEGLI_NATIVE_ENDIAN) {
+    endianness = IsLittleEndian() ? JPEGLI_LITTLE_ENDIAN : JPEGLI_BIG_ENDIAN;
   }
 
   size_t stride =
-      xsize * jxl::DivCeil(GetDataBits(format.data_type) * num_channels,
-                           jxl::kBitsPerByte);
-  if (format.align > 1) stride = jxl::RoundUpTo(stride, format.align);
+      xsize * jpegli::DivCeil(GetDataBits(format.data_type) * num_channels,
+                              jpegli::kBitsPerByte);
+  if (format.align > 1) stride = jpegli::RoundUpTo(stride, format.align);
 
-  if (format.data_type == JXL_TYPE_UINT8) {
+  if (format.data_type == JPEGLI_TYPE_UINT8) {
     // Multiplier to bring to 0-1.0 range
     double mul = factor > 0.0 ? factor : 1.0 / 255.0;
     for (size_t y = 0; y < ysize; ++y) {
@@ -123,8 +124,8 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         result[j + 3] = a * mul;
       }
     }
-  } else if (format.data_type == JXL_TYPE_UINT16) {
-    jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
+  } else if (format.data_type == JPEGLI_TYPE_UINT16) {
+    jpegli::test::Check(endianness != JPEGLI_NATIVE_ENDIAN);
     // Multiplier to bring to 0-1.0 range
     double mul = factor > 0.0 ? factor : 1.0 / 65535.0;
     for (size_t y = 0; y < ysize; ++y) {
@@ -135,7 +136,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         double g;
         double b;
         double a;
-        if (endianness == JXL_BIG_ENDIAN) {
+        if (endianness == JPEGLI_BIG_ENDIAN) {
           r = (pixels[i + 0] << 8) + pixels[i + 1];
           g = gray ? r : (pixels[i + 2] << 8) + pixels[i + 3];
           b = gray ? r : (pixels[i + 4] << 8) + pixels[i + 5];
@@ -156,8 +157,8 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         result[j + 3] = a * mul;
       }
     }
-  } else if (format.data_type == JXL_TYPE_FLOAT) {
-    jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
+  } else if (format.data_type == JPEGLI_TYPE_FLOAT) {
+    jpegli::test::Check(endianness != JPEGLI_NATIVE_ENDIAN);
     for (size_t y = 0; y < ysize; ++y) {
       for (size_t x = 0; x < xsize; ++x) {
         size_t j = (y * xsize + x) * 4;
@@ -166,7 +167,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         double g;
         double b;
         double a;
-        if (endianness == JXL_BIG_ENDIAN) {
+        if (endianness == JPEGLI_BIG_ENDIAN) {
           r = LoadBEFloat(pixels + i);
           g = gray ? r : LoadBEFloat(pixels + i + 4);
           b = gray ? r : LoadBEFloat(pixels + i + 8);
@@ -183,8 +184,8 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         result[j + 3] = a;
       }
     }
-  } else if (format.data_type == JXL_TYPE_FLOAT16) {
-    ::jxl::test::Check(endianness != JXL_NATIVE_ENDIAN);
+  } else if (format.data_type == JPEGLI_TYPE_FLOAT16) {
+    ::jpegli::test::Check(endianness != JPEGLI_NATIVE_ENDIAN);
     for (size_t y = 0; y < ysize; ++y) {
       for (size_t x = 0; x < xsize; ++x) {
         size_t j = (y * xsize + x) * 4;
@@ -193,7 +194,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
         double g;
         double b;
         double a;
-        if (endianness == JXL_BIG_ENDIAN) {
+        if (endianness == JPEGLI_BIG_ENDIAN) {
           r = LoadBEFloat16(pixels + i);
           g = gray ? r : LoadBEFloat16(pixels + i + 2);
           b = gray ? r : LoadBEFloat16(pixels + i + 4);
@@ -211,7 +212,7 @@ std::vector<double> ConvertToRGBA32(const uint8_t* pixels, size_t xsize,
       }
     }
   } else {
-    ::jxl::test::Check(false);  // Unsupported type
+    ::jpegli::test::Check(false);  // Unsupported type
   }
   return result;
 }
@@ -247,7 +248,7 @@ void VerifySameImage(const PackedImage& im0, size_t bits_per_sample0,
   ASSERT_EQ(im0.xsize, im1.xsize);
   ASSERT_EQ(im0.ysize, im1.ysize);
   ASSERT_EQ(im0.format.num_channels, im1.format.num_channels);
-  auto get_factor = [](JxlPixelFormat f, size_t bits) -> double {
+  auto get_factor = [](JpegliPixelFormat f, size_t bits) -> double {
     return 1.0 / ((1u << std::min(GetPrecision(f.data_type), bits)) - 1);
   };
   double factor0 = get_factor(im0.format, bits_per_sample0);
@@ -276,13 +277,13 @@ void VerifySameImage(const PackedImage& im0, size_t bits_per_sample0,
   }
 }
 
-JxlColorEncoding CreateTestColorEncoding(bool is_gray) {
-  JxlColorEncoding c;
-  c.color_space = is_gray ? JXL_COLOR_SPACE_GRAY : JXL_COLOR_SPACE_RGB;
-  c.white_point = JXL_WHITE_POINT_D65;
-  c.primaries = JXL_PRIMARIES_P3;
-  c.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
-  c.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+JpegliColorEncoding CreateTestColorEncoding(bool is_gray) {
+  JpegliColorEncoding c;
+  c.color_space = is_gray ? JPEGLI_COLOR_SPACE_GRAY : JPEGLI_COLOR_SPACE_RGB;
+  c.white_point = JPEGLI_WHITE_POINT_D65;
+  c.primaries = JPEGLI_PRIMARIES_P3;
+  c.rendering_intent = JPEGLI_RENDERING_INTENT_RELATIVE;
+  c.transfer_function = JPEGLI_TRANSFER_FUNCTION_LINEAR;
   // Roundtrip through internal color encoding to fill in primaries and white
   // point CIE xy coordinates.
   ColorEncoding c_internal;
@@ -291,31 +292,31 @@ JxlColorEncoding CreateTestColorEncoding(bool is_gray) {
   return c;
 }
 
-std::vector<uint8_t> GenerateICC(JxlColorEncoding color_encoding) {
+std::vector<uint8_t> GenerateICC(JpegliColorEncoding color_encoding) {
   ColorEncoding c;
   EXPECT_TRUE(c.FromExternal(color_encoding));
   EXPECT_TRUE(!c.ICC().empty());
   return c.ICC();
 }
 
-void StoreRandomValue(uint8_t* out, Rng* rng, JxlPixelFormat format,
+void StoreRandomValue(uint8_t* out, Rng* rng, JpegliPixelFormat format,
                       size_t bits_per_sample) {
   uint64_t max_val = (1ull << bits_per_sample) - 1;
-  if (format.data_type == JXL_TYPE_UINT8) {
+  if (format.data_type == JPEGLI_TYPE_UINT8) {
     *out = rng->UniformU(0, max_val);
-  } else if (format.data_type == JXL_TYPE_UINT16) {
+  } else if (format.data_type == JPEGLI_TYPE_UINT16) {
     uint32_t val = rng->UniformU(0, max_val);
-    if (format.endianness == JXL_BIG_ENDIAN) {
+    if (format.endianness == JPEGLI_BIG_ENDIAN) {
       StoreBE16(val, out);
     } else {
       StoreLE16(val, out);
     }
   } else {
-    ASSERT_EQ(format.data_type, JXL_TYPE_FLOAT);
+    ASSERT_EQ(format.data_type, JPEGLI_TYPE_FLOAT);
     float val = rng->UniformF(0.0, 1.0);
     uint32_t uval;
     memcpy(&uval, &val, 4);
-    if (format.endianness == JXL_BIG_ENDIAN) {
+    if (format.endianness == JPEGLI_BIG_ENDIAN) {
       StoreBE32(uval, out);
     } else {
       StoreLE32(uval, out);
@@ -324,7 +325,7 @@ void StoreRandomValue(uint8_t* out, Rng* rng, JxlPixelFormat format,
 }
 
 void FillPackedImage(size_t bits_per_sample, PackedImage* image) {
-  JxlPixelFormat format = image->format;
+  JpegliPixelFormat format = image->format;
   size_t bytes_per_channel = PackedImage::BitsPerChannel(format.data_type) / 8;
   uint8_t* out = static_cast<uint8_t*>(image->pixels());
   size_t stride = image->xsize * format.num_channels * bytes_per_channel;
@@ -375,13 +376,13 @@ struct TestImageParams {
     }
   }
 
-  JxlPixelFormat PixelFormat() const {
-    JxlPixelFormat format;
+  JpegliPixelFormat PixelFormat() const {
+    JpegliPixelFormat format;
     format.num_channels = (is_gray ? 1 : 3) + (add_alpha ? 1 : 0);
-    format.data_type = (bits_per_sample == 32 ? JXL_TYPE_FLOAT
-                        : bits_per_sample > 8 ? JXL_TYPE_UINT16
-                                              : JXL_TYPE_UINT8);
-    format.endianness = big_endian ? JXL_BIG_ENDIAN : JXL_LITTLE_ENDIAN;
+    format.data_type = (bits_per_sample == 32 ? JPEGLI_TYPE_FLOAT
+                        : bits_per_sample > 8 ? JPEGLI_TYPE_UINT16
+                                              : JPEGLI_TYPE_UINT8);
+    format.endianness = big_endian ? JPEGLI_BIG_ENDIAN : JPEGLI_LITTLE_ENDIAN;
     format.align = 0;
     return format;
   }
@@ -401,28 +402,28 @@ void CreateTestImage(const TestImageParams& params, PackedPixelFile* ppf) {
   ppf->info.exponent_bits_per_sample = params.bits_per_sample == 32 ? 8 : 0;
   ppf->info.num_color_channels = params.is_gray ? 1 : 3;
   ppf->info.alpha_bits = params.add_alpha ? params.bits_per_sample : 0;
-  ppf->info.alpha_premultiplied = TO_JXL_BOOL(params.codec == Codec::kEXR);
+  ppf->info.alpha_premultiplied = TO_JPEGLI_BOOL(params.codec == Codec::kEXR);
 
-  JxlColorEncoding color_encoding = CreateTestColorEncoding(params.is_gray);
+  JpegliColorEncoding color_encoding = CreateTestColorEncoding(params.is_gray);
   ppf->icc = GenerateICC(color_encoding);
   ppf->color_encoding = color_encoding;
 
-  JXL_TEST_ASSIGN_OR_DIE(
+  JPEGLI_TEST_ASSIGN_OR_DIE(
       PackedFrame frame,
       PackedFrame::Create(params.xsize, params.ysize, params.PixelFormat()));
   FillPackedImage(params.bits_per_sample, &frame.color);
   if (params.add_extra_channels) {
     for (size_t i = 0; i < 7; ++i) {
-      JxlPixelFormat ec_format = params.PixelFormat();
+      JpegliPixelFormat ec_format = params.PixelFormat();
       ec_format.num_channels = 1;
-      JXL_TEST_ASSIGN_OR_DIE(
+      JPEGLI_TEST_ASSIGN_OR_DIE(
           PackedImage ec,
           PackedImage::Create(params.xsize, params.ysize, ec_format));
       FillPackedImage(params.bits_per_sample, &ec);
       frame.extra_channels.emplace_back(std::move(ec));
       PackedExtraChannel pec;
       pec.ec_info.bits_per_sample = params.bits_per_sample;
-      pec.ec_info.type = static_cast<JxlExtraChannelType>(i);
+      pec.ec_info.type = static_cast<JpegliExtraChannelType>(i);
       ppf->extra_channels_info.emplace_back(std::move(pec));
     }
   }
@@ -451,7 +452,7 @@ void TestRoundTrip(const TestImageParams& params, ThreadPool* pool) {
   CreateTestImage(params, &ppf_in);
   EncodedImage encoded;
   ASSERT_TRUE(encoder->Encode(ppf_in, &encoded, pool));
-  ASSERT_EQ(encoded.bitstreams.size(), 1);
+  ASSERT_EQ(encoded.bitstreams.size(), 1u);
 
   PackedPixelFile ppf_out;
   ColorHints color_hints;
@@ -467,20 +468,20 @@ void TestRoundTrip(const TestImageParams& params, ThreadPool* pool) {
               ppf_out.color_encoding.color_space);
     EXPECT_EQ(ppf_in.color_encoding.white_point,
               ppf_out.color_encoding.white_point);
-    if (ppf_in.color_encoding.color_space != JXL_COLOR_SPACE_GRAY) {
+    if (ppf_in.color_encoding.color_space != JPEGLI_COLOR_SPACE_GRAY) {
       EXPECT_EQ(ppf_in.color_encoding.primaries,
                 ppf_out.color_encoding.primaries);
     }
     EXPECT_EQ(ppf_in.color_encoding.transfer_function,
               ppf_out.color_encoding.transfer_function);
     EXPECT_EQ(ppf_out.color_encoding.rendering_intent,
-              JXL_RENDERING_INTENT_RELATIVE);
+              JPEGLI_RENDERING_INTENT_RELATIVE);
   } else if (params.codec != Codec::kPNM && params.codec != Codec::kPGX &&
              params.codec != Codec::kEXR) {
     EXPECT_EQ(ppf_in.icc, ppf_out.icc);
   }
 
-  ASSERT_EQ(ppf_out.frames.size(), 1);
+  ASSERT_EQ(ppf_out.frames.size(), 1u);
   const auto& frame_in = ppf_in.frames[0];
   const auto& frame_out = ppf_out.frames[0];
   VerifySameImage(frame_in.color, ppf_in.info.bits_per_sample, frame_out.color,
@@ -541,7 +542,7 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
       std::string filename = "jxl/flower/flower_small." +
                              std::string(kChannels[channels]) + ".depth" +
                              std::to_string(bit_depth) + extension;
-      const std::vector<uint8_t> orig = jxl::test::ReadTestData(filename);
+      const std::vector<uint8_t> orig = jpegli::test::ReadTestData(filename);
 
       PackedPixelFile ppf;
       ColorHints color_hints;
@@ -553,7 +554,7 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
       auto encoder = Encoder::FromExtension(extension);
       ASSERT_TRUE(encoder.get());
       ASSERT_TRUE(encoder->Encode(ppf, &encoded, pool.get()));
-      ASSERT_EQ(encoded.bitstreams.size(), 1);
+      ASSERT_EQ(encoded.bitstreams.size(), 1u);
       ASSERT_EQ(orig.size(), encoded.bitstreams[0].size());
       EXPECT_EQ(0,
                 memcmp(orig.data(), encoded.bitstreams[0].data(), orig.size()));
@@ -564,10 +565,10 @@ TEST(CodecTest, LosslessPNMRoundtrip) {
 TEST(CodecTest, TestPNM) {
   size_t u = 77777;  // Initialized to wrong value.
   double d = 77.77;
-// Failing to parse invalid strings results in a crash if `JXL_CRASH_ON_ERROR`
-// is defined and hence the tests fail. Therefore we only run these tests if
-// `JXL_CRASH_ON_ERROR` is not defined.
-#if (!JXL_CRASH_ON_ERROR)
+// Failing to parse invalid strings results in a crash if
+// `JPEGLI_CRASH_ON_ERROR` is defined and hence the tests fail. Therefore we
+// only run these tests if `JPEGLI_CRASH_ON_ERROR` is not defined.
+#if (!JPEGLI_CRASH_ON_ERROR)
   ASSERT_FALSE(PnmParseUnsigned(MakeSpan(""), &u));
   ASSERT_FALSE(PnmParseUnsigned(MakeSpan("+"), &u));
   ASSERT_FALSE(PnmParseUnsigned(MakeSpan("-"), &u));
@@ -605,13 +606,13 @@ TEST(CodecTest, EncodeToPNG) {
     return;
   }
 
-  const std::vector<uint8_t> original_png = jxl::test::ReadTestData(
+  const std::vector<uint8_t> original_png = jpegli::test::ReadTestData(
       "external/wesaturate/500px/tmshre_riaphotographs_srgb8.png");
   PackedPixelFile ppf;
   ASSERT_TRUE(extras::DecodeBytes(Bytes(original_png), ColorHints(), &ppf));
 
-  const JxlPixelFormat& format = ppf.frames.front().color.format;
-  const auto& format_matcher = [&format](const JxlPixelFormat& candidate) {
+  const JpegliPixelFormat& format = ppf.frames.front().color.format;
+  const auto& format_matcher = [&format](const JpegliPixelFormat& candidate) {
     return (candidate.num_channels == format.num_channels) &&
            (candidate.data_type == format.data_type) &&
            (candidate.endianness == format.endianness);
@@ -621,14 +622,14 @@ TEST(CodecTest, EncodeToPNG) {
   EncodedImage encoded_png;
   ASSERT_TRUE(png_encoder->Encode(ppf, &encoded_png, pool));
   EXPECT_TRUE(encoded_png.icc.empty());
-  ASSERT_EQ(encoded_png.bitstreams.size(), 1);
+  ASSERT_EQ(encoded_png.bitstreams.size(), 1u);
 
   PackedPixelFile decoded_ppf;
   ASSERT_TRUE(extras::DecodeBytes(Bytes(encoded_png.bitstreams.front()),
                                   ColorHints(), &decoded_ppf));
 
   ASSERT_EQ(decoded_ppf.info.bits_per_sample, ppf.info.bits_per_sample);
-  ASSERT_EQ(decoded_ppf.frames.size(), 1);
+  ASSERT_EQ(decoded_ppf.frames.size(), 1u);
   VerifySameImage(ppf.frames[0].color, ppf.info.bits_per_sample,
                   decoded_ppf.frames[0].color,
                   decoded_ppf.info.bits_per_sample);
@@ -636,4 +637,4 @@ TEST(CodecTest, EncodeToPNG) {
 
 }  // namespace
 }  // namespace extras
-}  // namespace jxl
+}  // namespace jpegli
