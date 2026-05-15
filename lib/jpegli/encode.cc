@@ -836,7 +836,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
 void jpegli_set_distance(j_compress_ptr cinfo, float distance,
                          boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
-  cinfo->master->force_baseline = FROM_JXL_BOOL(force_baseline);
+  cinfo->master->force_baseline = FROM_JPEGLI_BOOL(force_baseline);
   if (distance >= 1.9f && !(cinfo->master->xyb_mode) &&
       !cinfo->master->chroma_subsampling_set_by_cli) {
     // At medium qualities, 420 subsampling begins to outperform 444.
