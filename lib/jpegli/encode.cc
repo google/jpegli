@@ -785,7 +785,7 @@ void jpegli_set_colorspace(j_compress_ptr cinfo, J_COLOR_SPACE colorspace) {
   }
   // Adobe marker is needed to distinguish CMYK, YCCK and RGB(XYB) JPEGs.
   cinfo->write_Adobe_marker =
-      TO_JXL_BOOL((cinfo->jpeg_color_space == JCS_CMYK ||
+      TO_JPEGLI_BOOL((cinfo->jpeg_color_space == JCS_CMYK ||
                    cinfo->jpeg_color_space == JCS_YCCK ||
                    cinfo->jpeg_color_space == JCS_RGB));
   if (cinfo->comp_info == nullptr) {
