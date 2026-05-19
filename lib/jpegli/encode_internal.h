@@ -90,6 +90,7 @@ struct jpeg_comp_master {
   float* quant_mul[jpegli::kMaxComponents];
   float* zero_bias_offset[jpegli::kMaxComponents];
   float* zero_bias_mul[jpegli::kMaxComponents];
+  bool zero_bias_params_set;
   int h_factor[jpegli::kMaxComponents];
   int v_factor[jpegli::kMaxComponents];
   // Array of Huffman tables that will be encoded in one or more DHT segments.
