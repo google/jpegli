@@ -266,6 +266,10 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
   if (cinfo->out_color_space != JCS_RGB) {
     JPEGLI_ERROR("Two-pass quantizer must use RGB output color space.");
   }
+  if (cinfo->desired_number_of_colors > 256) {
+    JPEGLI_ERROR("Too many colors requested for quantization: %d",
+                 cinfo->desired_number_of_colors);
+  }
   jpeg_decomp_master* m = cinfo->master;
   const size_t num_pixels =
       static_cast<size_t>(cinfo->output_width) * cinfo->output_height;
