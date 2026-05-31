@@ -34,6 +34,7 @@
 #include "lib/extras/xyb_transform.h"
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode.h"
+#include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/types.h"
 
 namespace jpegli {
@@ -415,6 +416,7 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
     if (!jpeg_settings.chroma_subsampling.empty()) {
+      cinfo.master->chroma_subsampling_set_by_cli = true;
       if (jpeg_settings.chroma_subsampling == "444") {
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 1;
