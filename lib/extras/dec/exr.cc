@@ -374,10 +374,10 @@ Status DecodeImageEXR(Span<const uint8_t> bytes, const ColorHints& color_hints,
         const char* JPEGLI_RESTRICT input_ec_slice = input_extra_rows.data();
         for (PackedImage& ec : frame.extra_channels) {
           const char* const JPEGLI_RESTRICT input_ec_row =
-              input_ec_slice + (exr_y - start_y) * ec.stride;
+              input_ec_slice + (exr_y - start_y) * ec.pixel_stride() * row_size;
           uint8_t* ec_row =
               static_cast<uint8_t*>(ec.pixels()) + ec.stride * image_y;
-          input_ec_slice += ec.stride * (end_y - start_y + 1);
+          input_ec_slice += ec.pixel_stride() * row_size * (end_y - start_y + 1);
 
           const char* exr_ec_ptr =
               input_ec_row + (exr_x1 - dataWindow.min.x) * ec.pixel_stride();
