@@ -457,6 +457,10 @@ void CreateInverseColorMap(j_decompress_ptr cinfo) {
   int ncomp = cinfo->out_color_components;
   JPEGLI_CHECK(ncomp > 0);
   JPEGLI_CHECK(ncomp <= kMaxComponents);
+  if (cinfo->actual_number_of_colors > 256) {
+    JPEGLI_ERROR("Too many quantization colors (%d)",
+                 cinfo->actual_number_of_colors);
+  }
   int num_cells = 1;
   for (int c = 0; c < ncomp; ++c) {
     num_cells *= (1 << kNumColorCellBits[c]);
