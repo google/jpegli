@@ -148,7 +148,7 @@ bool FindCICPTag(const uint8_t* icc_data, size_t len, bool is_first_chunk,
       return false;
     }
     uint32_t tag_count = LoadBE32(&icc_data[128]);
-    if (len < 132 + 12 * tag_count) {
+    if (len < 132 + static_cast<uint64_t>(12) * tag_count) {
       return false;
     }
     for (uint32_t i = 0; i < tag_count; ++i) {
