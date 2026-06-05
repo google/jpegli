@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "jpeglib.h"
+#include "lib/base/include_jpeglib.h"
 #include "lib/base/compiler_specific.h"
 #include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/huffman.h"
