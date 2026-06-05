@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "jpeglib.h"
+#include "lib/base/include_jpeglib.h"
 #include "lib/jpegli/common_internal.h"
 #include "lib/jpegli/types.h"
 
