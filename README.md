@@ -48,6 +48,11 @@ When [building the project](doc/building_and_testing.md), two binaries,
 `lib/jpegli/libjpeg.so.62.3.0` shared library that can be used as a drop-in
 replacement for the system library with the same name.
 
+## Third-party Python package
+
+A third-party package, [ajpegli](https://github.com/dKosarevsky/ajpegli),
+provides JPEG-to-NumPy loading for Python using jpegli.
+
 ## Development process
 
 *   [More information on testing/build options](doc/building_and_testing.md)
