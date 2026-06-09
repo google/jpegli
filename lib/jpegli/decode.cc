@@ -939,7 +939,8 @@ void jpegli_crop_scanline(j_decompress_ptr cinfo, JDIMENSION* xoffset,
     JPEGLI_ERROR("Output cropping is not supported in raw data mode");
   }
   if (xoffset == nullptr || width == nullptr || *width == 0 ||
-      *xoffset + *width > cinfo->output_width) {
+      *xoffset >= cinfo->output_width ||
+      *width > cinfo->output_width - *xoffset) {
     JPEGLI_ERROR("jpegli_crop_scanline: Invalid arguments");
   }
   // TODO(szabadka) Skip the IDCT for skipped over blocks.
