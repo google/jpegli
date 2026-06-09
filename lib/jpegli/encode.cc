@@ -906,7 +906,7 @@ void jpegli_add_quant_table(j_compress_ptr cinfo, int which_tbl,
                             const unsigned int* basic_table, int scale_factor,
                             boolean force_baseline) {
   CheckState(cinfo, jpegli::kEncStart);
-  if (which_tbl < 0 || which_tbl > NUM_QUANT_TBLS) {
+  if (which_tbl < 0 || which_tbl >= NUM_QUANT_TBLS) {
     JPEGLI_ERROR("Invalid quant table index %d", which_tbl);
   }
   if (cinfo->quant_tbl_ptrs[which_tbl] == nullptr) {
