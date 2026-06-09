@@ -1140,6 +1140,25 @@ TEST(DecoderErrorHandlingTest, NoReadScanlines) {
   jpegli_destroy_decompress(&cinfo);
 }
 
+TEST(DecoderErrorHandlingTest, CropScanlineArgumentOverflow) {
+  jpeg_decompress_struct cinfo = {};
+  const auto try_catch_block = [&]() -> bool {
+    ERROR_HANDLER_SETUP(jpegli);
+    jpegli_create_decompress(&cinfo);
+    jpegli_mem_src(&cinfo, kCompressed0, kLen0);
+    jpegli_read_header(&cinfo, TRUE);
+    jpegli_start_decompress(&cinfo);
+    // xoffset + width wraps around JDIMENSION and lands below output_width, so
+    // an unguarded sum accepts this out-of-range crop window.
+    JDIMENSION xoffset = 0xffffffffu;
+    JDIMENSION width = 2;
+    jpegli_crop_scanline(&cinfo, &xoffset, &width);
+    return true;
+  };
+  EXPECT_FALSE(try_catch_block());
+  jpegli_destroy_decompress(&cinfo);
+}
+
 const size_t kMaxImageWidth = 0xffff;
 JSAMPLE kOutputBuffer[MAX_COMPONENTS * kMaxImageWidth];
 
