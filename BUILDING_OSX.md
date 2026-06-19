@@ -30,7 +30,7 @@ brew install coreutils cmake giflib jpeg-turbo libpng ninja zlib
 ```
 
 Before building the project check that `which clang` is
-`/usr/local/opt/llvm/bin/clang`, not the one provided by XCode. If not, update
+`/usr/local/opt/llvm/bin/clang` (or `/opt/homebrew/opt/llvm/bin/clang` on Apple Silicon Macs), not the one provided by XCode. If not, update
 `PATH` environment variable.
 
 Also, setting `CMAKE_PREFIX_PATH` might be necessary for correct include paths
