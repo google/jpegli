@@ -145,6 +145,17 @@ void jpegli_set_input_format(j_compress_ptr cinfo, JpegliDataType data_type,
 // Enabled by default.
 void jpegli_enable_adaptive_quantization(j_compress_ptr cinfo, boolean value);
 
+// Sets the adaptive quantization settings, allowing for control of the
+// conditions for when coefficients are zero'd out. Each of the mul and
+// offset parameters consists of an array of 64 values, one for each
+// coefficient.
+// Note that when used, this function must be called once for each
+// component of the image.
+void jpegli_set_adaptive_quantization_settings(j_compress_ptr cinfo,
+                                               int which_component,
+                                               const float* mul,
+                                               const float offset);
+
 // Sets the default progression parameters, where level 0 is sequential, and
 // greater level value means more progression steps. Default is 2.
 void jpegli_set_progressive_level(j_compress_ptr cinfo, int level);
