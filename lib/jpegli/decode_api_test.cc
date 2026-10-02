@@ -266,6 +266,20 @@ void TestAPINonBuffered(const CompressParams& jparams,
     EXPECT_EQ(num_markers_seen, kMarkerSequenceLen);
     EXPECT_EQ(0, memcmp(markers_seen, kMarkerSequence, num_markers_seen));
   }
+  // Saved markers must be listed in the order they appear in the file.
+  std::vector<int> saved_markers;
+  for (jpeg_saved_marker_ptr m = cinfo->marker_list; m; m = m->next) {
+    saved_markers.push_back(m->marker);
+  }
+  std::vector<int> expected_markers;
+  if (jparams.add_marker) {
+    expected_markers.push_back(kSpecialMarker0);
+    expected_markers.push_back(kSpecialMarker1);
+  }
+  if (!jparams.icc.empty()) {
+    expected_markers.resize(saved_markers.size(), JPEG_APP0 + 2);
+  }
+  EXPECT_EQ(expected_markers, saved_markers);
   if (!jparams.icc.empty()) {
     uint8_t* icc_data = nullptr;
     unsigned int icc_len;
