@@ -457,17 +457,19 @@ void SaveMarker(j_decompress_ptr cinfo, const uint8_t* data, size_t len) {
   const uint8_t* payload = data + 2;
   size_t payload_size = len - 2;
 
-  // Insert new saved marker to the head of the list.
-  jpeg_saved_marker_ptr next = cinfo->marker_list;
-  cinfo->marker_list =
+  // Append new saved marker to the tail of the list, so that the list is in
+  // the order the markers appear in the file, as with libjpeg.
+  jpeg_saved_marker_ptr saved =
       jpegli::Allocate<jpeg_marker_struct>(cinfo, 1, JPOOL_IMAGE);
-  cinfo->marker_list->next = next;
-  cinfo->marker_list->marker = marker;
-  cinfo->marker_list->original_length = payload_size;
-  cinfo->marker_list->data_length = payload_size;
-  cinfo->marker_list->data =
-      jpegli::Allocate<uint8_t>(cinfo, payload_size, JPOOL_IMAGE);
-  memcpy(cinfo->marker_list->data, payload, payload_size);
+  saved->next = nullptr;
+  saved->marker = marker;
+  saved->original_length = payload_size;
+  saved->data_length = payload_size;
+  saved->data = jpegli::Allocate<uint8_t>(cinfo, payload_size, JPOOL_IMAGE);
+  memcpy(saved->data, payload, payload_size);
+  jpeg_saved_marker_ptr* tail = &cinfo->marker_list;
+  while (*tail) tail = &(*tail)->next;
+  *tail = saved;
 }
 
 uint8_t ProcessNextMarker(j_decompress_ptr cinfo, const uint8_t* const data,
