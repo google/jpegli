@@ -586,7 +586,11 @@ float QuantValsToDistance(j_compress_ptr cinfo) {
   for (int c = 0; c < cinfo->num_components; ++c) {
     int quant_idx = cinfo->comp_info[c].quant_tbl_no;
     uint16_t* quantval = cinfo->quant_tbl_ptrs[quant_idx]->quantval;
-    const float* base_qm = &kBaseQuantMatrixYCbCr[quant_idx * DCTSIZE2];
+    // kBaseQuantMatrixYCbCr only holds base matrices for the three standard
+    // YCbCr tables (0..2), but a component may legally reference table 3; clamp
+    // the base-matrix index so we do not read past the array.
+    const float* base_qm =
+        &kBaseQuantMatrixYCbCr[std::min(quant_idx, 2) * DCTSIZE2];
     for (int k = 0; k < DCTSIZE2; ++k) {
       float dmin = 0.0;
       float dmax = kDistMax;
