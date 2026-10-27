@@ -290,6 +290,9 @@ void ProcessCompressionParams(j_compress_ptr cinfo) {
       JPEGLI_ERROR("Invalid sampling factor %d x %d", comp->h_samp_factor,
                    comp->v_samp_factor);
     }
+    if (comp->quant_tbl_no < 0 || comp->quant_tbl_no >= NUM_QUANT_TBLS) {
+      JPEGLI_ERROR("Invalid quant table index %d", comp->quant_tbl_no);
+    }
     if (cinfo->num_components == 1) {
       // Force samp factors to 1x1 for single-component images.
       comp->h_samp_factor = comp->v_samp_factor = 1;
