@@ -106,7 +106,7 @@ endif()
 # Build libjpeg.so that links to libjpeg-static
 #
 
-if (JPEGLI_ENABLE_JPEGLI_LIBJPEG AND NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
+if (JPEGLI_ENABLE_JPEGLI_LIBJPEG AND NOT WIN32 AND NOT EMSCRIPTEN)
 add_library(jpegli-libjpeg-obj OBJECT "${JPEGLI_INTERNAL_JPEGLI_WRAPPER_SOURCES}")
 target_compile_options(jpegli-libjpeg-obj PRIVATE ${JPEGLI_INTERNAL_FLAGS})
 target_compile_options(jpegli-libjpeg-obj PUBLIC ${JPEGLI_COVERAGE_FLAGS})
@@ -134,8 +134,13 @@ set_target_properties(jpeg PROPERTIES
 # appropriate version number.
 set_target_properties(jpeg PROPERTIES
   LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/jpegli/jpeg.version.${JPEGLI_LIBJPEG_LIBRARY_SOVERSION})
-set_property(TARGET jpeg APPEND_STRING PROPERTY
-  LINK_FLAGS " -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/jpegli/jpeg.version.${JPEGLI_LIBJPEG_LIBRARY_SOVERSION}")
+if(APPLE)
+  set_property(TARGET jpeg APPEND_STRING PROPERTY
+    LINK_FLAGS "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/jpegli/osx.syms")
+else()
+  set_property(TARGET jpeg APPEND_STRING PROPERTY
+    LINK_FLAGS " -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/jpegli/jpeg.version.${JPEGLI_LIBJPEG_LIBRARY_SOVERSION}")
+endif()
 
 if (JPEGLI_INSTALL_JPEGLI_LIBJPEG)
   install(TARGETS jpeg
