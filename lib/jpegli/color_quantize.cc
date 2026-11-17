@@ -222,6 +222,12 @@ struct WangHasher {
   }
 };
 
+constexpr size_t kColorPrecision = 6;
+constexpr size_t kColorDropBits = 8 - kColorPrecision;
+constexpr size_t kColorVolume = 1 << (kColorPrecision * 3);
+constexpr uint8_t kColorMask = static_cast<uint8_t>(0xFFu << kColorDropBits);
+constexpr size_t kMaxColors = 256;
+
 // Build an index of all the different colors in the input
 // image. To do this we map the 24 bit RGB representation of the colors
 // to a unique integer index assigned to the different colors in order of
@@ -230,32 +236,37 @@ struct WangHasher {
 int BuildRGBColorIndex(const uint8_t* const image, int const num_pixels,
                        int* const count, uint8_t* const red,
                        uint8_t* const green, uint8_t* const blue) {
-  // Impossible because rgb are in the low 24 bits, and the upper 8 bits is 0.
+  // Impossible because RGB are in the low 24 bits, and the upper 8 bits is 0.
   const uint32_t impossible_pixel_value = 0x10000000;
   std::unordered_map<uint32_t, int, RGBPixelHasher> index_map(1 << 12);
-  std::unordered_map<uint32_t, int, RGBPixelHasher>::iterator index_map_lookup;
   const uint8_t* imagep = &image[0];
   uint32_t prev_pixel = impossible_pixel_value;
-  int index = 0;
+  size_t prev_index = 0;
   int n = 0;
   for (int i = 0; i < num_pixels; ++i) {
-    uint8_t r = ((*imagep++) & 0xfc) + 2;
-    uint8_t g = ((*imagep++) & 0xfc) + 2;
-    uint8_t b = ((*imagep++) & 0xfc) + 2;
+    // TODO(eustas): what is magic number 2.
+    uint8_t r = ((*imagep++) & kColorMask) + 2;
+    uint8_t g = ((*imagep++) & kColorMask) + 2;
+    uint8_t b = ((*imagep++) & kColorMask) + 2;
     uint32_t pixel = (b << 16) | (g << 8) | r;
-    if (pixel != prev_pixel) {
-      prev_pixel = pixel;
-      index_map_lookup = index_map.find(pixel);
-      if (index_map_lookup != index_map.end()) {
-        index = index_map_lookup->second;
-      } else {
-        index_map[pixel] = index = n++;
-        red[index] = r;
-        green[index] = g;
-        blue[index] = b;
-      }
+    if (pixel == prev_pixel) {
+      count[prev_index]++;
+      continue;
     }
-    ++count[index];
+    prev_pixel = pixel;
+    auto index_map_lookup = index_map.find(pixel);
+    if (index_map_lookup != index_map.end()) {
+      prev_index = index_map_lookup->second;
+      count[prev_index]++;
+      continue;
+    }
+    index_map[pixel] = n;
+    red[n] = r;
+    green[n] = g;
+    blue[n] = b;
+    prev_index = n;
+    count[prev_index]++;
+    n++;
   }
   return n;
 }
@@ -269,8 +280,12 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
   jpeg_decomp_master* m = cinfo->master;
   const size_t num_pixels =
       static_cast<size_t>(cinfo->output_width) * cinfo->output_height;
-  const int max_color_count = std::max<size_t>(num_pixels, 1u << 18);
+  const int max_color_count = std::max<size_t>(num_pixels, kColorVolume);
   const int max_palette_size = cinfo->desired_number_of_colors;
+  if (max_palette_size < 1 || max_palette_size > static_cast<int>(kMaxColors)) {
+    JPEGLI_ERROR("desired_number_of_colors must be between 1 and %d.",
+                 static_cast<int>(kMaxColors));
+  }
   auto red_storage =
       jpegli::make_uninitialized_vector<uint8_t>(max_color_count);
   auto green_storage =
@@ -288,7 +303,7 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
   std::vector<int> dist(n, std::numeric_limits<int>::max());
   std::vector<int> cluster(n);
   std::vector<bool> in_palette(n, false);
-  int center[256];
+  std::vector<int> center(kMaxColors);
   int k = 0;  // palette size
   const int count_threshold = (num_pixels * 4) / max_palette_size;
   static constexpr int kAveragePixelErrorThreshold = 1;
@@ -296,22 +311,23 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
   int64_t error = 0;  // quantization error
 
   int max_count = 0;
-  int winner = 0;
+  int max_count_i = 0;
   for (int i = 0; i < n; ++i) {
     if (count[i] > max_count) {
       max_count = count[i];
-      winner = i;
+      max_count_i = i;
     }
-    if (!in_palette[i] && count[i] > count_threshold) {
+    if (count[i] > count_threshold) {
       AddToRGBPalette(red, green, blue, count.data(), i, k++, n, dist.data(),
-                      cluster.data(), &center[0], &error);
+                      cluster.data(), center.data(), &error);
       in_palette[i] = true;
     }
   }
+  // If no candidates are frequent enough, pick one with highest frequency.
   if (k == 0) {
-    AddToRGBPalette(red, green, blue, count.data(), winner, k++, n, dist.data(),
-                    cluster.data(), &center[0], &error);
-    in_palette[winner] = true;
+    AddToRGBPalette(red, green, blue, count.data(), max_count_i, k++, n,
+                    dist.data(), cluster.data(), center.data(), &error);
+    in_palette[max_count_i] = true;
   }
 
   // Calculation of the multi-resolution density grid.
@@ -323,11 +339,11 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
   }
 
   for (int i = 0; i < n; ++i) {
-    if (!in_palette[i]) {
-      const int key = InterlaceBitsRGB(red[i], green[i], blue[i]) >> 6;
-      for (int level = 0; level < kMaxLevel; ++level) {
-        histogram[level][key >> (3 * level)] += count[i];
-      }
+    if (in_palette[i]) continue;
+    const int key =
+        InterlaceBitsRGB(red[i], green[i], blue[i]) >> (3 * kColorDropBits);
+    for (int level = 0; level < kMaxLevel; ++level) {
+      histogram[level][key >> (3 * level)] += count[i];
     }
   }
   for (int i = 0; i < n; ++i) {
@@ -340,7 +356,8 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
         radius[i * kMaxLevel + level] =
             ScaleQuadDistanceRGB(ColorIntQuadDistanceRGB(0, 0, 0, rd, gd, bd));
       }
-      const int key = InterlaceBitsRGB(red[i], green[i], blue[i]) >> 6;
+      const int key =
+          InterlaceBitsRGB(red[i], green[i], blue[i]) >> (3 * kColorDropBits);
       if (kMaxLevel > 0) {
         density[i * kMaxLevel] = histogram[0][key] - count[i];
       }
@@ -384,7 +401,7 @@ void ChooseColorMap2Pass(j_decompress_ptr cinfo) {
       bucket_array[priority].push_back(i);
     } else {
       AddToRGBPalette(red, green, blue, count.data(), i, k++, n, dist.data(),
-                      cluster.data(), &center[0], &error);
+                      cluster.data(), center.data(), &error);
     }
     bucket_array[top_priority].pop_back();
     while (top_priority >= 0 && bucket_array[top_priority].empty()) {

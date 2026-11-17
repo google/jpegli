@@ -307,6 +307,7 @@ void SetDecompressParams(const DecompressParams& dparams,
   cinfo->scale_num = dparams.scale_num;
   cinfo->scale_denom = dparams.scale_denom;
   cinfo->quantize_colors = dparams.quantize_colors ? 1 : 0;
+  Check(dparams.desired_number_of_colors <= 256);
   cinfo->desired_number_of_colors = dparams.desired_number_of_colors;
   if (!dparams.scan_params.empty()) {
     if (cinfo->buffered_image) {
