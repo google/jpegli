@@ -842,7 +842,9 @@ void InitEntropyCoder(j_compress_ptr cinfo) {
   m->coding_tables =
       Allocate<HuffmanCodeTable>(cinfo, m->num_huffman_tables, JPOOL_IMAGE);
   for (size_t i = 0; i < m->num_huffman_tables; ++i) {
-    BuildHuffmanCodeTable(m->huffman_tables[i], &m->coding_tables[i]);
+    HuffmanCodeTable* code = &m->coding_tables[i];
+    memset(code, 0, sizeof(HuffmanCodeTable));
+    BuildHuffmanCodeTable(m->huffman_tables[i], code);
   }
 }
 
