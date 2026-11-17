@@ -29,7 +29,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
@@ -86,12 +86,15 @@ jobs:
           -DJPEGLI_ENABLE_DEVTOOLS=OFF \
 
     - name: Package release tarball
+      env:
+        HERE: ${{ runner.workspace }}
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
       run: |
         cd build
-        tar -zcvf ${{ runner.workspace }}/release_file.tar.gz \
+        tar -zcvf ${HERE}/release_file.tar.gz \
           LICENSE* tools/{cjpegli,djpegli}
-        ln -s ${{ runner.workspace }}/release_file.tar.gz \
-          ${{ runner.workspace }}/jpegli-linux-x86_64-static-${{ github.event.release.tag_name }}.tar.gz
+        ln -s ${HERE}/release_file.tar.gz \
+          ${HERE}/jpegli-linux-x86_64-static-${RELEASE_TAG}.tar.gz
 
     - name: Upload artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -118,8 +121,6 @@ jobs:
         os:
         - ubuntu:24.04
         - ubuntu:22.04
-        - ubuntu:20.04
-        - debian:bullseye
         - debian:bookworm
         - debian:trixie
         - debian:sid
@@ -220,11 +221,13 @@ jobs:
 
     - name: Package release tarball
       if: github.event_name == 'release'
+      env:
+        ARTIFACT_NAME: ${{ format('{0}-{1}', steps.env.outputs.artifact_name, github.event.release.tag_name)}}
       run: |
         (cd build/debs/; find -maxdepth 1 -name '*jpegli*.*') | \
         tar -zcvf release_file.tar.gz -C build/debs/ -T -
         ln -s release_file.tar.gz \
-          ${{ steps.env.outputs.artifact_name }}-${{ github.event.release.tag_name }}.tar.gz
+          ${ARTIFACT_NAME}.tar.gz
 
     - name: Upload binaries to release
       if: github.event_name == 'release'
@@ -324,7 +327,7 @@ jobs:
           -DJPEGLI_STATIC=${{ matrix.static || 'ON'}} \
           -DJPEGLI_ENABLE_TOOLS=${{ matrix.tools || 'ON'}} \
           -DBUILD_TESTING=OFF \
-          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
           -DCMAKE_INSTALL_PREFIX=`pwd`/${PREFIX} \
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
           -DJPEGLI_ENABLE_JPEGLI_LIBJPEG=OFF \
@@ -337,12 +340,12 @@ jobs:
       shell: 'bash'
       run: |
         set -x
-        cmake --build build --config ${{ env.BUILD_TYPE }}
+        cmake --build build --config ${BUILD_TYPE}
     - name: Install
       shell: 'bash'
       run: |
         set -x
-        cmake --build build --config ${{ env.BUILD_TYPE }} --target install
+        cmake --build build --config ${BUILD_TYPE} --target install
         for pkg in giflib libjpeg-turbo libpng libwebp zlib; do
           cp vcpkg/installed/${{matrix.triplet}}/share/${pkg}/copyright \
             ${PREFIX}/bin/LICENSE.${pkg}
@@ -405,5 +408,6 @@ jobs:
     - name: Publish assets
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
       run: |
-        gh release upload ${{ github.event.release.tag_name }} ./release_assets/*
+        gh release upload "${RELEASE_TAG}" ./release_assets/*
