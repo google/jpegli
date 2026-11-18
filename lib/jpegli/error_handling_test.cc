@@ -292,6 +292,33 @@ TEST(EncoderErrorHandlingTest, InvalidQuantTableIndex) {
   if (buffer) free(buffer);
 }
 
+TEST(EncoderErrorHandlingTest, AddQuantTableInvalidIndex) {
+  uint8_t* buffer = nullptr;
+  unsigned long buffer_size = 0;  // NOLINT
+  jpeg_compress_struct cinfo;
+  const auto try_catch_block = [&]() -> bool {
+    ERROR_HANDLER_SETUP(jpegli);
+    jpegli_create_compress(&cinfo);
+    jpegli_mem_dest(&cinfo, &buffer, &buffer_size);
+    cinfo.image_width = 1;
+    cinfo.image_height = 1;
+    cinfo.input_components = 1;
+    jpegli_set_defaults(&cinfo);
+    unsigned int basic_table[DCTSIZE2];
+    for (unsigned int& v : basic_table) v = 1;
+    jpegli_add_quant_table(&cinfo, NUM_QUANT_TBLS, basic_table, 100, TRUE);
+    jpegli_start_compress(&cinfo, TRUE);
+    JSAMPLE image[1] = {0};
+    JSAMPROW row[] = {image};
+    jpegli_write_scanlines(&cinfo, row, 1);
+    jpegli_finish_compress(&cinfo);
+    return true;
+  };
+  EXPECT_FALSE(try_catch_block());
+  jpegli_destroy_compress(&cinfo);
+  if (buffer) free(buffer);
+}
+
 TEST(EncoderErrorHandlingTest, NumberOfComponentsMismatch1) {
   uint8_t* buffer = nullptr;
   unsigned long buffer_size = 0;  // NOLINT
