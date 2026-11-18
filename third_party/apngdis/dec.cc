@@ -1013,20 +1013,24 @@ Status DecodeImageAPNG(const Span<const uint8_t> bytes,
           png_color_8p sig_bits = nullptr;
           // Error is OK -> sig_bits remains nullptr.
           png_get_sBIT(ctx.png_ptr, ctx.info_ptr, &sig_bits);
+          const int png_bit_depth =
+              png_get_bit_depth(ctx.png_ptr, ctx.info_ptr);
           SetColorData(ppf, png_get_color_type(ctx.png_ptr, ctx.info_ptr),
-                       png_get_bit_depth(ctx.png_ptr, ctx.info_ptr), sig_bits,
+                       png_bit_depth, sig_bits,
                        png_get_valid(ctx.png_ptr, ctx.info_ptr, PNG_INFO_tRNS));
           num_channels =
               ppf->info.num_color_channels + (ppf->info.alpha_bits ? 1 : 0);
+          // libpng emits native 16-bit samples for 16-bit PNGs; sBIT only
+          // lowers the reported bits_per_sample, so size the row buffer from
+          // the actual depth instead.
+          const bool is_16bit = png_bit_depth == 16;
           format = {
               /*num_channels=*/num_channels,
-              /*data_type=*/ppf->info.bits_per_sample > 8 ? JPEGLI_TYPE_UINT16
-                                                          : JPEGLI_TYPE_UINT8,
+              /*data_type=*/is_16bit ? JPEGLI_TYPE_UINT16 : JPEGLI_TYPE_UINT8,
               /*endianness=*/JPEGLI_BIG_ENDIAN,
               /*align=*/0,
           };
-          bytes_per_pixel =
-              num_channels * (format.data_type == JPEGLI_TYPE_UINT16 ? 2 : 1);
+          bytes_per_pixel = num_channels * (is_16bit ? 2 : 1);
           // TODO(eustas): ensure multiplication is safe
           uint64_t row_bytes =
               static_cast<uint64_t>(image_rect.xsize()) * bytes_per_pixel;
