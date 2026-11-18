@@ -597,7 +597,7 @@ void jpegli_save_markers(j_decompress_ptr cinfo, int marker_code,
                          unsigned int length_limit) {
   // TODO(szabadka) Limit our memory usage by taking into account length_limit.
   jpeg_decomp_master* m = cinfo->master;
-  if (marker_code < 0xe0) {
+  if (marker_code < 0xe0 || marker_code > 0xff) {
     JPEGLI_ERROR("jpegli_save_markers: invalid marker code %d", marker_code);
   }
   m->markers_to_save_[marker_code - 0xe0] = 1;

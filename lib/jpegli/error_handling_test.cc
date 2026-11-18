@@ -1078,6 +1078,18 @@ TEST(DecoderErrorHandlingTest, MinimalSuccess) {
   jpegli_destroy_decompress(&cinfo);
 }
 
+TEST(DecoderErrorHandlingTest, InvalidSaveMarkersCode) {
+  jpeg_decompress_struct cinfo = {};
+  const auto try_catch_block = [&]() -> bool {
+    ERROR_HANDLER_SETUP(jpegli);
+    jpegli_create_decompress(&cinfo);
+    jpegli_save_markers(&cinfo, 0x100, 0xffff);
+    return true;
+  };
+  EXPECT_FALSE(try_catch_block());
+  jpegli_destroy_decompress(&cinfo);
+}
+
 TEST(DecoderErrorHandlingTest, NoSource) {
   jpeg_decompress_struct cinfo = {};
   const auto try_catch_block = [&]() -> bool {
