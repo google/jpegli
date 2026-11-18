@@ -241,6 +241,7 @@ set(JPEGLI_INTERNAL_TESTLIB_FILES
 )
 
 set(JPEGLI_INTERNAL_TESTS
+  base/rect_test.cc
   cms/tone_mapping_test.cc
   cms/transfer_functions_test.cc
   extras/butteraugli_test.cc
