@@ -48,6 +48,12 @@ When [building the project](doc/building_and_testing.md), two binaries,
 `lib/jpegli/libjpeg.so.62.3.0` shared library that can be used as a drop-in
 replacement for the system library with the same name.
 
+## Python bindings
+
+[pyjpegli](https://github.com/Maksim-Burtsev/pyjpegli) is a third-party
+package that bundles jpegli into wheels, so no system library is needed:
+`pip install pyjpegli`.
+
 ## Development process
 
 *   [More information on testing/build options](doc/building_and_testing.md)
