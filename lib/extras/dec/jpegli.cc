@@ -219,6 +219,9 @@ Status DecodeJpeg(const std::vector<uint8_t>& compressed,
                              dparams.output_endianness);
 
     if (dparams.num_colors > 0) {
+      if (dparams.num_colors > 256) {
+        return failure("too many colors");
+      }
       cinfo.quantize_colors = TRUE;
       cinfo.desired_number_of_colors = dparams.num_colors;
       cinfo.two_pass_quantize = static_cast<boolean>(dparams.two_pass_quant);
