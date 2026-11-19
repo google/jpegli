@@ -102,6 +102,42 @@ TEST(EncodeAPITest, ReuseCinfoSameImageTwice) {
             memcmp(compressed0.data(), compressed1.data(), compressed0.size()));
 }
 
+TEST(EncodeAPITest, ReuseCinfoCallerSuppliedBuffer) {
+  TestImage input;
+  input.xsize = 129;
+  input.ysize = 73;
+  CompressParams jparams;
+  GenerateInput(PIXELS, jparams, &input);
+  uint8_t* buffer = nullptr;
+  unsigned long buffer_size = 0;  // NOLINT
+  uint8_t* buffer0 = nullptr;
+  unsigned long buffer0_size = 0;  // NOLINT
+  // Too small for the second image, so the destination has to grow it.
+  uint8_t small_buffer[16];
+  jpeg_compress_struct cinfo;
+  const auto try_catch_block = [&]() -> bool {
+    ERROR_HANDLER_SETUP(jpegli);
+    jpegli_create_compress(&cinfo);
+    jpegli_mem_dest(&cinfo, &buffer, &buffer_size);
+    EncodeWithJpegli(input, jparams, &cinfo);
+    // The first output now belongs to the caller.
+    buffer0 = buffer;
+    buffer0_size = buffer_size;
+    buffer = small_buffer;
+    buffer_size = sizeof(small_buffer);
+    jpegli_mem_dest(&cinfo, &buffer, &buffer_size);
+    EncodeWithJpegli(input, jparams, &cinfo);
+    return true;
+  };
+  EXPECT_TRUE(try_catch_block());
+  jpegli_destroy_compress(&cinfo);
+  ASSERT_NE(buffer, small_buffer);
+  ASSERT_EQ(buffer0_size, buffer_size);
+  EXPECT_EQ(0, memcmp(buffer0, buffer, buffer_size));
+  free(buffer0);
+  free(buffer);
+}
+
 std::vector<TestConfig> GenerateBasicConfigs() {
   std::vector<TestConfig> all_configs;
   for (int samp : {1, 2}) {
