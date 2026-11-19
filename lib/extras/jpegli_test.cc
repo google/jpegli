@@ -380,6 +380,38 @@ TEST(JpegliTest, JpegliEncodeRejectsMismatchedFrameSize) {
   EXPECT_FALSE(EncodeJpeg(ppf_in, settings, nullptr, &compressed));
 }
 
+TEST(JpegliTest, JpegliLibjpegEncodeRejectsMismatchedFrameSize) {
+  TEST_LIBJPEG_SUPPORT();
+  std::string testimage = "jxl/flower/flower_small.rgb.depth8.ppm";
+  PackedPixelFile ppf_in;
+  ASSERT_TRUE(ReadTestImage(testimage, &ppf_in));
+  ASSERT_FALSE(ppf_in.frames.empty());
+  const uint32_t orig_xsize = ppf_in.info.xsize;
+  const uint32_t orig_ysize = ppf_in.info.ysize;
+  ASSERT_EQ(static_cast<size_t>(orig_xsize), ppf_in.frames[0].color.xsize);
+  ASSERT_EQ(static_cast<size_t>(orig_ysize), ppf_in.frames[0].color.ysize);
+
+  std::vector<uint8_t> compressed;
+
+  // Sanity: original ppf encodes successfully.
+  EXPECT_TRUE(EncodeWithLibjpeg(ppf_in, 90, &compressed));
+
+  // Mismatch ysize (info > frame): pre-fix this read past the pixel buffer
+  // in the encoder copy loops.
+  ppf_in.info.ysize = orig_ysize + 1;
+  EXPECT_FALSE(EncodeWithLibjpeg(ppf_in, 90, &compressed));
+
+  // Mismatch xsize (info > frame).
+  ppf_in.info.ysize = orig_ysize;
+  ppf_in.info.xsize = orig_xsize + 1;
+  EXPECT_FALSE(EncodeWithLibjpeg(ppf_in, 90, &compressed));
+
+  // Mismatch in the other direction (info < frame).
+  ppf_in.info.xsize = orig_xsize - 1;
+  ppf_in.info.ysize = orig_ysize;
+  EXPECT_FALSE(EncodeWithLibjpeg(ppf_in, 90, &compressed));
+}
+
 struct TestConfig {
   int num_colors;
   int passes;

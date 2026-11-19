@@ -623,6 +623,10 @@ class JPEGEncoder : public Encoder {
     encoded_image->bitstreams.reserve(ppf.frames.size());
     for (const auto& frame : ppf.frames) {
       JPEGLI_RETURN_IF_ERROR(VerifyPackedImage(frame.color, ppf.info));
+      if (frame.color.xsize != ppf.info.xsize ||
+          frame.color.ysize != ppf.info.ysize) {
+        return JPEGLI_FAILURE("Frame size does not match image size.");
+      }
       encoded_image->bitstreams.emplace_back();
       JPEGLI_RETURN_IF_ERROR(EncodeImageJPG(
           frame.color, ppf.info, ppf.icc, ppf.metadata.exif, jpeg_encoder,
