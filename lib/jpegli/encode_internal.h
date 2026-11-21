@@ -75,6 +75,7 @@ struct jpeg_comp_master {
   uint8_t cicp_transfer_function;
   bool use_std_tables;
   bool use_adaptive_quantization;
+  bool chroma_subsampling_set_by_cli = false;
   int progressive_level;
   size_t xsize_blocks;
   size_t ysize_blocks;
