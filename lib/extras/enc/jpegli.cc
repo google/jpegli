@@ -414,6 +414,8 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
     }
     jpegli_set_cicp_transfer_function(&cinfo, cicp_tf);
     jpegli_set_defaults(&cinfo);
+    // All factors need to be specified to subsample the blue channel
+    // for XYB. H and V are swapped between YCbCr and XYB.
     if (!jpeg_settings.chroma_subsampling.empty()) {
       if (jpeg_settings.chroma_subsampling == "444") {
         cinfo.comp_info[0].h_samp_factor = 1;
@@ -421,23 +423,39 @@ Status EncodeJpeg(const PackedPixelFile& ppf, const JpegSettings& jpeg_settings,
       } else if (jpeg_settings.chroma_subsampling == "440") {
         cinfo.comp_info[0].h_samp_factor = 1;
         cinfo.comp_info[0].v_samp_factor = 2;
+        if (jpeg_settings.xyb) {
+          cinfo.comp_info[0].h_samp_factor = 2;
+          cinfo.comp_info[0].v_samp_factor = 2;
+          cinfo.comp_info[1].h_samp_factor = 2;
+          cinfo.comp_info[1].v_samp_factor = 2;
+          cinfo.comp_info[2].h_samp_factor = 2;
+          cinfo.comp_info[2].v_samp_factor = 1;
+        }
       } else if (jpeg_settings.chroma_subsampling == "422") {
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 1;
+        if (jpeg_settings.xyb) {
+          cinfo.comp_info[0].h_samp_factor = 2;
+          cinfo.comp_info[0].v_samp_factor = 2;
+          cinfo.comp_info[1].h_samp_factor = 2;
+          cinfo.comp_info[1].v_samp_factor = 2;
+          cinfo.comp_info[2].h_samp_factor = 1;
+          cinfo.comp_info[2].v_samp_factor = 2;
+        }
       } else if (jpeg_settings.chroma_subsampling == "420") {
         cinfo.comp_info[0].h_samp_factor = 2;
         cinfo.comp_info[0].v_samp_factor = 2;
+        if (jpeg_settings.xyb) {
+          cinfo.comp_info[0].h_samp_factor = 2;
+          cinfo.comp_info[0].v_samp_factor = 2;
+          cinfo.comp_info[1].h_samp_factor = 2;
+          cinfo.comp_info[1].v_samp_factor = 2;
+          cinfo.comp_info[2].h_samp_factor = 1;
+          cinfo.comp_info[2].v_samp_factor = 1;
+        }
       } else {
         return false;
       }
-      for (int i = 1; i < cinfo.num_components; ++i) {
-        cinfo.comp_info[i].h_samp_factor = 1;
-        cinfo.comp_info[i].v_samp_factor = 1;
-      }
-    } else if (!jpeg_settings.xyb) {
-      // Default is no chroma subsampling.
-      cinfo.comp_info[0].h_samp_factor = 1;
-      cinfo.comp_info[0].v_samp_factor = 1;
     }
     jpegli_enable_adaptive_quantization(
         &cinfo, TO_JPEGLI_BOOL(jpeg_settings.use_adaptive_quantization));
